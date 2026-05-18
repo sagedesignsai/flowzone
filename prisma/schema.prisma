@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// BetterAuth: User model
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions     Session[]
+  accounts     Account[]
+  projects     Project[]
+  chats        Chat[]
+}
+
+/// BetterAuth: Session model
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// BetterAuth: Account model
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+/// BetterAuth: Verification model
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime?
+  updatedAt  DateTime?
+}
+
+/// Flowzone: A project containing chats and configuration
+model Project {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  envVars   Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  chats    Chat[]
+  gitRepos GitRepo[]
+
+  @@index([userId])
+}
+
+/// Flowzone: A chat conversation with the AI agent
+model Chat {
+  id        String    @id @default(cuid())
+  title     String
+  projectId String?
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  gitRepoId String?
+  gitRepo   GitRepo?  @relation(fields: [gitRepoId], references: [id], onDelete: SetNull)
+  gitBranch String?   /// The working branch created for this chat (e.g. "flowzone/abc123")
+
+  messages   Message[]
+  sandboxRun SandboxRun?
+  agentRun   AgentRun?
+
+  @@index([projectId])
+  @@index([userId])
+  @@index([gitRepoId])
+}
+
+/// Flowzone: A GitHub repository imported into the platform
+model GitRepo {
+  id              String   @id @default(cuid())
+  owner           String
+  name            String
+  fullName        String   @unique /// "owner/name"
+  defaultBranch   String   @default("main")
+  isPrivate       Boolean  @default(false)
+  installationId  String?  /// GitHub App installation ID for private repo access
+  projectId       String?
+  project         Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  chats Chat[]
+
+  @@index([fullName])
+  @@index([projectId])
+}
+
+/// Flowzone: A single message in a chat
+model Message {
+  id        String   @id @default(cuid())
+  chatId    String
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  role      String   // "user" | "assistant" | "tool"
+  content   String
+  parts     Json     @default("[]")
+  createdAt DateTime @default(now())
+
+  @@index([chatId, createdAt])
+}
+
+/// Flowzone: An E2B sandbox tied to a chat
+model SandboxRun {
+  id           String   @id @default(cuid())
+  chatId       String   @unique
+  chat         Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  e2bSandboxId String   @unique
+  templateId   String   @default("base")
+  status       String   @default("creating") // creating | running | paused | stopped
+  previewUrl   String?
+  metadata     Json     @default("{}")
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+
+  @@index([e2bSandboxId])
+  @@index([status])
+}
+
+/// Flowzone: A Trigger.dev durable agent execution
+model AgentRun {
+  id           String    @id @default(cuid())
+  chatId       String    @unique
+  chat         Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  status       String    @default("pending") // pending | running | completed | failed
+  triggerRunId String?
+  steps        Int       @default(0)
+  error        String?
+  createdAt    DateTime  @default(now())
+  completedAt  DateTime?
+
+  @@index([status])
+}

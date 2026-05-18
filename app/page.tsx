@@ -1,19 +1,23 @@
-import { Button } from "@/components/ui/button"
+import { AppLayout } from "@/components/layout/app-layout";
+import { GlobalHeader } from "@/components/layout/global-header";
+import { SidebarInset } from "@/components/ui/sidebar";
+import { PromptHero } from "@/components/landing/prompt-hero";
 
-export default function Page() {
+export const metadata = {
+  title: "Flowzone — Where ideas become reality",
+  description:
+    "Build fully functional apps and websites through simple conversations with AI.",
+};
+
+export default function LandingPage() {
   return (
-    <div className="flex min-h-svh p-6">
-      <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-        <div>
-          <h1 className="font-medium">Project ready!</h1>
-          <p>You may now add components and start building.</p>
-          <p>We&apos;ve already added the button component for you.</p>
-          <Button className="mt-2">Button</Button>
-        </div>
-        <div className="font-mono text-xs text-muted-foreground">
-          (Press <kbd>d</kbd> to toggle dark mode)
-        </div>
-      </div>
-    </div>
-  )
+    <AppLayout defaultSidebarOpen={false}>
+      <SidebarInset>
+        <GlobalHeader />
+        <main className="flex flex-1 overflow-hidden">
+          <PromptHero />
+        </main>
+      </SidebarInset>
+    </AppLayout>
+  );
 }

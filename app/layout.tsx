@@ -1,7 +1,8 @@
-import { Geist, Geist_Mono, JetBrains_Mono } from "next/font/google"
+import { Geist, JetBrains_Mono } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import NextTopLoader from "nextjs-toploader"
 import { cn } from "@/lib/utils";
 
 const fontSans = Geist({
@@ -23,6 +24,7 @@ export default function RootLayout({
       className={cn("antialiased", fontSans.variable, "font-mono", jetbrainsMono.variable)}
     >
       <body>
+        <NextTopLoader color="var(--primary)" showSpinner={false} height={3} />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

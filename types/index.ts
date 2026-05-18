@@ -1,0 +1,161 @@
+import type { UIMessage } from "ai"
+
+export type ProjectStatus = "active" | "archived"
+
+export interface ProjectData {
+  name: string
+  envVars: Record<string, string>
+}
+
+export interface ChatData {
+  title: string
+  projectId?: string
+}
+
+export interface MessageData {
+  role: "user" | "assistant" | "tool"
+  content: string
+  parts: UIMessage["parts"]
+}
+
+export type SandboxStatus =
+  | "creating"
+  | "running"
+  | "paused"
+  | "stopped"
+
+export interface SandboxData {
+  e2bSandboxId: string
+  templateId: string
+  status: SandboxStatus
+  previewUrl: string | null
+  metadata: Record<string, unknown>
+  expiresAt: Date
+}
+
+export type AgentRunStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+
+export interface AgentRunData {
+  status: AgentRunStatus
+  triggerRunId: string | null
+  steps: number
+  error: string | null
+  completedAt: Date | null
+}
+
+export interface ChatMessage {
+  id: string
+  role: "user" | "assistant" | "tool"
+  content: string
+  parts: UIMessage["parts"]
+  createdAt: Date
+}
+
+// ── Git / GitHub Integration ─────────────────────────────
+
+/** Identifies a GitHub repository and how to authenticate with it */
+export interface GitRepoRef {
+  provider: "github"
+  owner: string
+  name: string
+  installationId: string
+}
+
+/** A GitHub branch with metadata */
+export interface GitBranch {
+  name: string
+  sha: string
+  protected: boolean
+  isDefault: boolean
+}
+
+/** Summary of a GitHub repository accessible via an installation */
+export interface GitRepoSummary {
+  id: number
+  owner: string
+  name: string
+  fullName: string
+  defaultBranch: string
+  isPrivate: boolean
+  isFork: boolean
+  description: string | null
+  language: string | null
+  updatedAt: string
+  installationId: number
+}
+
+/** Request payload for importing a repo into a chat */
+export interface GitImportRequest {
+  chatId: string
+  repo: {
+    owner: string
+    name: string
+    installationId: number
+    branch?: string
+  }
+}
+
+/** Response after importing a repo */
+export interface GitImportResponse {
+  gitRepoId: string
+  chatBranch: string
+  sandboxId: string | null
+  clonePath: string
+}
+
+/** Request payload for creating a branch */
+export interface GitCreateBranchRequest {
+  owner: string
+  repo: string
+  installationId: number
+  baseBranch: string
+  newBranch: string
+}
+
+/** Request payload for creating a pull request */
+export interface GitCreatePRRequest {
+  owner: string
+  repo: string
+  installationId: number
+  head: string
+  base: string
+  title: string
+  body?: string
+  draft?: boolean
+}
+
+/** Response from creating a pull request */
+export interface GitCreatePRResponse {
+  prNumber: number
+  prUrl: string
+  title: string
+  state: string
+}
+
+/** Options for cloning a repo into an E2B sandbox */
+export interface SandboxGitCloneOptions {
+  url: string
+  branch?: string
+  depth?: number
+  token: string
+}
+
+/** Options for committing changes in the sandbox */
+export interface SandboxGitCommitOptions {
+  repoPath: string
+  message: string
+  authorName?: string
+  authorEmail?: string
+}
+
+/** Options for pushing changes from the sandbox */
+export interface SandboxGitPushOptions {
+  repoPath: string
+  branch: string
+  token: string
+  force?: boolean
+}
