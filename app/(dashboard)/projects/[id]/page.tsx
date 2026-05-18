@@ -101,7 +101,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-medium">Recent Chats</h2>
-            <Button render={<Link href="/chat" />} size="sm" variant="outline">
+            <Button nativeButton={false} render={<Link href="/chat" />} size="sm" variant="outline">
               New Chat
             </Button>
           </div>

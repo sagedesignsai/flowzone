@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useSession } from "@/lib/auth-client"
-import { useState } from "react"
+import { useSettingsStore } from "@/stores/settings-store"
+import { useEffect } from "react"
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
@@ -12,19 +13,24 @@ export function ProfileForm() {
   const { data: session, isPending } = useSession()
   const user = session?.user
 
-  const [name, setName] = useState(user?.name ?? "")
-  const [avatarUrl, setAvatarUrl] = useState(user?.image ?? "")
-  const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState<{
-    type: "success" | "error"
-    text: string
-  } | null>(null)
+  const name = useSettingsStore((s) => s.name)
+  const avatarUrl = useSettingsStore((s) => s.avatarUrl)
+  const saving = useSettingsStore((s) => s.saving)
+  const message = useSettingsStore((s) => s.message)
+  const setName = useSettingsStore((s) => s.setName)
+  const setAvatarUrl = useSettingsStore((s) => s.setAvatarUrl)
+  const setSaving = useSettingsStore((s) => s.setSaving)
+  const setMessage = useSettingsStore((s) => s.setMessage)
+  const hydrate = useSettingsStore((s) => s.hydrate)
 
-  // Sync form when session loads (handles race with Zustand hydration)
-  // We intentionally keep local state for the form so editing doesn't
-  // mutate the session store until the user explicitly saves.
+  // Hydrate store from session once it loads
+  useEffect(() => {
+    if (user) {
+      hydrate(user.name ?? "", user.image ?? "")
+    }
+  }, [user, hydrate])
 
-  async function handleSave(e: React.FormEvent) {
+  async function handleSave(e: React.SubmitEvent) {
     e.preventDefault()
     setSaving(true)
     setMessage(null)

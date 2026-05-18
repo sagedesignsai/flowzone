@@ -16,7 +16,7 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  async function handleEmailSubmit(e: React.FormEvent) {
+  async function handleEmailSubmit(e: React.SubmitEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)

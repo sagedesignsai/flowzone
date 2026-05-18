@@ -1,3 +1,5 @@
+"use client"
+
 import { Button } from "@/components/ui/button"
 import { ProjectCard, type ProjectCardData } from "@/components/projects/project-card"
 import { cn } from "@/lib/utils"
@@ -27,7 +29,7 @@ export function ProjectList({ projects, className, totalCount }: ProjectListProp
             Start a new chat and your projects will appear here.
           </p>
         </div>
-        <Button render={<Link href="/chat" />} size="sm">
+        <Button nativeButton={false} render={<Link href="/chat" />} size="sm">
           Start building
         </Button>
       </div>

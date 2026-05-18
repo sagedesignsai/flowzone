@@ -140,7 +140,7 @@ export const listFiles = tool({
     return {
       entries: entries.map((e) => ({
         name: e.name,
-        type: e.isDir ? ("directory" as const) : ("file" as const),
+        type: e.type === "dir" ? ("directory" as const) : ("file" as const),
       })),
     }
   },

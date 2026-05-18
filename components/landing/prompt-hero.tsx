@@ -27,7 +27,7 @@ import { motion, AnimatePresence } from "motion/react";
 import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
 import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
-import type { FormEvent } from "react";
+import type { SubmitEvent } from "react";
 
 // ─── Quick-start suggestions ─────────────────────────────────────────────────
 
@@ -50,7 +50,7 @@ export function PromptHero({ className }: PromptHeroProps) {
 
   function handleSubmit(
     message: PromptInputMessage,
-    _event: FormEvent<HTMLFormElement>
+    _event: SubmitEvent<HTMLFormElement>
   ) {
     if (!message.text.trim()) return;
 

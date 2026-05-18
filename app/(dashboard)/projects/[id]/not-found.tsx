@@ -10,7 +10,7 @@ export default function ProjectNotFound() {
           This project doesn&apos;t exist or you don&apos;t have access.
         </p>
       </div>
-      <Button render={<Link href="/projects" />} size="sm">
+      <Button nativeButton={false} render={<Link href="/projects" />} size="sm">
         Back to projects
       </Button>
     </div>

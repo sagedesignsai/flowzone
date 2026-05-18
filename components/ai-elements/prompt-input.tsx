@@ -59,9 +59,11 @@ import type {
   FormEventHandler,
   HTMLAttributes,
   KeyboardEventHandler,
+  MouseEvent,
   PropsWithChildren,
   ReactNode,
   RefObject,
+  SubmitEvent,
 } from "react";
 import {
   Children,
@@ -73,6 +75,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { type BaseUIEvent } from "@base-ui/react";
 
 // ============================================================================
 // Helpers
@@ -421,7 +424,7 @@ export const PromptInputActionAddAttachments = ({
   const attachments = usePromptInputAttachments();
 
   const handleSelect = useCallback(
-    (e: Event) => {
+    (e: BaseUIEvent<React.SyntheticEvent<HTMLDivElement, Event>>) => {
       e.preventDefault();
       attachments.openFileDialog();
     },
@@ -449,7 +452,7 @@ export const PromptInputActionAddScreenshot = ({
   const attachments = usePromptInputAttachments();
 
   const handleSelect = useCallback(
-    async (event: Event) => {
+    async (event: BaseUIEvent<React.SyntheticEvent<HTMLDivElement, Event>>) => {
       onSelect?.(event);
       if (event.defaultPrevented) {
         return;
@@ -507,7 +510,7 @@ export type PromptInputProps = Omit<
   }) => void;
   onSubmit: (
     message: PromptInputMessage,
-    event: FormEvent<HTMLFormElement>
+    event: SubmitEvent<HTMLFormElement>
   ) => void | Promise<void>;
 };
 
@@ -841,8 +844,8 @@ export const PromptInput = ({
     [referencedSources, clearReferencedSources]
   );
 
-  const handleSubmit: FormEventHandler<HTMLFormElement> = useCallback(
-    async (event) => {
+  const handleSubmit = useCallback(
+    async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
 
       const form = event.currentTarget;
@@ -875,7 +878,10 @@ export const PromptInput = ({
           })
         );
 
-        const result = onSubmit({ files: convertedFiles, text }, event);
+        const result = onSubmit(
+          { files: convertedFiles, text },
+          event as unknown as SubmitEvent<HTMLFormElement>
+        );
 
         // Handle both sync and async onSubmit
         if (result instanceof Promise) {
@@ -1232,7 +1238,7 @@ export const PromptInputSubmit = ({
   }
 
   const handleClick = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
+    (e: BaseUIEvent<MouseEvent<HTMLButtonElement>>) => {
       if (isGenerating && onStop) {
         e.preventDefault();
         onStop();
@@ -1314,20 +1320,25 @@ export const PromptInputSelectValue = ({
 export type PromptInputHoverCardProps = ComponentProps<typeof HoverCard>;
 
 export const PromptInputHoverCard = ({
-  openDelay = 0,
-  closeDelay = 0,
   ...props
 }: PromptInputHoverCardProps) => (
-  <HoverCard closeDelay={closeDelay} openDelay={openDelay} {...props} />
+  <HoverCard {...props} />
 );
 
 export type PromptInputHoverCardTriggerProps = ComponentProps<
   typeof HoverCardTrigger
->;
+> & {
+  openDelay?: number;
+  closeDelay?: number;
+};
 
-export const PromptInputHoverCardTrigger = (
-  props: PromptInputHoverCardTriggerProps
-) => <HoverCardTrigger {...props} />;
+export const PromptInputHoverCardTrigger = ({
+  openDelay = 0,
+  closeDelay = 0,
+  ...props
+}: PromptInputHoverCardTriggerProps) => (
+  <HoverCardTrigger closeDelay={closeDelay} delay={openDelay} {...props} />
+);
 
 export type PromptInputHoverCardContentProps = ComponentProps<
   typeof HoverCardContent

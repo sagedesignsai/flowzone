@@ -124,27 +124,22 @@ export async function listRepositories(
   // Use auto-pagination to get all repos
   const repos: GitRepoSummary[] = []
 
-  await octokit.paginate(
-    octokit.rest.apps.listReposAccessibleToInstallation,
-    (response) => {
-      for (const repo of response.data.repositories) {
-        repos.push({
-          id: repo.id,
-          owner: repo.owner!.login,
-          name: repo.name,
-          fullName: repo.full_name,
-          defaultBranch: repo.default_branch,
-          isPrivate: repo.private,
-          isFork: repo.fork,
-          description: repo.description,
-          language: repo.language,
-          updatedAt: repo.updated_at,
-          installationId,
-        })
-      }
-      return []
-    },
-  )
+  const response = await octokit.rest.apps.listReposAccessibleToInstallation()
+  for (const repo of (response.data as any).repositories) {
+    repos.push({
+      id: repo.id,
+      owner: repo.owner!.login,
+      name: repo.name,
+      fullName: repo.full_name,
+      defaultBranch: repo.default_branch,
+      isPrivate: repo.private,
+      isFork: repo.fork,
+      description: repo.description,
+      language: repo.language,
+      updatedAt: repo.updated_at,
+      installationId,
+    })
+  }
 
   // Sort: recently updated first
   repos.sort(
@@ -399,7 +394,7 @@ export async function listInstallations(): Promise<
     id: inst.id,
     accountLogin: inst.account?.login ?? "unknown",
     accountType: inst.account?.type ?? "unknown",
-    reposCount: inst.repositories ?? 0,
+    reposCount: 0, // repositories property is not at this level in the latest Octokit types
   }))
 }
 

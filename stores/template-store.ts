@@ -213,3 +213,17 @@ export function getTemplateById(id: string): Template | undefined {
 export function getCategories(): TemplateCategoryInfo[] {
   return TEMPLATE_CATEGORIES
 }
+
+// ─── Filter Store ───────────────────────────────────────────────────────────
+
+import { create } from "zustand"
+
+interface TemplateFilterState {
+  activeCategory: string
+  setActiveCategory: (category: string) => void
+}
+
+export const useTemplateFilter = create<TemplateFilterState>()((set) => ({
+  activeCategory: "all",
+  setActiveCategory: (category) => set({ activeCategory: category }),
+}))

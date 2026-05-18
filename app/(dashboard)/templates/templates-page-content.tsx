@@ -6,11 +6,11 @@ import {
   TEMPLATES,
   TEMPLATE_CATEGORIES,
   getTemplatesByCategory,
+  useTemplateFilter,
   type Template,
 } from "@/stores/template-store"
 import { useRouter } from "nextjs-toploader/app"
 import { nanoid } from "nanoid"
-import { useState } from "react"
 import { cn } from "@/lib/utils"
 
 const ALL_CATEGORY = { id: "all" as const, label: "All" }
@@ -18,7 +18,8 @@ const ALL_CATEGORY = { id: "all" as const, label: "All" }
 export function TemplatesPageContent() {
   const router = useRouter()
   const { addChatSession, setActiveChatId } = useIdeStore()
-  const [activeCategory, setActiveCategory] = useState<string>("all")
+  const activeCategory = useTemplateFilter((s) => s.activeCategory)
+  const setActiveCategory = useTemplateFilter((s) => s.setActiveCategory)
 
   const categories = [ALL_CATEGORY, ...TEMPLATE_CATEGORIES]
 

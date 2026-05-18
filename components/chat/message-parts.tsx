@@ -104,16 +104,24 @@ const ToolPart = memo(function ToolPart({
 
   return (
     <Tool className="my-4">
-      <ToolHeader
-        state={resolvedState}
-        title={title ?? derivedName}
-        toolName={dynamicToolName}
-        type={resolvedType}
-      />
+      {resolvedType === "dynamic-tool" ? (
+        <ToolHeader
+          state={resolvedState as any}
+          title={title ?? derivedName}
+          toolName={dynamicToolName ?? "tool"}
+          type="dynamic-tool"
+        />
+      ) : (
+        <ToolHeader
+          state={resolvedState as any}
+          title={title ?? derivedName}
+          type={resolvedType as any}
+        />
+      )}
       <ToolContent>
-        {input && <ToolInput input={input} />}
-        {(output || errorText) && (
-          <ToolOutput errorText={errorText ?? undefined} output={output} />
+        {Boolean(input) && <ToolInput input={input as any} />}
+        {Boolean(output || errorText) && (
+          <ToolOutput errorText={errorText ?? undefined} output={output as any} />
         )}
       </ToolContent>
     </Tool>

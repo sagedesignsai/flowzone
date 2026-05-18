@@ -152,6 +152,7 @@ export function GlobalHeader({
         ) : (
           <div className="flex items-center gap-1.5">
             <Button
+              nativeButton={false}
               render={<Link href="/login" />}
               size="sm"
               variant="ghost"
@@ -159,6 +160,7 @@ export function GlobalHeader({
               Sign in
             </Button>
             <Button
+              nativeButton={false}
               render={<Link href="/signup" />}
               size="sm"
             >

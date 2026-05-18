@@ -30,10 +30,14 @@ import { useIdeStore } from "@/hooks/use-ide-store"
 import { cn } from "@/lib/utils"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
-import { ArrowClockwise, Sparkle, StopCircle } from "@phosphor-icons/react"
+import {
+  ArrowClockwiseIcon as ArrowClockwise,
+  SparkleIcon as Sparkle,
+  StopCircleIcon as StopCircle
+} from "@phosphor-icons/react"
 import { useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useRef } from "react"
-import type { FormEvent } from "react"
+import type { SubmitEvent } from "react"
 
 // ─── Props ──────────────────────────────────────────────────
 
@@ -110,10 +114,9 @@ export function ChatPanel({ chatId, className }: ChatPanelProps) {
   const {
     messages,
     sendMessage,
-    isLoading,
     error,
     stop,
-    reload,
+    regenerate,
     status,
   } = useChat({
     id: chatId,
@@ -137,6 +140,8 @@ export function ChatPanel({ chatId, className }: ChatPanelProps) {
     },
   })
 
+  const isLoading = status === "streaming" || status === "submitted"
+
   // ── Auto-send initial prompt from URL search params ───────
   const initialPrompt = searchParams.get("q")
 
@@ -156,7 +161,7 @@ export function ChatPanel({ chatId, className }: ChatPanelProps) {
   const handlePromptSubmit = useCallback(
     (
       _message: { text: string; files?: import("ai").FileUIPart[] },
-      _event: FormEvent<HTMLFormElement>,
+      _event: SubmitEvent<HTMLFormElement>,
     ) => {
       const text = _message.text
       if (!text.trim() || isLoading) return
@@ -233,7 +238,7 @@ export function ChatPanel({ chatId, className }: ChatPanelProps) {
             {/* Inline error with retry */}
             {error && !isEmpty && (
               <div className="flex items-center justify-center py-4">
-                <ErrorBanner error={error} onRetry={() => reload()} />
+                <ErrorBanner error={error} onRetry={() => regenerate()} />
               </div>
             )}
           </ConversationContent>
@@ -243,7 +248,7 @@ export function ChatPanel({ chatId, className }: ChatPanelProps) {
         {/* ── Error Banner (above input) ──────────────────── */}
         {error && isEmpty && (
           <div className="px-3 pb-2">
-            <ErrorBanner error={error} onRetry={() => reload()} />
+            <ErrorBanner error={error} onRetry={() => regenerate()} />
           </div>
         )}
 
