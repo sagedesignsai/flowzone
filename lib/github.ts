@@ -121,11 +121,11 @@ export async function listRepositories(
   installationId: number,
 ): Promise<GitRepoSummary[]> {
   const octokit = createInstallationOctokit(installationId)
-  // Use auto-pagination to get all repos
+  // Use pagination to get all repos
   const repos: GitRepoSummary[] = []
 
-  const response = await octokit.rest.apps.listReposAccessibleToInstallation()
-  for (const repo of (response.data as any).repositories) {
+  const repositories = await octokit.paginate(octokit.rest.apps.listReposAccessibleToInstallation)
+  for (const repo of repositories) {
     repos.push({
       id: repo.id,
       owner: repo.owner!.login,
@@ -136,7 +136,7 @@ export async function listRepositories(
       isFork: repo.fork,
       description: repo.description,
       language: repo.language,
-      updatedAt: repo.updated_at,
+      updatedAt: repo.updated_at ?? "",
       installationId,
     })
   }

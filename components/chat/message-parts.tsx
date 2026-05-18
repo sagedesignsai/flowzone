@@ -119,8 +119,8 @@ const ToolPart = memo(function ToolPart({
         />
       )}
       <ToolContent>
-        {Boolean(input) && <ToolInput input={input as any} />}
-        {Boolean(output || errorText) && (
+        {input !== null && input !== undefined && <ToolInput input={input as any} />}
+        {(output !== null && output !== undefined || errorText !== null && errorText !== undefined) && (
           <ToolOutput errorText={errorText ?? undefined} output={output as any} />
         )}
       </ToolContent>
