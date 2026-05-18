@@ -13,26 +13,14 @@
  *   500 { error: string } if no AI provider configured
  */
 
-import { createAgentUIStreamResponse } from "ai"
+import { createAgentUIStreamResponse, validateUIMessages, type UIMessage } from "ai"
 import { createFlowzoneAgent } from "@/lib/agents/flowzone-agent"
 import { SandboxContext } from "@/lib/tools/sandbox-store"
 import type { SandboxContextValue } from "@/lib/tools/sandbox-store"
-import { anthropic } from "@ai-sdk/anthropic"
-import { openai } from "@ai-sdk/openai"
-
-// ── Provider selection ─────────────────────────────────────
-
-function getModel() {
-  if (process.env.ANTHROPIC_API_KEY) {
-    return anthropic("claude-sonnet-4-20250514")
-  }
-
-  if (process.env.OPENAI_API_KEY) {
-    return openai("gpt-4o")
-  }
-
-  return null
-}
+import { getPrimaryModel } from "@/lib/ai/models"
+import { ensureChat, loadChat, saveChat } from "@/lib/chat/store"
+import { auth } from "@/lib/auth"
+import { headers } from "next/headers"
 
 // ── Optional sandbox creation ──────────────────────────────
 
@@ -55,24 +43,65 @@ async function tryCreateSandbox(): Promise<SandboxContextValue | null> {
 
 export async function POST(req: Request) {
   try {
-    const model = getModel()
+    const model = getPrimaryModel()
 
     if (!model) {
       return Response.json(
         {
           error:
-            "No AI provider configured. Set ANTHROPIC_API_KEY or OPENAI_API_KEY in your environment.",
+            "No AI provider configured. Set AI_GATEWAY_API_KEY in your environment.",
         },
         { status: 500 },
       )
     }
 
-    const { messages } = (await req.json()) as {
-      messages: unknown[]
+    const { messages: incomingMessages, id } = (await req.json()) as {
+      messages: UIMessage[]
       id?: string
     }
 
+    if (!id) {
+      return Response.json({ error: "Chat ID is required" }, { status: 400 })
+    }
+
+    // Ensure user is authenticated
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    })
+    
+    if (!session) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const agent = createFlowzoneAgent(model)
+
+    // Load previous messages from DB
+    const previousMessages = await loadChat(id)
+    
+    // Extract the latest message
+    const latestMessage = incomingMessages[incomingMessages.length - 1]
+    
+    // Create the chat if it doesn't exist, using the latest user message text for the title
+    const latestTextPart = latestMessage?.parts?.find(p => p.type === "text")
+    // @ts-ignore
+    const firstMessageText = latestTextPart?.text
+    await ensureChat(id, session.user.id, firstMessageText)
+
+    // Combine previous messages with the new incoming message
+    // If incoming messages contains history (default behavior of useChat), we just use it
+    // But validating against previous is safer
+    let combinedMessages: UIMessage[] = incomingMessages
+    
+    // If the client only sent the latest message, append it to history
+    if (incomingMessages.length === 1 && previousMessages.length > 0) {
+      combinedMessages = [...previousMessages, incomingMessages[0]]
+    }
+
+    // Validate messages against tools
+    const validatedMessages = await validateUIMessages({
+      messages: combinedMessages,
+      tools: agent.tools,
+    })
 
     // Try to create a sandbox for this session (optional)
     const sandboxCtx = await tryCreateSandbox()
@@ -81,14 +110,22 @@ export async function POST(req: Request) {
       return SandboxContext.run(sandboxCtx, () =>
         createAgentUIStreamResponse({
           agent,
-          uiMessages: messages,
+          uiMessages: validatedMessages,
+          originalMessages: validatedMessages,
+          onFinish: async ({ messages }) => {
+            await saveChat({ chatId: id, messages })
+          }
         }),
       )
     }
 
     return createAgentUIStreamResponse({
       agent,
-      uiMessages: messages,
+      uiMessages: validatedMessages,
+      originalMessages: validatedMessages,
+      onFinish: async ({ messages }) => {
+        await saveChat({ chatId: id, messages })
+      }
     })
   } catch (error) {
     const message =

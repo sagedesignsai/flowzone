@@ -3,6 +3,7 @@
 import { EditorView } from "@/components/editor/editor-view";
 import { PreviewView } from "@/components/editor/preview-view";
 import { TerminalView } from "@/components/editor/terminal-view";
+import { DesktopView } from "@/components/editor/desktop-view"
 import { useIdeStore } from "@/hooks/use-ide-store";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "motion/react";
@@ -57,6 +58,19 @@ export function EditorPanel({ previewUrl, className, ...props }: EditorPanelProp
             transition={{ duration: 0.12 }}
           >
             <TerminalView />
+          </motion.div>
+        )}
+
+        {viewMode === "desktop" && (
+          <motion.div
+            key="desktop"
+            animate={{ opacity: 1 }}
+            className="size-full"
+            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }}
+            transition={{ duration: 0.12 }}
+          >
+            <DesktopView />
           </motion.div>
         )}
       </AnimatePresence>

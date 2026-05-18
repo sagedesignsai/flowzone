@@ -7,7 +7,7 @@ import { persist } from "zustand/middleware";
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type ViewMode = "preview" | "code" | "terminal";
+export type ViewMode = "preview" | "code" | "terminal" | "desktop";
 
 export interface ChatMessage {
   id: string;
@@ -28,6 +28,8 @@ export interface IdeFile {
   content: string;
   language: string;
 }
+
+export type DesktopStatus = "idle" | "starting" | "running" | "stopping" | "error"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Store Shape
@@ -67,6 +69,14 @@ interface IdeState {
   // ─── Selected model ───────────────────────────────────────────────
   selectedModel: string;
   setSelectedModel: (model: string) => void;
+
+  // ─── Desktop sandbox (E2B VNC) ────────────────────────────────────
+  desktopSandboxId: string | null;
+  desktopVncUrl: string | null;
+  desktopStatus: DesktopStatus;
+  setDesktopSandbox: (sandboxId: string, vncUrl: string) => void;
+  setDesktopStatus: (status: DesktopStatus) => void;
+  clearDesktopSandbox: () => void;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -129,6 +139,16 @@ export const useIdeStore = create<IdeState>()(
       // Model
       selectedModel: "claude-4-5-opus",
       setSelectedModel: (model) => set({ selectedModel: model }),
+
+      // Desktop sandbox
+      desktopSandboxId: null,
+      desktopVncUrl: null,
+      desktopStatus: "idle",
+      setDesktopSandbox: (sandboxId, vncUrl) =>
+        set({ desktopSandboxId: sandboxId, desktopVncUrl: vncUrl, desktopStatus: "running" }),
+      setDesktopStatus: (status) => set({ desktopStatus: status }),
+      clearDesktopSandbox: () =>
+        set({ desktopSandboxId: null, desktopVncUrl: null, desktopStatus: "idle" }),
     }),
     {
       name: "flowzone-ide",

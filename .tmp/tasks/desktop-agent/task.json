@@ -1,0 +1,52 @@
+{
+  "id": "desktop-agent",
+  "name": "Desktop Agent Mode",
+  "status": "active",
+  "objective": "Add Desktop Agent Mode as a clean additive layer using @e2b/desktop for VNC-streamed desktop sandbox with computer-use tool calls and OpenCode CLI delegation.",
+  "context_files": [
+    ".opencode/context/core/standards/code-quality.md",
+    ".opencode/context/core/essential-patterns.md",
+    ".opencode/context/core/standards/security-patterns.md",
+    ".opencode/context/core/workflows/component-planning.md"
+  ],
+  "reference_files": [
+    "lib/tools/sandbox-store.ts",
+    "lib/tools/sandbox.ts",
+    "lib/tools/git.ts",
+    "lib/agents/flowzone-agent.ts",
+    "hooks/use-ide-store.ts",
+    "components/editor/editor-panel.tsx",
+    "components/editor/terminal-view.tsx",
+    "components/editor/preview-view.tsx",
+    "components/layout/global-header.tsx",
+    "app/api/chat/route.ts",
+    "app/api/chat/[id]/title/route.ts",
+    "reference-repos/desktop/packages/js-sdk/src/sandbox.ts",
+    "reference-repos/surf/app/api/chat/route.ts",
+    "reference-repos/surf/app/actions.ts",
+    "types/index.ts"
+  ],
+  "exit_criteria": [
+    "lib/tools/desktop/sandbox-context.ts implemented — DesktopSandboxContext + requireDesktop guard",
+    "lib/tools/desktop/mouse.ts implemented — 6 tools (mouseLeftClick, mouseRightClick, mouseDoubleClick, mouseScroll, mouseMove, mouseDrag)",
+    "lib/tools/desktop/keyboard.ts implemented — 3 tools (keyboardType, keyboardPress, keyboardShortcut)",
+    "lib/tools/desktop/screen.ts implemented — 3 tools (takeScreenshot, getScreenSize, getCursorPosition)",
+    "lib/tools/desktop/app.ts implemented — 4 tools (launchApp, openFile, getWindowTitle, runShellCommand)",
+    "lib/tools/desktop/opencode.ts implemented — 1 tool (runOpenCodeTask)",
+    "lib/tools/desktop/index.ts barrel export — re-exports all desktop tools",
+    "lib/agents/desktop-agent.ts implemented — createDesktopAgent(model) factory",
+    "app/api/desktop/route.ts implemented — POST create + DELETE kill sandbox",
+    "app/api/desktop/[id]/route.ts implemented — POST reconnect",
+    "app/api/chat/[id]/desktop/route.ts implemented — POST run desktop agent",
+    "hooks/use-ide-store.ts extended — desktop ViewMode + state fields + actions",
+    "components/editor/desktop-view.tsx implemented — VNC iframe + status/controls",
+    "components/editor/editor-panel.tsx updated — desktop case in AnimatePresence",
+    "components/layout/global-header.tsx updated — conditional Desktop tab",
+    "@e2b/desktop package installed",
+    ".env.example updated with E2B_DESKTOP_TIMEOUT_MS"
+  ],
+  "subtask_count": 15,
+  "completed_count": 0,
+  "created_at": "2026-05-18T12:00:00Z",
+  "completed_at": null
+}

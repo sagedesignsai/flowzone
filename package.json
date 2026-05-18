@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "tool:svg": "cd tools/image-to-svg && ./.venv/bin/python main.py"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.77",
@@ -23,6 +24,7 @@
     "@chat-adapter/state-redis": "^4.28.1",
     "@chat-adapter/telegram": "^4.28.1",
     "@e2b/code-interpreter": "^2.4.2",
+    "@e2b/desktop": "^2.2.3",
     "@octokit/auth-app": "^8.2.0",
     "@octokit/rest": "^22.0.1",
     "@phosphor-icons/react": "^2.1.10",

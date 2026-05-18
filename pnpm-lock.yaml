@@ -41,6 +41,9 @@ importers:
       '@e2b/code-interpreter':
         specifier: ^2.4.2
         version: 2.4.2
+      '@e2b/desktop':
+        specifier: ^2.2.3
+        version: 2.2.3
       '@octokit/auth-app':
         specifier: ^8.2.0
         version: 8.2.0
@@ -677,6 +680,10 @@ packages:
 
   '@e2b/code-interpreter@2.4.2':
     resolution: {integrity: sha512-udLYysT+Jrue5citQc6Wr6N7Et9Eiw8FTeQpf6NQdLEg4RM6aZJoi7QFC0oqr+rv6g+I4W1KGdrxW1eBtKbnRw==}
+    engines: {node: '>=20'}
+
+  '@e2b/desktop@2.2.3':
+    resolution: {integrity: sha512-hhFcEdF1pguJ7a3uy/oxGEBf/mgxzJS6g6ebocwubfQ9FHagM/CGdPkmnhqIJz1EkUPdI4wHorijP1fo9jRegQ==}
     engines: {node: '>=20'}
 
   '@ecies/ciphers@0.2.6':
@@ -7176,6 +7183,10 @@ snapshots:
       yocto-spinner: 1.2.0
 
   '@e2b/code-interpreter@2.4.2':
+    dependencies:
+      e2b: 2.20.0
+
+  '@e2b/desktop@2.2.3':
     dependencies:
       e2b: 2.20.0
 

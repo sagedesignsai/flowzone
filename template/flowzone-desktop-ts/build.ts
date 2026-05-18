@@ -1,0 +1,25 @@
+import { config } from 'dotenv';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { Template, defaultBuildLogger } from 'e2b';
+import { flowzoneTemplate } from './template.ts';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Load .env from project root
+config({ path: resolve(__dirname, '../../.env') });
+
+async function build() {
+  console.log("Building flowzone-desktop template...");
+  await Template.build(flowzoneTemplate, 'flowzone-desktop', {
+    cpuCount: 8,
+    memoryMb: 8192,
+    onBuildLogs: defaultBuildLogger(),
+  });
+  console.log("Build complete.");
+}
+
+build().catch(err => {
+  console.error("Build failed:", err);
+  process.exit(1);
+});

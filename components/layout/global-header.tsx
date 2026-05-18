@@ -22,19 +22,12 @@ import {
   Code,
   Eye,
   Gear,
+  Monitor,
   SignOut,
   Terminal as TerminalIcon,
   User,
 } from "@phosphor-icons/react";
 import type { ComponentProps } from "react";
-
-// ─── View tabs ───────────────────────────────────────────────────────────────
-
-const VIEW_TABS = [
-  { mode: "preview"  as const, icon: Eye,          label: "Preview"  },
-  { mode: "code"     as const, icon: Code,         label: "Code"     },
-  { mode: "terminal" as const, icon: TerminalIcon, label: "Terminal" },
-] as const;
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
@@ -52,7 +45,16 @@ export function GlobalHeader({
   ...props
 }: GlobalHeaderProps) {
   const { data: session } = useSession();
-  const { viewMode, setViewMode } = useIdeStore();
+  const { viewMode, setViewMode, desktopSandboxId } = useIdeStore()
+
+  const viewTabs = [
+    { mode: "preview"  as const, icon: Eye,          label: "Preview"  },
+    { mode: "code"     as const, icon: Code,         label: "Code"     },
+    { mode: "terminal" as const, icon: TerminalIcon, label: "Terminal" },
+    ...(desktopSandboxId
+      ? [{ mode: "desktop" as const, icon: Monitor, label: "Desktop" }]
+      : []),
+  ]
 
   const user = session?.user;
   const initials = user?.name
@@ -82,7 +84,7 @@ export function GlobalHeader({
       {/* ── Center: view-mode tabs (IDE only) ──────────────────── */}
       {showViewTabs && (
         <div className="flex flex-1 items-center justify-center gap-0.5">
-          {VIEW_TABS.map(({ mode, icon: Icon, label }) => (
+          {viewTabs.map(({ mode, icon: Icon, label }) => (
             <button
               key={mode}
               className={cn(

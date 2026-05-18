@@ -162,7 +162,7 @@ export function GlobalSidebar() {
                       </SidebarMenuButton>
 
                       {/* Actions menu */}
-                      <SidebarMenuAction showOnHover>
+                      <SidebarMenuAction render={<span />} showOnHover>
                         <DropdownMenu>
                           <DropdownMenuTrigger>
                             <DotsThree className="size-4" />

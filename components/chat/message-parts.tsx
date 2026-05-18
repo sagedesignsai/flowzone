@@ -194,6 +194,32 @@ const FilePart = memo(function FilePart({
   )
 })
 
+// ─── Screenshot Part ────────────────────────────────────────────────────────
+
+const ScreenshotPart = memo(function ScreenshotPart({
+  screenshot,
+  width,
+  height,
+}: {
+  screenshot: string
+  width?: number
+  height?: number
+}) {
+  return (
+    <div className="my-2 rounded-lg border border-border overflow-hidden bg-muted">
+      <img
+        src={`data:image/png;base64,${screenshot}`}
+        alt="Desktop screenshot"
+        className="w-full h-auto"
+        style={{
+          maxWidth: width ? `${Math.min(width, 800)}px` : "100%",
+          maxHeight: height ? `${Math.min(height, 600)}px` : "auto",
+        }}
+      />
+    </div>
+  )
+})
+
 // ─── Step Start Part ─────────────────────────────────────────────────────────
 
 const StepStartDivider = memo(function StepStartDivider() {
@@ -247,6 +273,35 @@ export const MessageParts = memo(function MessageParts({
 
       case "step-start": {
         return <StepStartDivider key={index} />
+      }
+
+      case "dynamic-tool": {
+        // Handle desktop tool results (screenshots, etc.)
+        const toolPart = part as any
+        if (toolPart.toolName === "takeScreenshot" && toolPart.output?.screenshot) {
+          return (
+            <ScreenshotPart
+              key={index}
+              screenshot={toolPart.output.screenshot}
+              width={toolPart.output.width}
+              height={toolPart.output.height}
+            />
+          )
+        }
+        // Fall through to default tool handling
+        return (
+          <ToolPart
+            key={toolPart.toolCallId ?? index}
+            errorText={toolPart.errorText}
+            input={toolPart.input}
+            output={toolPart.output}
+            state={toolPart.state}
+            title={toolPart.title}
+            toolCallId={toolPart.toolCallId}
+            toolName={toolPart.toolName}
+            type={toolPart.type}
+          />
+        )
       }
 
       case "source-url":

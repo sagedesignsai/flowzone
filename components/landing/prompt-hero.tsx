@@ -12,6 +12,7 @@ import {
   PromptInputActionAddAttachments,
   PromptInputActionAddScreenshot,
 } from "@/components/ai-elements/prompt-input";
+import { Logomark } from "@/components/brand/logomark";
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
 import { useIdeStore } from "@/hooks/use-ide-store";
 import { cn } from "@/lib/utils";
@@ -87,6 +88,15 @@ export function PromptHero({ className }: PromptHeroProps) {
           className
         )}
       >
+        <motion.div
+          animate={{ opacity: 1, scale: 1 }}
+          className="mb-2"
+          initial={{ opacity: 0, scale: 0.9 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        >
+          <Logomark size={80} variant="pulse" />
+        </motion.div>
+
         {/* ── Hero text ──────────────────────────────────────────── */}
         <motion.div
           animate={{ opacity: 1, y: 0 }}

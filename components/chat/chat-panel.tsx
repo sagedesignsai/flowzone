@@ -26,10 +26,11 @@ import {
   PromptInputTextarea,
 } from "@/components/ai-elements/prompt-input"
 import { Button } from "@/components/ui/button"
+import { DesktopLauncher } from "@/components/editor/desktop-launcher"
 import { useIdeStore } from "@/hooks/use-ide-store"
 import { cn } from "@/lib/utils"
 import { useChat } from "@ai-sdk/react"
-import { DefaultChatTransport } from "ai"
+import { DefaultChatTransport, type UIMessage } from "ai"
 import {
   ArrowClockwiseIcon as ArrowClockwise,
   SparkleIcon as Sparkle,
@@ -43,6 +44,7 @@ import type { SubmitEvent } from "react"
 
 interface ChatPanelProps {
   chatId: string
+  initialMessages?: UIMessage[]
   className?: string
 }
 
@@ -104,12 +106,13 @@ function ErrorBanner({
 
 // ─── Component ───────────────────────────────────────────────
 
-export function ChatPanel({ chatId, className }: ChatPanelProps) {
+export function ChatPanel({ chatId, initialMessages, className }: ChatPanelProps) {
   const searchParams = useSearchParams()
-  const { updateChatSession } = useIdeStore()
+  const { updateChatSession, desktopSandboxId } = useIdeStore()
 
   // Guard against React Strict Mode double-fire
   const hasSentInitialRef = useRef(false)
+  const titleGeneratedRef = useRef(false)
 
   const {
     messages,
@@ -120,22 +123,27 @@ export function ChatPanel({ chatId, className }: ChatPanelProps) {
     status,
   } = useChat({
     id: chatId,
+    initialMessages,
     transport: new DefaultChatTransport(),
     onError: (err) => {
       console.error("Chat error:", err)
     },
     onFinish: (event) => {
-      // Update chat title from first assistant response
-      const textPart = event.message.parts.find(
-        (p): p is { type: "text"; text: string } => p.type === "text",
-      )
-      if (textPart) {
-        const firstLine = textPart.text
-          .split("\n")
-          .find((l) => l.trim().length > 0)
-        if (firstLine) {
-          updateChatSession(chatId, { title: firstLine.slice(0, 60) })
-        }
+      // Trigger title generation if this is the first assistant response
+      // (1 user message + 1 assistant message = 2)
+      if (!titleGeneratedRef.current && messages.length <= 2) {
+        titleGeneratedRef.current = true
+        
+        fetch(`/api/chat/${chatId}/title`, { method: "POST" })
+          .then(async (res) => {
+            if (res.ok) {
+              const { title } = await res.json()
+              updateChatSession(chatId, { title })
+            }
+          })
+          .catch((err) => {
+            console.error("Failed to generate title:", err)
+          })
       }
     },
   })
@@ -166,9 +174,23 @@ export function ChatPanel({ chatId, className }: ChatPanelProps) {
       const text = _message.text
       if (!text.trim() || isLoading) return
 
-      sendMessage({ text: text.trim() })
+      // Route to desktop agent if desktop is active
+      if (desktopSandboxId) {
+        sendMessage({ 
+          text: text.trim(),
+          experimental_attachments: [
+            {
+              type: "custom",
+              data: { sandboxId: desktopSandboxId },
+              mimeType: "application/x-desktop-sandbox"
+            }
+          ]
+        })
+      } else {
+        sendMessage({ text: text.trim() })
+      }
     },
-    [isLoading, sendMessage],
+    [isLoading, sendMessage, desktopSandboxId],
   )
 
   // ── Render ────────────────────────────────────────────────
@@ -266,14 +288,17 @@ export function ChatPanel({ chatId, className }: ChatPanelProps) {
             />
 
             <PromptInputFooter>
-              {/* Left side: attachments */}
-              <PromptInputActionMenu>
-                <PromptInputActionMenuTrigger />
-                <PromptInputActionMenuContent>
-                  <PromptInputActionAddAttachments />
-                  <PromptInputActionAddScreenshot />
-                </PromptInputActionMenuContent>
-              </PromptInputActionMenu>
+              {/* Left side: attachments + desktop launcher */}
+              <div className="flex items-center gap-1">
+                <PromptInputActionMenu>
+                  <PromptInputActionMenuTrigger />
+                  <PromptInputActionMenuContent>
+                    <PromptInputActionAddAttachments />
+                    <PromptInputActionAddScreenshot />
+                  </PromptInputActionMenuContent>
+                </PromptInputActionMenu>
+                <DesktopLauncher chatId={chatId} />
+              </div>
 
               {/* Right side: stop / submit */}
               <div className="flex items-center gap-1">

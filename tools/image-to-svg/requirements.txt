@@ -1,0 +1,4 @@
+opencv-python
+vtracer
+Pillow
+numpy

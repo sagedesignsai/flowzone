@@ -1,0 +1,18 @@
+# Flowzone AI Development Rules
+
+## Core Principles
+1. **Production Ready**: Always generate Production or MVP ready code. No mockups or simulations.
+2. **Modular Architecture**: Use modular architecture with clear separation of concerns. Keep files focused and reusable.
+3. **Organization**: Maintain proper file and folder organization. Always scan the codebase to see if similar implementations exist before creating new files.
+4. **Context Awareness**: Don't just quick patch/edit code. Inspect relative working files to understand the whole picture and context.
+
+## Workflow & Git
+5. **Primary Branch**: Use `main` as the primary branch for the repository.
+6. **Feature Branching**: Do not work directly on `main`. Always use descriptive feature branches (e.g., `feature/description`) for new development and merge via Pull Requests.
+7. **Secret Management**: Never commit runtime secrets or `.env` files. Always maintain a `.env.example` template with scrubbed placeholders.
+8. **Package Management**: Always use `pnpm` for package management and terminal/CLI commands.
+9. **Execution**: Do not run `dev` or `build` commands unless explicitly instructed by the user.
+
+## Tech Stack
+10. **State Management**: Use **Zustand** for all application state management.
+11. **Documentation**: Always perform web research on the latest library/package documentation before implementation.
