@@ -29,6 +29,8 @@ import type { Sandbox } from "@e2b/desktop"
 export interface DesktopSandboxContextValue {
   desktop: Sandbox
   sandboxId: string
+  /** Chat ID, used to resolve repo context from DB for git/GitHub tools */
+  chatId?: string
 }
 
 // ── Store ─────────────────────────────────────────────────

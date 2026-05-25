@@ -77,6 +77,14 @@ interface IdeState {
   setDesktopSandbox: (sandboxId: string, vncUrl: string) => void;
   setDesktopStatus: (status: DesktopStatus) => void;
   clearDesktopSandbox: () => void;
+
+  // ─── Git repo info (populated by DesktopAgent) ──────────────────
+  gitBranch: string | null;
+  gitRepoOwner: string | null;
+  gitRepoName: string | null;
+  gitRepoFullName: string | null;
+  setGitBranch: (branch: string | null) => void;
+  setGitRepoInfo: (owner: string, name: string, fullName: string) => void;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -149,6 +157,15 @@ export const useIdeStore = create<IdeState>()(
       setDesktopStatus: (status) => set({ desktopStatus: status }),
       clearDesktopSandbox: () =>
         set({ desktopSandboxId: null, desktopVncUrl: null, desktopStatus: "idle" }),
+
+      // Git repo info
+      gitBranch: null,
+      gitRepoOwner: null,
+      gitRepoName: null,
+      gitRepoFullName: null,
+      setGitBranch: (branch) => set({ gitBranch: branch }),
+      setGitRepoInfo: (owner, name, fullName) =>
+        set({ gitRepoOwner: owner, gitRepoName: name, gitRepoFullName: fullName }),
     }),
     {
       name: "flowzone-ide",
@@ -157,6 +174,13 @@ export const useIdeStore = create<IdeState>()(
         messages: s.messages,
         selectedModel: s.selectedModel,
         viewMode: s.viewMode,
+        desktopSandboxId: s.desktopSandboxId,
+        desktopVncUrl: s.desktopVncUrl,
+        desktopStatus: s.desktopStatus,
+        gitBranch: s.gitBranch,
+        gitRepoOwner: s.gitRepoOwner,
+        gitRepoName: s.gitRepoName,
+        gitRepoFullName: s.gitRepoFullName,
       }),
     }
   )

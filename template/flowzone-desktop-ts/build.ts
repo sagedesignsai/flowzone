@@ -13,7 +13,7 @@ async function build() {
   console.log("Building flowzone-desktop template...");
   await Template.build(flowzoneTemplate, 'flowzone-desktop', {
     cpuCount: 8,
-    memoryMb: 8192,
+    memoryMB: 8192,
     onBuildLogs: defaultBuildLogger(),
   });
   console.log("Build complete.");

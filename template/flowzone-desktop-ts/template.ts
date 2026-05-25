@@ -19,12 +19,14 @@ export const flowzoneTemplate = Template()
   // Ensure required directories exist
   .makeDir("/home/user/.config/Code/User")
   .makeDir("/home/user/.config/opencode")
+  .makeDir("/home/user/.config/opencode/plugins")
   .makeDir("/home/user/.config/xfce4/xfconf/xfce-perchannel-xml/")
   .makeDir("/home/user/.config/autostart")
   .makeDir("/home/user/.ssh")
   // Copy configuration files
   // Note: These files should be located in a 'files' directory relative to this script
   .copy('files/flowzone-bridge.sh', '/usr/local/bin/flowzone-bridge')
+  .copy('files/opencode-plugins/flowzone-bridge.ts', '/home/user/.config/opencode/plugins/flowzone-bridge.ts')
   .copy('files/gitconfig', '/home/user/.gitconfig')
   .copy('files/opencode-config.json', '/home/user/.config/opencode/config.json')
   .copy('files/vscode-settings.json', '/home/user/.config/Code/User/settings.json')

@@ -35,7 +35,8 @@ export async function POST(req: Request) {
 
     const timeoutMs = Number(process.env.E2B_DESKTOP_TIMEOUT_MS ?? 300000)
 
-    const desktop = await Sandbox.create("flowzone-desktop", {
+    const template = process.env.E2B_DESKTOP_TEMPLATE ?? "flowzone-desktop"
+    const desktop = await Sandbox.create(template, {
       resolution: [1280, 800],
       dpi: 96,
       timeoutMs,

@@ -152,6 +152,7 @@ export async function pushChanges(
     username: GIT_USERNAME,
     password: token,
     setUpstream: true,
+    force: force ?? false,
   })
 
   return { success: true }

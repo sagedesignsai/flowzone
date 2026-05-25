@@ -32,6 +32,8 @@ export interface SandboxContextValue {
   branch?: string
   /** GitHub installation token for push operations, if any */
   token?: string
+  /** Chat ID, used to resolve repo context from DB for GitHub tools */
+  chatId?: string
 }
 
 // ── Store ─────────────────────────────────────────────────

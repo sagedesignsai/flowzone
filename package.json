@@ -27,6 +27,7 @@
     "@e2b/desktop": "^2.2.3",
     "@octokit/auth-app": "^8.2.0",
     "@octokit/rest": "^22.0.1",
+    "@octokit/webhooks": "^14.2.0",
     "@phosphor-icons/react": "^2.1.10",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
@@ -83,6 +84,7 @@
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.2.1",
     "@types/node": "^25.5.0",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "dotenv": "^17.4.2",
@@ -92,6 +94,7 @@
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "tailwindcss": "^4.2.1",
+    "tsx": "^4.22.2",
     "typescript": "^5.9.3"
   }
 }

@@ -58,7 +58,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
   return (
     <AppLayout defaultSidebarOpen={false}>
       <SidebarInset className="overflow-hidden">
-        <GlobalHeader breadcrumb="New chat" showViewTabs />
+        <GlobalHeader breadcrumb="New chat" showActions chatId={id} />
 
         <ResizablePanelGroup
           className="flex-1 overflow-hidden"

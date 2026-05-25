@@ -13,48 +13,70 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { SettingsDialog } from "@/components/settings/settings-dialog";
 import { useIdeStore } from "@/hooks/use-ide-store";
+import { useSettingsStore } from "@/stores/settings-store";
 import { useSession, signOut } from "@/lib/auth-client";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import {
   CaretDown,
-  Code,
-  Eye,
   Gear,
-  Monitor,
+  GitBranch,
+  ShareNetwork,
   SignOut,
-  Terminal as TerminalIcon,
   User,
+  ArrowUpRight,
+  FileText,
+  Users,
+  ChatCircle,
+  Gift,
+  Trophy,
+  Monitor,
+  Sun,
+  Moon,
 } from "@phosphor-icons/react";
 import type { ComponentProps } from "react";
+import { useState } from "react";
+import { BranchDialog } from "@/components/layout/branch-dialog";
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
 interface GlobalHeaderProps extends ComponentProps<"header"> {
   breadcrumb?: string;
-  showViewTabs?: boolean;
+  showActions?: boolean;
+  chatId?: string;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function GlobalHeader({
   breadcrumb,
-  showViewTabs = false,
+  showActions = false,
+  chatId,
   className,
   ...props
 }: GlobalHeaderProps) {
   const { data: session } = useSession();
-  const { viewMode, setViewMode, desktopSandboxId } = useIdeStore()
+  const { desktopSandboxId } = useIdeStore()
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [branchDialogOpen, setBranchDialogOpen] = useState(false)
 
-  const viewTabs = [
-    { mode: "preview"  as const, icon: Eye,          label: "Preview"  },
-    { mode: "code"     as const, icon: Code,         label: "Code"     },
-    { mode: "terminal" as const, icon: TerminalIcon, label: "Terminal" },
-    ...(desktopSandboxId
-      ? [{ mode: "desktop" as const, icon: Monitor, label: "Desktop" }]
-      : []),
-  ]
+  // Read GitHub connection status from persisted store
+  const ghConfig = useSettingsStore((s) => s.github)
+
+  const handleSettings = () => {
+    setSettingsOpen(true)
+  }
+
+  const handleShare = () => {
+    // TODO: Open share dialog with link
+    console.log("Share clicked")
+  }
+
+  const handleViewBranch = () => {
+    setBranchDialogOpen(true)
+  }
 
   const user = session?.user;
   const initials = user?.name
@@ -81,30 +103,52 @@ export function GlobalHeader({
         )}
       </div>
 
-      {/* ── Center: view-mode tabs (IDE only) ──────────────────── */}
-      {showViewTabs && (
-        <div className="flex flex-1 items-center justify-center gap-0.5">
-          {viewTabs.map(({ mode, icon: Icon, label }) => (
-            <button
-              key={mode}
-              className={cn(
-                "flex items-center gap-1.5 rounded-sm px-2.5 py-1 text-xs transition-colors",
-                viewMode === mode
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-              )}
-              onClick={() => setViewMode(mode)}
-              type="button"
-            >
-              <Icon className="size-3.5" />
-              {label}
-            </button>
-          ))}
+      {/* ── Center: breadcrumb ──────────────────────────────────── */}
+      {breadcrumb && (
+        <div className="flex flex-1 items-center justify-center">
+          <span className="text-xs text-muted-foreground">{breadcrumb}</span>
         </div>
       )}
 
-      {/* ── Right: auth / user menu ─────────────────────────────── */}
+      {/* ── Right: actions + auth / user menu ──────────────────── */}
       <div className="ml-auto flex items-center gap-2">
+        {/* Action buttons (Settings, Share, View Branch) */}
+        {showActions && (
+          <>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="gap-1.5 text-xs h-7"
+              onClick={handleSettings}
+            >
+              <Gear className="size-3.5" />
+              Settings
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="gap-1.5 text-xs h-7"
+              onClick={handleShare}
+            >
+              <ShareNetwork className="size-3.5" />
+              Share
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="gap-1.5 text-xs h-7"
+              onClick={handleViewBranch}
+            >
+              <GitBranch className="size-3.5" />
+              View Branch
+            </Button>
+            
+            <Separator className="h-4" orientation="vertical" />
+          </>
+        )}
+
         {user ? (
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -126,25 +170,128 @@ export function GlobalHeader({
               <CaretDown className="size-3 text-muted-foreground" />
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuContent align="end" className="w-56">
+              {/* Email */}
+              <div className="px-2 py-1.5">
+                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+              </div>
+
+              <DropdownMenuSeparator />
+
+              {/* Main menu items */}
               <DropdownMenuGroup>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col gap-0.5">
-                    <p className="font-medium text-xs">{user.name}</p>
-                    <p className="text-muted-foreground text-xs">{user.email}</p>
-                  </div>
-                </DropdownMenuLabel>
+                <DropdownMenuItem asChild>
+                  <Link href="/profile">
+                    <User className="mr-2 size-3.5" />
+                    <span>Profile</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/account-settings">
+                    <Gear className="mr-2 size-3.5" />
+                    <span>Account Settings</span>
+                  </Link>
+                </DropdownMenuItem>
               </DropdownMenuGroup>
+
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="mr-2 size-3.5" />
-                Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Gear className="mr-2 size-3.5" />
-                Settings
-              </DropdownMenuItem>
+
+              {/* GitHub integration */}
+              <DropdownMenuGroup>
+                {ghConfig?.connected ? (
+                  <DropdownMenuItem onClick={() => window.open(ghConfig.url, "_blank")}>
+                    <GitBranch className="mr-2 size-3.5 text-green-500" />
+                    <span>{ghConfig.owner}/{ghConfig.name}</span>
+                    <span className="ml-auto flex size-2 rounded-full bg-green-500" />
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={() => {
+                    useSettingsStore.getState().setActiveSection("github")
+                    setSettingsOpen(true)
+                  }}>
+                    <GitBranch className="mr-2 size-3.5" />
+                    <span>Connect GitHub</span>
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuGroup>
+
               <DropdownMenuSeparator />
+
+              {/* External links */}
+              <DropdownMenuGroup>
+                <DropdownMenuItem onClick={() => window.open("https://pricing.example.com", "_blank")}>
+                  <svg className="mr-2 size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Pricing</span>
+                  <ArrowUpRight className="ml-auto size-3" />
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.open("https://docs.example.com", "_blank")}>
+                  <FileText className="mr-2 size-3.5" />
+                  <span>Documentation</span>
+                  <ArrowUpRight className="ml-auto size-3" />
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.open("https://community.example.com", "_blank")}>
+                  <Users className="mr-2 size-3.5" />
+                  <span>Community Forum</span>
+                  <ArrowUpRight className="ml-auto size-3" />
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.open("https://feedback.example.com", "_blank")}>
+                  <ChatCircle className="mr-2 size-3.5" />
+                  <span>Feedback</span>
+                  <ArrowUpRight className="ml-auto size-3" />
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.open("https://refer.example.com", "_blank")}>
+                  <Gift className="mr-2 size-3.5" />
+                  <span>Refer</span>
+                  <ArrowUpRight className="ml-auto size-3" />
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+
+              <DropdownMenuSeparator />
+
+              {/* Credits */}
+              <div className="px-2 py-1.5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Trophy className="size-3.5 text-muted-foreground" />
+                  <span className="text-xs">Credits</span>
+                </div>
+                <span className="text-xs text-muted-foreground">0.73</span>
+              </div>
+
+              <DropdownMenuSeparator />
+
+              {/* Preferences */}
+              <div className="px-2 py-2">
+                <p className="text-xs font-medium mb-2">Preferences</p>
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground mb-1.5">Theme</p>
+                  <div className="flex gap-1">
+                    <button
+                      className="flex-1 flex items-center justify-center gap-1 rounded px-2 py-1 text-xs bg-muted hover:bg-muted/80 transition-colors"
+                      title="System"
+                    >
+                      <Monitor className="size-3.5" />
+                    </button>
+                    <button
+                      className="flex-1 flex items-center justify-center gap-1 rounded px-2 py-1 text-xs bg-muted hover:bg-muted/80 transition-colors"
+                      title="Light"
+                    >
+                      <Sun className="size-3.5" />
+                    </button>
+                    <button
+                      className="flex-1 flex items-center justify-center gap-1 rounded px-2 py-1 text-xs bg-muted hover:bg-muted/80 transition-colors"
+                      title="Dark"
+                    >
+                      <Moon className="size-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <DropdownMenuSeparator />
+
+              {/* Sign out */}
               <DropdownMenuItem
                 className="text-destructive"
                 onClick={() => signOut()}
@@ -174,6 +321,16 @@ export function GlobalHeader({
           </div>
         )}
       </div>
+
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} chatId={chatId} />
+
+      {chatId && (
+        <BranchDialog
+          chatId={chatId}
+          open={branchDialogOpen}
+          onOpenChange={setBranchDialogOpen}
+        />
+      )}
     </header>
   );
 }

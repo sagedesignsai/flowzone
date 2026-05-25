@@ -1,14 +1,6 @@
 "use client"
 
-/**
- * Desktop View
- *
- * Renders the E2B Desktop Sandbox VNC stream inside an iframe.
- * Shows sandbox controls (status badge, stop button) when a session is active.
- * Shows an empty state when no desktop session is running.
- */
-
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { useIdeStore } from "@/hooks/use-ide-store"
 import { cn } from "@/lib/utils"
@@ -20,13 +12,47 @@ export function DesktopView({ className }: { className?: string }) {
   const {
     desktopSandboxId,
     desktopVncUrl,
+    setDesktopSandbox,
     clearDesktopSandbox,
+    setDesktopStatus,
     setViewMode,
   } = useIdeStore()
 
   const [isStopping, setIsStopping] = useState(false)
+  const [isReconnecting, setIsReconnecting] = useState(false)
+  const hasAttemptedReconnect = useRef(false)
 
-  // Monitor sandbox status and cleanup on expiration
+  // ── Reconnect on mount if sandboxId is set but VNC may be stale ──
+  useEffect(() => {
+    if (!desktopSandboxId || hasAttemptedReconnect.current) return
+    hasAttemptedReconnect.current = true
+
+    // If we have a sandboxId on mount (e.g. after page reload), reconnect to refresh VNC stream
+    setDesktopStatus("starting")
+    setIsReconnecting(true)
+
+    fetch(`/api/desktop/${desktopSandboxId}`, { method: "POST" })
+      .then(async (res) => {
+        if (!res.ok) {
+          clearDesktopSandbox()
+          setViewMode("preview")
+          return
+        }
+        const data = await res.json()
+        setDesktopSandbox(data.sandboxId, data.vncUrl)
+        toast.success("Desktop reconnected")
+      })
+      .catch(() => {
+        clearDesktopSandbox()
+        setViewMode("preview")
+        toast.info("Desktop session expired")
+      })
+      .finally(() => {
+        setIsReconnecting(false)
+      })
+  }, [desktopSandboxId, setDesktopSandbox, clearDesktopSandbox, setDesktopStatus, setViewMode])
+
+  // ── Monitor sandbox status (keep-alive check) ──
   useEffect(() => {
     if (!desktopSandboxId) return
 
@@ -34,7 +60,6 @@ export function DesktopView({ className }: { className?: string }) {
       try {
         const response = await fetch(`/api/desktop/${desktopSandboxId}/status`)
         if (!response.ok) {
-          // Sandbox expired or doesn't exist
           clearDesktopSandbox()
           setViewMode("preview")
           toast.info("Desktop session expired")
@@ -42,21 +67,10 @@ export function DesktopView({ className }: { className?: string }) {
       } catch (error) {
         console.error("Failed to check desktop status:", error)
       }
-    }, 30000) // Check every 30 seconds
+    }, 30000)
 
     return () => clearInterval(interval)
   }, [desktopSandboxId, clearDesktopSandbox, setViewMode])
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (desktopSandboxId) {
-        deleteDesktop(desktopSandboxId).catch(() => {
-          // Best effort cleanup
-        })
-      }
-    }
-  }, [desktopSandboxId])
 
   const handleStop = async () => {
     if (!desktopSandboxId) return
@@ -70,7 +84,6 @@ export function DesktopView({ className }: { className?: string }) {
       const message =
         error instanceof Error ? error.message : "Failed to stop desktop"
       toast.error(message)
-      // Clear state anyway
       clearDesktopSandbox()
       setViewMode("preview")
     } finally {
@@ -85,15 +98,13 @@ export function DesktopView({ className }: { className?: string }) {
         <div className="flex items-center gap-2">
           <Monitor className="size-3.5 text-muted-foreground" />
           <span className="text-xs font-medium">Desktop</span>
-          {/* Status badge — only when a session is active */}
           {desktopSandboxId && (
             <span className="flex items-center gap-1 rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-medium text-green-600 dark:text-green-400">
               <span className="size-1.5 animate-pulse rounded-full bg-green-500" />
-              Running
+              {isReconnecting ? "Reconnecting…" : "Running"}
             </span>
           )}
         </div>
-        {/* Stop button — only when a session is active */}
         {desktopSandboxId && (
           <Button
             disabled={isStopping}
@@ -109,7 +120,14 @@ export function DesktopView({ className }: { className?: string }) {
       </div>
 
       {/* Content */}
-      {desktopVncUrl ? (
+      {isReconnecting ? (
+        <div className="flex size-full flex-col items-center justify-center gap-3 text-center">
+          <Monitor className="size-8 text-muted-foreground/40" />
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-muted-foreground">Reconnecting to desktop…</p>
+          </div>
+        </div>
+      ) : desktopVncUrl ? (
         <iframe
           src={desktopVncUrl}
           className="size-full border-0"
@@ -117,7 +135,6 @@ export function DesktopView({ className }: { className?: string }) {
           title="Desktop Sandbox"
         />
       ) : (
-        /* Empty state */
         <div className="flex size-full flex-col items-center justify-center gap-3 text-center">
           <Monitor className="size-8 text-muted-foreground/40" />
           <div className="space-y-1">

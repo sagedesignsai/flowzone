@@ -14,6 +14,15 @@ import {
   listFiles,
 } from "@/lib/tools/sandbox"
 import { commitAndPush, getDiff, getStatus, getLog } from "@/lib/tools/git"
+import {
+  createPullRequest,
+  listPullRequests,
+  createIssue as createGithubIssue,
+  listIssues as listGithubIssues,
+  dispatchWorkflow,
+  createBranch as createGithubBranch,
+  deleteBranch as deleteGithubBranch,
+} from "@/lib/tools/github"
 
 // ── Agent Factory ──────────────────────────────────────────
 
@@ -46,6 +55,14 @@ export function createFlowzoneAgent(model: LanguageModel) {
       "- Use `getLog` to see recent commit history.",
       "- Each chat has its own isolated branch (flowzone/{chatId}).",
       "",
+      "## GitHub API Tools (Requires Imported Repo)",
+      "- Use `createPullRequest` to open a PR from the current branch.",
+      "- Use `listPullRequests` to see open/closed PRs for the repo.",
+      "- Use `createIssue` to file a bug report or feature request.",
+      "- Use `listIssues` to view issues for the repo.",
+      "- Use `dispatchWorkflow` to trigger GitHub Actions workflows.",
+      "- Use `createBranch` / `deleteBranch` to manage branches.",
+      "",
       "## Best Practices",
       "- When starting a new project, scaffold it first (e.g. `npx create-next-app`).",
       "- Install dependencies before running dev servers.",
@@ -58,14 +75,24 @@ export function createFlowzoneAgent(model: LanguageModel) {
       "When running dev servers, use `--host 0.0.0.0` or similar flags so the preview works.",
     ].join("\n"),
     tools: {
+      // Sandbox tools
       runCommand,
       writeFile,
       readFile,
       listFiles,
+      // Sandbox git tools
       commitAndPush,
       getDiff,
       getStatus,
       getLog,
+      // GitHub API tools
+      createPullRequest,
+      listPullRequests,
+      createIssue: createGithubIssue,
+      listIssues: listGithubIssues,
+      dispatchWorkflow,
+      createBranch: createGithubBranch,
+      deleteBranch: deleteGithubBranch,
     },
   })
 }

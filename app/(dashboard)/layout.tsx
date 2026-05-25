@@ -1,4 +1,6 @@
 import { AppLayout } from "@/components/layout/app-layout"
+import { GlobalHeader } from "@/components/layout/global-header"
+import { SidebarInset } from "@/components/ui/sidebar"
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
@@ -17,5 +19,12 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
     redirect("/login")
   }
 
-  return <AppLayout defaultSidebarOpen>{children}</AppLayout>
+  return (
+    <AppLayout defaultSidebarOpen>
+      <SidebarInset>
+        <GlobalHeader />
+        {children}
+      </SidebarInset>
+    </AppLayout>
+  )
 }

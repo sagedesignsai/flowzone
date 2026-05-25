@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { github } from "@/lib/github"
+import { deleteBranch } from "@/lib/github/branches"
 import type { GitCreateBranchRequest } from "@/types"
 
 /**
@@ -127,6 +128,54 @@ export async function POST(request: NextRequest) {
     const message =
       error instanceof Error ? error.message : "Failed to create branch"
     console.error("POST /api/github/branches error:", message)
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}
+
+/**
+ * DELETE /api/github/branches
+ *
+ * Delete a branch from a repository.
+ *
+ * Request body:
+ *   { owner, repo, branch, installationId }
+ *
+ * Response:
+ *   200 { success: true }
+ *   400 { error } — validation
+ *   401 { error } — unauthorized
+ *   500 { error } — deletion failed
+ */
+export async function DELETE(request: NextRequest) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  })
+
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  try {
+    const body = await request.json()
+    const { owner, repo, branch, installationId } = body
+
+    if (!owner || !repo || !branch || !installationId) {
+      return NextResponse.json(
+        {
+          error:
+            "Missing required fields: owner, repo, branch, installationId",
+        },
+        { status: 400 },
+      )
+    }
+
+    await deleteBranch({ owner, repo, branch, installationId })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to delete branch"
+    console.error("DELETE /api/github/branches error:", message)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

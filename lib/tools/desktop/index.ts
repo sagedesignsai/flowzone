@@ -11,6 +11,7 @@ export * from "./screen"
 export * from "./app"
 export * from "./opencode"
 export * from "./sandbox-context"
+export * from "./git"
 
 import {
   mouseLeftClick,
@@ -24,6 +25,7 @@ import { keyboardType, keyboardPress, keyboardShortcut } from "./keyboard"
 import { takeScreenshot, getScreenSize, getCursorPosition } from "./screen"
 import { launchApp, openFile, getWindowTitle, runShellCommand } from "./app"
 import { runOpenCodeTask } from "./opencode"
+import { cloneRepo, getGitStatus, getGitDiff, getGitLog } from "./git"
 
 export const allDesktopTools = {
   mouseLeftClick,
@@ -43,4 +45,8 @@ export const allDesktopTools = {
   getWindowTitle,
   runShellCommand,
   runOpenCodeTask,
+  cloneRepo,
+  getGitStatus,
+  getGitDiff,
+  getGitLog,
 }

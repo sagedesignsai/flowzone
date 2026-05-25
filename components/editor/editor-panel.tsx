@@ -4,6 +4,8 @@ import { EditorView } from "@/components/editor/editor-view";
 import { PreviewView } from "@/components/editor/preview-view";
 import { TerminalView } from "@/components/editor/terminal-view";
 import { DesktopView } from "@/components/editor/desktop-view"
+import { EditorHeader } from "@/components/editor/editor-header";
+import { EditorTabs } from "@/components/editor/editor-tabs";
 import { useIdeStore } from "@/hooks/use-ide-store";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "motion/react";
@@ -21,6 +23,9 @@ export function EditorPanel({ previewUrl, className, ...props }: EditorPanelProp
       className={cn("flex size-full flex-col overflow-hidden bg-background", className)}
       {...props}
     >
+      <EditorHeader />
+      <EditorTabs />
+      
       <AnimatePresence initial={false} mode="wait">
         {viewMode === "preview" && (
           <motion.div

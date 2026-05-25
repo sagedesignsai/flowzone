@@ -28,6 +28,7 @@ template = (
     # Ensure required directories exist
     .make_dir("/home/user/.config/Code/User")
     .make_dir("/home/user/.config/opencode")
+    .make_dir("/home/user/.config/opencode/plugins")
     .make_dir("/home/user/.config/xfce4/xfconf/xfce-perchannel-xml/")
     .make_dir("/home/user/.config/autostart")
     .make_dir("/home/user/.ssh")
@@ -37,6 +38,10 @@ template = (
             CopyItem(
                 src="flowzone-bridge.sh",
                 dest="/usr/local/bin/flowzone-bridge",
+            ),
+            CopyItem(
+                src="opencode-plugins/flowzone-bridge.ts",
+                dest="/home/user/.config/opencode/plugins/flowzone-bridge.ts",
             ),
             CopyItem(
                 src="gitconfig",

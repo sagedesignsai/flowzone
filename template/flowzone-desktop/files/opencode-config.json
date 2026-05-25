@@ -13,8 +13,8 @@
   "permissions": {
     "file": {
       "read": ["**/*"],
-      "write": ["**/*.{ts,tsx,js,jsx,css,md,json,yaml,yml,html,prisma,env}"],
-      "deny": [".env", ".env.*", "**/node_modules/**", "**/.git/**"]
+      "write": ["**/*"],
+      "deny": []
     },
     "command": {
       "allow": ["pnpm", "npm", "npx", "git", "ls", "cat", "mkdir", "rm", "cp", "mv"],

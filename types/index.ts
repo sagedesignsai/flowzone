@@ -159,3 +159,125 @@ export interface SandboxGitPushOptions {
   token: string
   force?: boolean
 }
+
+// ── New GitHub Domain Types ───────────────────────────────
+
+/** A GitHub issue summary */
+export interface GitIssue {
+  number: number
+  title: string
+  state: string
+  body: string | null
+  user: string | undefined
+  labels: (string | undefined)[]
+  createdAt: string
+  updatedAt: string
+  comments: number
+  pullRequest: boolean
+}
+
+/** A GitHub pull request summary (extended) */
+export interface GitPRSummary {
+  prNumber: number
+  prUrl: string
+  title: string
+  state: string | null
+  body: string | null
+  draft: boolean
+  user: string | undefined
+  createdAt: string
+  updatedAt: string
+  head: { ref: string; sha: string; repoFullName: string | null }
+  base: { ref: string; sha: string }
+}
+
+/** A GitHub commit summary */
+export interface GitCommit {
+  sha: string
+  message: string
+  author: string
+  date: string
+  url: string
+  authorAvatar?: string | null
+}
+
+/** A GitHub Actions workflow summary */
+export interface GitWorkflow {
+  id: number
+  name: string
+  path: string
+  state: string
+  url: string
+  badgeUrl: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+/** A GitHub Actions workflow run */
+export interface GitWorkflowRun {
+  id: number
+  name: string | null
+  status: string | null
+  conclusion: string | null
+  branch: string
+  sha: string
+  url: string
+  createdAt: string
+  updatedAt: string
+  runNumber: number
+  triggeringActor: string | undefined
+}
+
+/** A GitHub release summary */
+export interface GitRelease {
+  id: number
+  tagName: string
+  name: string | null
+  body: string | null
+  draft: boolean
+  prerelease: boolean
+  url: string
+  author: string | undefined
+  createdAt: string
+  publishedAt: string | null
+}
+
+/** A git tag summary */
+export interface GitTag {
+  name: string
+  sha: string
+  url: string
+}
+
+/** A commit status */
+export interface GitCommitStatus {
+  id: number
+  state: string
+  context: string
+  description: string | null
+  targetUrl: string | null
+  createdAt: string
+  creator: string | undefined
+}
+
+/** A check suite summary */
+export interface GitCheckSuite {
+  id: number
+  status: string | null
+  conclusion: string | null
+  appName: string | undefined
+  createdAt: string
+  updatedAt: string
+}
+
+/** A webhook event record */
+export interface WebhookEventRecord {
+  id: string
+  eventType: string
+  action: string | null
+  installationId: string | null
+  processed: boolean
+  processedAt: string | null
+  error: string | null
+  createdAt: string
+}

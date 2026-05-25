@@ -1,32 +1,33 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { headers } from "next/headers"
-import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
-import { github } from "@/lib/github"
-import type { GitImportRequest, GitImportResponse } from "@/types"
-import { Sandbox } from "e2b"
-
 /**
  * POST /api/github/import
  *
  * Import a GitHub repository into a chat:
  *   1. Verify auth + chat ownership
  *   2. Create or find GitRepo record in DB
- *   3. Ensure the E2B sandbox exists for the chat
- *   4. Create a dedicated branch (flowzone/{chatId})
+ *   3. Create a dedicated branch (flowzone/{chatId})
+ *   4. Create an E2B sandbox for the chat
  *   5. Clone the repo into the sandbox
- *   6. Return repo + branch + sandbox info
+ *   6. Store sandbox context (repoPath, gitBranch) in the SandboxRun record
+ *   7. Update chat with gitRepoId and gitBranch
+ *   8. Return repo + sandbox info
  *
- * Request body: GitImportRequest
- *   { chatId: string, repo: { owner, name, installationId, branch? } }
- *
- * Response:
- *   200 { gitRepoId, chatBranch, sandboxId, clonePath }
- *   400 { error } — validation
- *   401 { error } — unauthorized
- *   404 { error } — chat not found
- *   500 { error } — server error
+ * This replaces the previous best-effort approach. The sandbox is now
+ * guaranteed to exist after import, and its context is persisted for
+ * the chat route to pick up.
  */
+
+import { type NextRequest, NextResponse } from "next/server"
+import { headers } from "next/headers"
+import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
+import { getInstallationToken, getRepo } from "@/lib/github"
+import { createBranch } from "@/lib/github/branches"
+import type { GitImportRequest, GitImportResponse } from "@/types"
+import { Sandbox } from "e2b"
+
+const GIT_USERNAME = "x-access-token"
+const DEFAULT_REPO_PATH = "/home/user/repo"
+
 export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -34,6 +35,13 @@ export async function POST(request: NextRequest) {
 
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  if (!process.env.E2B_API_KEY) {
+    return NextResponse.json(
+      { error: "E2B_API_KEY is not configured. Sandbox features require it." },
+      { status: 500 },
+    )
   }
 
   try {
@@ -53,7 +61,7 @@ export async function POST(request: NextRequest) {
     // ── Verify chat exists and belongs to user ──────────────
     const chat = await prisma.chat.findUnique({
       where: { id: chatId },
-      include: { gitRepo: true },
+      include: { gitRepo: true, sandboxRun: true },
     })
 
     if (!chat) {
@@ -81,7 +89,7 @@ export async function POST(request: NextRequest) {
           name: repoInput.name,
           fullName,
           defaultBranch: repoInput.branch ?? "main",
-          isPrivate: false, // Will be updated after fetching from API
+          isPrivate: false,
           installationId: String(repoInput.installationId),
           projectId: chat.projectId,
         },
@@ -89,7 +97,7 @@ export async function POST(request: NextRequest) {
 
       // Fetch actual repo details to update isPrivate / defaultBranch
       try {
-        const repoDetails = await github.getRepo(
+        const repoDetails = await getRepo(
           repoInput.owner,
           repoInput.name,
           repoInput.installationId,
@@ -98,7 +106,10 @@ export async function POST(request: NextRequest) {
           where: { id: gitRepo.id },
           data: {
             isPrivate: repoDetails.isPrivate,
+            isFork: repoDetails.isFork,
             defaultBranch: repoDetails.defaultBranch,
+            description: repoDetails.description,
+            language: repoDetails.language,
           },
         })
       } catch {
@@ -111,59 +122,88 @@ export async function POST(request: NextRequest) {
     const chatBranch = `flowzone/${chatId.slice(0, 8)}`
 
     try {
-      await github.createBranch(
-        repoInput.owner,
-        repoInput.name,
+      await createBranch({
+        owner: repoInput.owner,
+        repo: repoInput.name,
         baseBranch,
-        chatBranch,
-        repoInput.installationId,
-      )
+        newBranch: chatBranch,
+        installationId: repoInput.installationId,
+      })
     } catch {
       // Branch may already exist from a previous import — that's fine
     }
 
-    // ── Get or create the E2B sandbox for the chat ─────────
-    let sandboxRun = await prisma.sandboxRun.findUnique({
-      where: { chatId },
-    })
+    // ── Get a fresh installation token for cloning ──────────
+    const { token } = await getInstallationToken(repoInput.installationId)
 
-    let sandboxId: string | null = null
-    let clonePath = `/home/user/repo/${fullName}`
+    // ── Create or reconnect to sandbox ──────────────────────
+    let sandbox: Sandbox
+    let sandboxId: string
+    let isExisting = false
 
-    if (sandboxRun?.e2bSandboxId) {
-      sandboxId = sandboxRun.e2bSandboxId
+    if (chat.sandboxRun?.e2bSandboxId) {
+      // Try to reconnect to existing sandbox
+      try {
+        sandbox = await Sandbox.connect(chat.sandboxRun.e2bSandboxId)
+        sandboxId = chat.sandboxRun.e2bSandboxId
+        isExisting = true
+      } catch {
+        // Sandbox expired — create a new one
+        sandbox = await Sandbox.create()
+        sandboxId = sandbox.sandboxId
+      }
+    } else {
+      // Create a new sandbox
+      sandbox = await Sandbox.create()
+      sandboxId = sandbox.sandboxId
     }
 
-    // Get a fresh installation token for cloning
-    const { token } = await github.getInstallationToken(
-      repoInput.installationId,
+    // ── Clone the repo into the sandbox ────────────────────
+    const clonePath = `${DEFAULT_REPO_PATH}/${fullName}`
+
+    await sandbox.git.clone(`https://github.com/${fullName}.git`, {
+      path: clonePath,
+      branch: chatBranch,
+      depth: 1,
+      username: GIT_USERNAME,
+      password: token,
+    })
+
+    // Checkout the chat branch
+    await sandbox.commands.run(
+      `cd ${clonePath} && git checkout ${chatBranch} 2>/dev/null || true`,
     )
 
-    // Try to clone into the sandbox (non-blocking — sandbox may not be running)
-    try {
-      if (sandboxRun?.e2bSandboxId) {
-        const e2bSandbox = await Sandbox.connect(sandboxRun.e2bSandboxId)
+    // Configure git identity inside the sandbox
+    await sandbox.commands.run(
+      `cd ${clonePath} && git config user.name "Flowzone Bot" && git config user.email "bot@flowzone.dev"`,
+    )
 
-        await e2bSandbox.git.clone(
-          `https://github.com/${fullName}.git`,
-          {
-            path: clonePath,
-            branch: chatBranch,
-            depth: 1,
-            username: "x-access-token",
-            password: token,
-          },
-        )
+    // ── Persist sandbox context in DB ───────────────────────
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
 
-        // Checkout the chat branch
-        await e2bSandbox.commands.run(
-          `cd ${clonePath} && git checkout ${chatBranch} 2>/dev/null || echo "checked out"`,
-        )
-      }
-    } catch {
-      // Sandbox clone is best-effort at import time.
-      // The sandbox will clone on first real connection.
-      clonePath = `/home/user/repo/${fullName}`
+    if (chat.sandboxRun) {
+      await prisma.sandboxRun.update({
+        where: { id: chat.sandboxRun.id },
+        data: {
+          e2bSandboxId: sandboxId,
+          status: "running",
+          repoPath: clonePath,
+          gitBranch: chatBranch,
+          expiresAt,
+        },
+      })
+    } else {
+      await prisma.sandboxRun.create({
+        data: {
+          chatId,
+          e2bSandboxId: sandboxId,
+          status: "running",
+          repoPath: clonePath,
+          gitBranch: chatBranch,
+          expiresAt,
+        },
+      })
     }
 
     // ── Update chat with repo info ──────────────────────────
