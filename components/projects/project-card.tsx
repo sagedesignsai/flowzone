@@ -55,12 +55,12 @@ export function ProjectCard({ project, className }: ProjectCardProps) {
       >
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
+            <div className="flex min-w-0 items-center gap-3">
               <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
                 <FolderSimple className="size-4" />
               </div>
               <div className="min-w-0">
-                <CardTitle className="text-sm font-medium truncate">
+                <CardTitle className="truncate text-sm font-medium">
                   {project.name}
                 </CardTitle>
                 <CardDescription className="text-xs">

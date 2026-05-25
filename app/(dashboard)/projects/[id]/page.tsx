@@ -101,7 +101,12 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-medium">Recent Chats</h2>
-            <Button nativeButton={false} render={<Link href="/chat" />} size="sm" variant="outline">
+            <Button
+              nativeButton={false}
+              render={<Link href="/chat" />}
+              size="sm"
+              variant="outline"
+            >
               New Chat
             </Button>
           </div>
@@ -120,7 +125,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                   href={`/chat/${chat.id}`}
                   className="flex items-center justify-between rounded-md px-3 py-2 text-xs transition-colors hover:bg-accent"
                 >
-                  <span className="font-medium truncate">{chat.title}</span>
+                  <span className="truncate font-medium">{chat.title}</span>
                   <span className="shrink-0 text-muted-foreground">
                     {formatDistanceToNow(new Date(chat.updatedAt), {
                       addSuffix: true,

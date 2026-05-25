@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {
   PromptInput,
@@ -11,11 +11,11 @@ import {
   PromptInputActionMenuContent,
   PromptInputActionAddAttachments,
   PromptInputActionAddScreenshot,
-} from "@/components/ai-elements/prompt-input";
-import { Logomark } from "@/components/brand/logomark";
-import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
-import { useIdeStore } from "@/hooks/use-ide-store";
-import { cn } from "@/lib/utils";
+} from "@/components/ai-elements/prompt-input"
+import { Logomark } from "@/components/brand/logomark"
+import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion"
+import { useIdeStore } from "@/hooks/use-ide-store"
+import { cn } from "@/lib/utils"
 import {
   ArrowCircleRight,
   DeviceTablet,
@@ -23,48 +23,48 @@ import {
   Layout,
   Sparkle,
   Stack,
-} from "@phosphor-icons/react";
-import { motion, AnimatePresence } from "motion/react";
-import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
-import { nanoid } from "nanoid";
-import { useRouter } from "next/navigation";
-import type { SubmitEvent } from "react";
+} from "@phosphor-icons/react"
+import { motion, AnimatePresence } from "motion/react"
+import type { PromptInputMessage } from "@/components/ai-elements/prompt-input"
+import { nanoid } from "nanoid"
+import { useRouter } from "next/navigation"
+import type { SubmitEvent } from "react"
 
 // ─── Quick-start suggestions ─────────────────────────────────────────────────
 
 const SUGGESTIONS = [
-  { label: "Full Stack App",  icon: Stack        },
-  { label: "Mobile App",     icon: DeviceTablet  },
-  { label: "Landing Page",   icon: Layout        },
-  { label: "SaaS Dashboard", icon: Globe         },
-];
+  { label: "Full Stack App", icon: Stack },
+  { label: "Mobile App", icon: DeviceTablet },
+  { label: "Landing Page", icon: Layout },
+  { label: "SaaS Dashboard", icon: Globe },
+]
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
 interface PromptHeroProps {
-  className?: string;
+  className?: string
 }
 
 export function PromptHero({ className }: PromptHeroProps) {
-  const router = useRouter();
-  const { addChatSession, setActiveChatId } = useIdeStore();
+  const router = useRouter()
+  const { addChatSession, setActiveChatId } = useIdeStore()
 
   function handleSubmit(
     message: PromptInputMessage,
     _event: SubmitEvent<HTMLFormElement>
   ) {
-    if (!message.text.trim()) return;
+    if (!message.text.trim()) return
 
-    const id = nanoid();
+    const id = nanoid()
     addChatSession({
       id,
       title: message.text.slice(0, 60),
       createdAt: Date.now(),
       updatedAt: Date.now(),
-    });
-    setActiveChatId(id);
+    })
+    setActiveChatId(id)
     // Pass prompt as query param so ChatPanel auto-sends it
-    router.push(`/chat/${id}?q=${encodeURIComponent(message.text)}`);
+    router.push(`/chat/${id}?q=${encodeURIComponent(message.text)}`)
   }
 
   function handleSuggestion(suggestion: string) {
@@ -104,11 +104,10 @@ export function PromptHero({ className }: PromptHeroProps) {
           initial={{ opacity: 0, y: 12 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
         >
-          <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
-            Where ideas become{" "}
-            <span className="text-primary">reality</span>
+          <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl lg:text-5xl">
+            Where ideas become <span className="text-primary">reality</span>
           </h1>
-          <p className="text-muted-foreground text-sm sm:text-base">
+          <p className="text-sm text-muted-foreground sm:text-base">
             Build fully functional apps and websites through simple
             conversations
           </p>
@@ -166,5 +165,5 @@ export function PromptHero({ className }: PromptHeroProps) {
         </motion.div>
       </div>
     </PromptInputProvider>
-  );
+  )
 }

@@ -6,7 +6,14 @@ import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { Monitor, Sun, Moon, Code, Bell, GitBranch } from "@phosphor-icons/react/dist/ssr"
+import {
+  Monitor,
+  Sun,
+  Moon,
+  Code,
+  Bell,
+  GitBranch,
+} from "@phosphor-icons/react/dist/ssr"
 
 export const metadata = {
   title: "Preferences — Flowzone",
@@ -105,7 +112,9 @@ export default async function PreferencesPage() {
                 icon={<Code className="size-4" />}
                 title="Font Size"
                 description="12px"
-                action={<StatusBadge status="active" label="Default" size="sm" />}
+                action={
+                  <StatusBadge status="active" label="Default" size="sm" />
+                }
               />
               <SettingsCard
                 icon={<Code className="size-4" />}

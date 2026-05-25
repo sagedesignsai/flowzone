@@ -5,7 +5,11 @@
  */
 
 import { createInstallationOctokit } from "@/lib/github/auth"
-import type { GitHubPROptions, CreateIssueInput, IssueCommentInput } from "@/lib/github/types"
+import type {
+  GitHubPROptions,
+  CreateIssueInput,
+  IssueCommentInput,
+} from "@/lib/github/types"
 
 // ── List Issues ────────────────────────────────────────────
 
@@ -15,7 +19,7 @@ import type { GitHubPROptions, CreateIssueInput, IssueCommentInput } from "@/lib
  * @param state - "open" | "closed" | "all" (default: "open")
  */
 export async function listIssues(
-  options: GitHubPROptions & { state?: "open" | "closed" | "all" },
+  options: GitHubPROptions & { state?: "open" | "closed" | "all" }
 ) {
   const { owner, repo, installationId, state = "open" } = options
   const octokit = createInstallationOctokit(installationId)
@@ -47,9 +51,7 @@ export async function listIssues(
 /**
  * Create an issue on a repository.
  */
-export async function createIssue(
-  options: GitHubPROptions & CreateIssueInput,
-) {
+export async function createIssue(options: GitHubPROptions & CreateIssueInput) {
   const { owner, repo, installationId, title, body, labels, assignees } =
     options
   const octokit = createInstallationOctokit(installationId)
@@ -78,7 +80,7 @@ export async function createIssue(
  * Get a single issue by number.
  */
 export async function getIssue(
-  options: GitHubPROptions & { issueNumber: number },
+  options: GitHubPROptions & { issueNumber: number }
 ) {
   const { owner, repo, issueNumber, installationId } = options
   const octokit = createInstallationOctokit(installationId)
@@ -108,7 +110,7 @@ export async function getIssue(
  * Add a comment to an issue or pull request.
  */
 export async function addIssueComment(
-  options: GitHubPROptions & { issueNumber: number } & IssueCommentInput,
+  options: GitHubPROptions & { issueNumber: number } & IssueCommentInput
 ) {
   const { owner, repo, issueNumber, installationId, body } = options
   const octokit = createInstallationOctokit(installationId)
@@ -137,8 +139,13 @@ export async function addIssueComment(
 export async function updateIssue(
   options: GitHubPROptions & {
     issueNumber: number
-    updates: { title?: string; body?: string; state?: "open" | "closed"; labels?: string[] }
-  },
+    updates: {
+      title?: string
+      body?: string
+      state?: "open" | "closed"
+      labels?: string[]
+    }
+  }
 ) {
   const { owner, repo, issueNumber, installationId, updates } = options
   const octokit = createInstallationOctokit(installationId)

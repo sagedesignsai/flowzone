@@ -22,7 +22,11 @@ interface TemplateCardProps {
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export function TemplateCard({ template, onSelect, className }: TemplateCardProps) {
+export function TemplateCard({
+  template,
+  onSelect,
+  className,
+}: TemplateCardProps) {
   const Icon = template.icon
 
   function handleKeyDown(e: React.KeyboardEvent) {

@@ -18,7 +18,8 @@ export async function GET() {
       },
     })
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to fetch settings"
+    const message =
+      err instanceof Error ? err.message : "Failed to fetch settings"
     return NextResponse.json({ message }, { status: 500 })
   }
 }
@@ -42,7 +43,8 @@ export async function POST(request: Request) {
       },
     })
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to update settings"
+    const message =
+      err instanceof Error ? err.message : "Failed to update settings"
     return NextResponse.json({ message }, { status: 500 })
   }
 }

@@ -61,7 +61,7 @@ export interface CloneOptions {
  */
 export async function cloneRepo(
   sandbox: Sandbox,
-  options: CloneOptions,
+  options: CloneOptions
 ): Promise<{ repoPath: string }> {
   const repoPath = options.path ?? DEFAULT_REPO_PATH
 
@@ -86,21 +86,19 @@ export async function cloneRepo(
  */
 export async function autoCommit(
   sandbox: Sandbox,
-  options: SandboxGitCommitOptions,
+  options: SandboxGitCommitOptions
 ): Promise<{ sha: string }> {
   const { repoPath, message, authorName, authorEmail } = options
 
   // Configure git identity if provided
   if (authorName && authorEmail) {
     await sandbox.commands.run(
-      `cd ${repoPath} && git config user.name "${authorName}" && git config user.email "${authorEmail}"`,
+      `cd ${repoPath} && git config user.name "${authorName}" && git config user.email "${authorEmail}"`
     )
   }
 
   // Stage everything
-  const addResult = await sandbox.commands.run(
-    `cd ${repoPath} && git add -A`,
-  )
+  const addResult = await sandbox.commands.run(`cd ${repoPath} && git add -A`)
 
   if (addResult.exitCode !== 0) {
     throw new Error(`git add failed: ${addResult.stderr}`)
@@ -108,7 +106,7 @@ export async function autoCommit(
 
   // Check if there's anything to commit
   const statusResult = await sandbox.commands.run(
-    `cd ${repoPath} && git status --porcelain`,
+    `cd ${repoPath} && git status --porcelain`
   )
 
   if (!statusResult.stdout.trim()) {
@@ -117,7 +115,7 @@ export async function autoCommit(
 
   // Create commit
   const commitResult = await sandbox.commands.run(
-    `cd ${repoPath} && git commit -m "${escapeQuotes(message)}"`,
+    `cd ${repoPath} && git commit -m "${escapeQuotes(message)}"`
   )
 
   if (commitResult.exitCode !== 0) {
@@ -142,7 +140,7 @@ export async function autoCommit(
  */
 export async function pushChanges(
   sandbox: Sandbox,
-  options: SandboxGitPushOptions,
+  options: SandboxGitPushOptions
 ): Promise<{ success: boolean }> {
   const { repoPath, branch, token, force } = options
 
@@ -175,7 +173,7 @@ export interface DiffOptions {
  */
 export async function getDiff(
   sandbox: Sandbox,
-  options: DiffOptions,
+  options: DiffOptions
 ): Promise<string> {
   const { repoPath, against, contextLines = 3 } = options
   const contextArg = `-U${contextLines}`
@@ -208,14 +206,14 @@ export interface LogOptions {
  */
 export async function getLog(
   sandbox: Sandbox,
-  options: LogOptions,
+  options: LogOptions
 ): Promise<{ sha: string; author: string; date: string; message: string }[]> {
   const { repoPath, maxCount = 10 } = options
 
   // Use a delimiter-safe format: hash|author|date|subject%n
   const format = "--format=%H|%an|%ai|%s"
   const result = await sandbox.commands.run(
-    `cd ${repoPath} && git log ${format} -${maxCount}`,
+    `cd ${repoPath} && git log ${format} -${maxCount}`
   )
 
   if (!result.stdout.trim()) {
@@ -245,11 +243,11 @@ export async function getLog(
 export async function checkoutBranch(
   sandbox: Sandbox,
   repoPath: string,
-  branch: string,
+  branch: string
 ): Promise<void> {
   // Try checking out existing branch, then create if it doesn't exist
   const result = await sandbox.commands.run(
-    `cd ${repoPath} && git checkout ${branch} 2>/dev/null || git checkout -b ${branch}`,
+    `cd ${repoPath} && git checkout ${branch} 2>/dev/null || git checkout -b ${branch}`
   )
 
   if (result.exitCode !== 0) {
@@ -262,10 +260,10 @@ export async function checkoutBranch(
  */
 export async function getCurrentBranch(
   sandbox: Sandbox,
-  repoPath: string,
+  repoPath: string
 ): Promise<string> {
   const result = await sandbox.commands.run(
-    `cd ${repoPath} && git rev-parse --abbrev-ref HEAD`,
+    `cd ${repoPath} && git rev-parse --abbrev-ref HEAD`
   )
   return result.stdout.trim()
 }
@@ -275,10 +273,10 @@ export async function getCurrentBranch(
  */
 export async function listLocalBranches(
   sandbox: Sandbox,
-  repoPath: string,
+  repoPath: string
 ): Promise<string[]> {
   const result = await sandbox.commands.run(
-    `cd ${repoPath} && git branch --format="%(refname:short)"`,
+    `cd ${repoPath} && git branch --format="%(refname:short)"`
   )
 
   if (!result.stdout.trim()) {
@@ -306,10 +304,10 @@ export interface WorkingTreeStatus {
  */
 export async function getStatus(
   sandbox: Sandbox,
-  repoPath: string,
+  repoPath: string
 ): Promise<WorkingTreeStatus> {
   const result = await sandbox.commands.run(
-    `cd ${repoPath} && git status --porcelain`,
+    `cd ${repoPath} && git status --porcelain`
   )
 
   const lines = result.stdout.trim().split("\n").filter(Boolean)
@@ -352,10 +350,10 @@ export async function configureIdentity(
   sandbox: Sandbox,
   repoPath: string,
   name: string,
-  email: string,
+  email: string
 ): Promise<void> {
   await sandbox.commands.run(
-    `cd ${repoPath} && git config user.name "${escapeQuotes(name)}" && git config user.email "${email}"`,
+    `cd ${repoPath} && git config user.name "${escapeQuotes(name)}" && git config user.email "${email}"`
   )
 }
 

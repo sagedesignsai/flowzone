@@ -1,31 +1,38 @@
-"use client";
+"use client"
 
-import { EditorView } from "@/components/editor/editor-view";
-import { PreviewView } from "@/components/editor/preview-view";
-import { TerminalView } from "@/components/editor/terminal-view";
+import { EditorView } from "@/components/editor/editor-view"
+import { PreviewView } from "@/components/editor/preview-view"
+import { TerminalView } from "@/components/editor/terminal-view"
 import { DesktopView } from "@/components/editor/desktop-view"
-import { EditorHeader } from "@/components/editor/editor-header";
-import { EditorTabs } from "@/components/editor/editor-tabs";
-import { useIdeStore } from "@/hooks/use-ide-store";
-import { cn } from "@/lib/utils";
-import { AnimatePresence, motion } from "motion/react";
-import type { ComponentProps } from "react";
+import { EditorHeader } from "@/components/editor/editor-header"
+import { EditorTabs } from "@/components/editor/editor-tabs"
+import { useIdeStore } from "@/hooks/use-ide-store"
+import { cn } from "@/lib/utils"
+import { AnimatePresence, motion } from "motion/react"
+import type { ComponentProps } from "react"
 
 interface EditorPanelProps extends ComponentProps<"div"> {
-  previewUrl?: string;
+  previewUrl?: string
 }
 
-export function EditorPanel({ previewUrl, className, ...props }: EditorPanelProps) {
-  const { viewMode } = useIdeStore();
+export function EditorPanel({
+  previewUrl,
+  className,
+  ...props
+}: EditorPanelProps) {
+  const { viewMode } = useIdeStore()
 
   return (
     <div
-      className={cn("flex size-full flex-col overflow-hidden bg-background", className)}
+      className={cn(
+        "flex size-full flex-col overflow-hidden bg-background",
+        className
+      )}
       {...props}
     >
       <EditorHeader />
       <EditorTabs />
-      
+
       <AnimatePresence initial={false} mode="wait">
         {viewMode === "preview" && (
           <motion.div
@@ -80,5 +87,5 @@ export function EditorPanel({ previewUrl, className, ...props }: EditorPanelProp
         )}
       </AnimatePresence>
     </div>
-  );
+  )
 }

@@ -1,8 +1,6 @@
 "use client"
 
-import {
-  MessageResponse,
-} from "@/components/ai-elements/message"
+import { MessageResponse } from "@/components/ai-elements/message"
 import {
   Tool,
   ToolContent,
@@ -41,7 +39,9 @@ const TextPart = memo(function TextPart({
   state?: "streaming" | "done"
 }) {
   return (
-    <MessageResponse isAnimating={state === "streaming"}>{text}</MessageResponse>
+    <MessageResponse isAnimating={state === "streaming"}>
+      {text}
+    </MessageResponse>
   )
 })
 
@@ -85,7 +85,9 @@ const ToolPart = memo(function ToolPart({
   title,
 }: ToolPartProps) {
   const resolvedType =
-    type === "dynamic-tool" ? ("dynamic-tool" as const) : ("tool-invocation" as const)
+    type === "dynamic-tool"
+      ? ("dynamic-tool" as const)
+      : ("tool-invocation" as const)
   const resolvedState = state as
     | "input-streaming"
     | "input-available"
@@ -119,9 +121,15 @@ const ToolPart = memo(function ToolPart({
         />
       )}
       <ToolContent>
-        {input !== null && input !== undefined && <ToolInput input={input as any} />}
-        {(output !== null && output !== undefined || errorText !== null && errorText !== undefined) && (
-          <ToolOutput errorText={errorText ?? undefined} output={output as any} />
+        {input !== null && input !== undefined && (
+          <ToolInput input={input as any} />
+        )}
+        {((output !== null && output !== undefined) ||
+          (errorText !== null && errorText !== undefined)) && (
+          <ToolOutput
+            errorText={errorText ?? undefined}
+            output={output as any}
+          />
         )}
       </ToolContent>
     </Tool>
@@ -143,13 +151,7 @@ const SourcePart = memo(function SourcePart({
   url,
   title,
 }: SourcePartProps) {
-  return (
-    <Source
-      href={url ?? "#"}
-      key={sourceId}
-      title={title ?? "Source"}
-    />
-  )
+  return <Source href={url ?? "#"} key={sourceId} title={title ?? "Source"} />
 })
 
 // ─── Sources Group ───────────────────────────────────────────────────────────
@@ -206,11 +208,11 @@ const ScreenshotPart = memo(function ScreenshotPart({
   height?: number
 }) {
   return (
-    <div className="my-2 rounded-lg border border-border overflow-hidden bg-muted">
+    <div className="my-2 overflow-hidden rounded-lg border border-border bg-muted">
       <img
         src={`data:image/png;base64,${screenshot}`}
         alt="Desktop screenshot"
-        className="w-full h-auto"
+        className="h-auto w-full"
         style={{
           maxWidth: width ? `${Math.min(width, 800)}px` : "100%",
           maxHeight: height ? `${Math.min(height, 600)}px` : "auto",
@@ -226,7 +228,7 @@ const StepStartDivider = memo(function StepStartDivider() {
   return (
     <div className="flex items-center gap-2 py-2">
       <div className="h-px flex-1 bg-border" />
-      <span className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider">
+      <span className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
         Step
       </span>
       <div className="h-px flex-1 bg-border" />
@@ -255,9 +257,7 @@ export const MessageParts = memo(function MessageParts({
       }
 
       case "reasoning": {
-        return (
-          <ReasoningPart key={index} state={part.state} text={part.text} />
-        )
+        return <ReasoningPart key={index} state={part.state} text={part.text} />
       }
 
       case "file": {
@@ -278,7 +278,10 @@ export const MessageParts = memo(function MessageParts({
       case "dynamic-tool": {
         // Handle desktop tool results (screenshots, etc.)
         const toolPart = part as any
-        if (toolPart.toolName === "takeScreenshot" && toolPart.output?.screenshot) {
+        if (
+          toolPart.toolName === "takeScreenshot" &&
+          toolPart.output?.screenshot
+        ) {
           return (
             <ScreenshotPart
               key={index}
@@ -310,7 +313,8 @@ export const MessageParts = memo(function MessageParts({
           sourceId: part.sourceId,
           url: part.type === "source-url" ? part.url : undefined,
           title: part.type === "source-document" ? part.title : part.title,
-          mediaType: part.type === "source-document" ? part.mediaType : undefined,
+          mediaType:
+            part.type === "source-document" ? part.mediaType : undefined,
           filename: part.type === "source-document" ? part.filename : undefined,
         })
         return null // rendered as group below

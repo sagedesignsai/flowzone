@@ -3,7 +3,11 @@ import { GlobalHeader } from "@/components/layout/global-header"
 import { SidebarInset } from "@/components/ui/sidebar"
 import type { ReactNode } from "react"
 
-export default function PreferencesLayout({ children }: { children: ReactNode }) {
+export default function PreferencesLayout({
+  children,
+}: {
+  children: ReactNode
+}) {
   return (
     <AppLayout>
       <SidebarInset className="overflow-hidden">

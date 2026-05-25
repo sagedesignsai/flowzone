@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {
   Terminal,
@@ -9,20 +9,17 @@ import {
   TerminalHeader,
   TerminalStatus,
   TerminalTitle,
-} from "@/components/ai-elements/terminal";
-import { useIdeStore } from "@/hooks/use-ide-store";
-import { cn } from "@/lib/utils";
+} from "@/components/ai-elements/terminal"
+import { useIdeStore } from "@/hooks/use-ide-store"
+import { cn } from "@/lib/utils"
 
 interface TerminalViewProps {
-  className?: string;
+  className?: string
 }
 
 export function TerminalView({ className }: TerminalViewProps) {
-  const {
-    terminalOutput,
-    isTerminalStreaming,
-    clearTerminalOutput,
-  } = useIdeStore();
+  const { terminalOutput, isTerminalStreaming, clearTerminalOutput } =
+    useIdeStore()
 
   return (
     <Terminal
@@ -47,5 +44,5 @@ export function TerminalView({ className }: TerminalViewProps) {
       </TerminalHeader>
       <TerminalContent className="max-h-full flex-1" />
     </Terminal>
-  );
+  )
 }

@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       if (chat.userId !== session.user.id) {
         return NextResponse.json(
           { error: "Chat does not belong to user" },
-          { status: 403 },
+          { status: 403 }
         )
       }
 
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
             error:
               "Chat is not linked to a Git repository. Import a repo first.",
           },
-          { status: 400 },
+          { status: 400 }
         )
       }
 
@@ -91,14 +91,14 @@ export async function POST(request: NextRequest) {
           error:
             "Missing required fields: owner, repo, head. Provide directly or via chatId.",
         },
-        { status: 400 },
+        { status: 400 }
       )
     }
 
     if (!title) {
       return NextResponse.json(
         { error: "Missing required field: title" },
-        { status: 400 },
+        { status: 400 }
       )
     }
 
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
       title,
       prBody,
       installationId,
-      draft,
+      draft
     )
 
     return NextResponse.json(pr, { status: 201 })

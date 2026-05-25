@@ -39,7 +39,7 @@ export function DesktopLauncher({ chatId, projectId }: DesktopLauncherProps) {
       toast.success("Desktop started")
     } catch (error) {
       setDesktopStatus("error")
-      
+
       // Provide specific error messages
       let message = "Failed to start desktop"
       if (error instanceof Error) {
@@ -53,7 +53,7 @@ export function DesktopLauncher({ chatId, projectId }: DesktopLauncherProps) {
           message = error.message
         }
       }
-      
+
       toast.error(message)
       console.error("Desktop launch error:", error)
     } finally {

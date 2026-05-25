@@ -63,7 +63,8 @@ export function IntegrationsSection() {
     } catch (err) {
       setMessage({
         type: "error",
-        text: err instanceof Error ? err.message : "Failed to connect integration",
+        text:
+          err instanceof Error ? err.message : "Failed to connect integration",
       })
     } finally {
       setSaving(false)
@@ -94,7 +95,10 @@ export function IntegrationsSection() {
     } catch (err) {
       setMessage({
         type: "error",
-        text: err instanceof Error ? err.message : "Failed to disconnect integration",
+        text:
+          err instanceof Error
+            ? err.message
+            : "Failed to disconnect integration",
       })
     } finally {
       setSaving(false)
@@ -129,11 +133,7 @@ export function IntegrationsSection() {
               </div>
               {isConnected ? (
                 <ButtonGroup>
-                  <Button
-                    size="icon-xs"
-                    variant="outline"
-                    disabled
-                  >
+                  <Button size="icon-xs" variant="outline" disabled>
                     <Check className="size-3.5 text-green-600" />
                   </Button>
                   <Button

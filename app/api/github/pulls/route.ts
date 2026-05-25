@@ -25,19 +25,22 @@ export async function GET(request: NextRequest) {
     const owner = searchParams.get("owner")
     const repo = searchParams.get("repo")
     const installationIdParam = searchParams.get("installationId")
-    const state = (searchParams.get("state") ?? "open") as "open" | "closed" | "all"
+    const state = (searchParams.get("state") ?? "open") as
+      | "open"
+      | "closed"
+      | "all"
 
     if (!owner || !repo) {
       return NextResponse.json(
         { error: "Missing required params: owner, repo" },
-        { status: 400 },
+        { status: 400 }
       )
     }
 
     if (!installationIdParam) {
       return NextResponse.json(
         { error: "Missing required param: installationId" },
-        { status: 400 },
+        { status: 400 }
       )
     }
 
@@ -45,7 +48,7 @@ export async function GET(request: NextRequest) {
     if (isNaN(installationId)) {
       return NextResponse.json(
         { error: "Invalid installationId" },
-        { status: 400 },
+        { status: 400 }
       )
     }
 

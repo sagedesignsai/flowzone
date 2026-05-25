@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     if (!chatId) {
       return NextResponse.json(
         { error: "Missing required query param: chatId" },
-        { status: 400 },
+        { status: 400 }
       )
     }
 

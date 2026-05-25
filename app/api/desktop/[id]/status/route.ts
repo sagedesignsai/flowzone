@@ -23,7 +23,7 @@ export async function GET(
     if (!process.env.E2B_API_KEY) {
       return Response.json(
         { error: "E2B_API_KEY is not configured" },
-        { status: 500 },
+        { status: 500 }
       )
     }
 
@@ -32,7 +32,7 @@ export async function GET(
 
     try {
       const desktop = await Sandbox.connect(id)
-      
+
       // If we can connect, sandbox is still running
       return Response.json({
         status: "running",
@@ -40,10 +40,7 @@ export async function GET(
       })
     } catch (error) {
       // Sandbox not found or already terminated
-      return Response.json(
-        { error: "Sandbox not found" },
-        { status: 404 },
-      )
+      return Response.json({ error: "Sandbox not found" }, { status: 404 })
     }
   } catch (error) {
     const message =

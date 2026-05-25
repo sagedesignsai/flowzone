@@ -44,7 +44,13 @@ export async function GET(request: Request) {
     }
 
     // Get GitHub App installations
-    const installations = await github.listInstallations()
+    const allInstallations = await github.listInstallations()
+
+    // Filter installations to only show those belonging to the user
+    // or organizations they are part of (simple version: match current user accountId)
+    const installations = allInstallations.filter(
+      (inst) => String(inst.accountId) === account.accountId
+    )
 
     // Get connected repository based on level
     let connectedRepo = null
@@ -81,7 +87,8 @@ export async function GET(request: Request) {
       installations,
     })
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to fetch GitHub config"
+    const message =
+      err instanceof Error ? err.message : "Failed to fetch GitHub config"
     return NextResponse.json({ message }, { status: 500 })
   }
 }
@@ -94,7 +101,14 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { action, repoFullName, installationId, projectId: explicitProjectId, chatId, level = "project" } = body
+    const {
+      action,
+      repoFullName,
+      installationId,
+      projectId: explicitProjectId,
+      chatId,
+      level = "project",
+    } = body
 
     // Resolve project from chatId if provided
     let projectId = explicitProjectId
@@ -123,7 +137,11 @@ export async function POST(request: Request) {
       }
 
       // Get repo details from GitHub
-      const repoDetails = await github.getRepo(owner, name, Number(installationId))
+      const repoDetails = await github.getRepo(
+        owner,
+        name,
+        Number(installationId)
+      )
 
       // Create or update GitRepo
       const gitRepo = await prisma.gitRepo.upsert({
@@ -219,7 +237,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ message: "Invalid action" }, { status: 400 })
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to update GitHub config"
+    const message =
+      err instanceof Error ? err.message : "Failed to update GitHub config"
     return NextResponse.json({ message }, { status: 500 })
   }
 }

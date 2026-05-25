@@ -48,7 +48,7 @@ export function createDesktopAgent(model: LanguageModel) {
       "- OpenCode codes → the Bridge plugin handles git add/commit/push via `flowzone_push`.",
       "- You can verify changes: `getGitStatus`, `getGitDiff`, `getGitLog`.",
       "- To push changes out: OpenCode's agent can call `flowzone_push` via the plugin.",
-      "- To create a PR: tell the user to click \"View Branch\" in the header — PR creation is manual.",
+      '- To create a PR: tell the user to click "View Branch" in the header — PR creation is manual.',
       "- The cloned repo path is /home/user/project. Use this as workdir for shell commands.",
       "",
       "## OpenCode Interaction (Primary: Server API)",

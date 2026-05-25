@@ -33,10 +33,10 @@ export function EditorTabs() {
             >
               <button
                 onClick={() => setActiveTab(tab.id)}
-                className="flex items-center gap-1.5 flex-1 min-w-0"
+                className="flex min-w-0 flex-1 items-center gap-1.5"
               >
                 {tab.isDirty && (
-                  <Circle className="size-1.5 fill-current flex-shrink-0" />
+                  <Circle className="size-1.5 flex-shrink-0 fill-current" />
                 )}
                 <span className="truncate">{tab.name}</span>
               </button>

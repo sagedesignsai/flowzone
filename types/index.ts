@@ -18,11 +18,7 @@ export interface MessageData {
   parts: UIMessage["parts"]
 }
 
-export type SandboxStatus =
-  | "creating"
-  | "running"
-  | "paused"
-  | "stopped"
+export type SandboxStatus = "creating" | "running" | "paused" | "stopped"
 
 export interface SandboxData {
   e2bSandboxId: string
@@ -33,11 +29,7 @@ export interface SandboxData {
   expiresAt: Date
 }
 
-export type AgentRunStatus =
-  | "pending"
-  | "running"
-  | "completed"
-  | "failed"
+export type AgentRunStatus = "pending" | "running" | "completed" | "failed"
 
 export interface AgentRunData {
   status: AgentRunStatus

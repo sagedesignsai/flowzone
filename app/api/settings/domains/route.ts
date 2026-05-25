@@ -15,7 +15,8 @@ export async function GET() {
       domains: [],
     })
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to fetch domains"
+    const message =
+      err instanceof Error ? err.message : "Failed to fetch domains"
     return NextResponse.json({ message }, { status: 500 })
   }
 }
@@ -62,7 +63,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ message: "Invalid action" }, { status: 400 })
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to update domains"
+    const message =
+      err instanceof Error ? err.message : "Failed to update domains"
     return NextResponse.json({ message }, { status: 500 })
   }
 }

@@ -71,7 +71,7 @@ export const keyboardShortcut = tool({
     keys: z
       .array(z.string())
       .describe(
-        "Array of keys to press simultaneously, e.g. ['ctrl', 'c'] or ['ctrl', 'shift', 'z']",
+        "Array of keys to press simultaneously, e.g. ['ctrl', 'c'] or ['ctrl', 'shift', 'z']"
       ),
   }),
   execute: async ({ keys }) => {

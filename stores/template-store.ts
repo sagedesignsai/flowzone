@@ -61,7 +61,8 @@ export const TEMPLATES: Template[] = [
       "A full SaaS dashboard with authentication, billing, team management, and analytics.",
     icon: Stack,
     category: "Full Stack",
-    prompt: "Build a full SaaS dashboard application with user authentication, subscription billing, team management, and analytics charts.",
+    prompt:
+      "Build a full SaaS dashboard application with user authentication, subscription billing, team management, and analytics charts.",
     features: [
       "User auth & roles",
       "Subscription billing",
@@ -77,7 +78,8 @@ export const TEMPLATES: Template[] = [
       "A modern marketing landing page with hero sections, features grid, pricing, and CTAs.",
     icon: Globe,
     category: "Landing",
-    prompt: "Build a modern startup landing page with a hero section, feature grid, pricing table, and call-to-action sections.",
+    prompt:
+      "Build a modern startup landing page with a hero section, feature grid, pricing table, and call-to-action sections.",
     features: [
       "Hero with animations",
       "Features section",
@@ -93,7 +95,8 @@ export const TEMPLATES: Template[] = [
       "A data-rich admin panel with tables, charts, activity feeds, and user management.",
     icon: Layout,
     category: "Dashboard",
-    prompt: "Build an admin dashboard with data tables, charts, activity feed, user management, and role-based access.",
+    prompt:
+      "Build an admin dashboard with data tables, charts, activity feed, user management, and role-based access.",
     features: [
       "Data tables",
       "Charts & metrics",
@@ -109,7 +112,8 @@ export const TEMPLATES: Template[] = [
       "A progressive web app with offline support, push notifications, and native-like UX.",
     icon: DeviceTablet,
     category: "Mobile",
-    prompt: "Build a progressive web app (PWA) with offline support, push notifications, app shell architecture, and native-feeling interactions.",
+    prompt:
+      "Build a progressive web app (PWA) with offline support, push notifications, app shell architecture, and native-feeling interactions.",
     features: [
       "Offline support",
       "Push notifications",
@@ -125,7 +129,8 @@ export const TEMPLATES: Template[] = [
       "A full online store with product catalog, cart, checkout, and payment integration.",
     icon: ShoppingCart,
     category: "E-commerce",
-    prompt: "Build an e-commerce store with a product catalog, shopping cart, checkout flow, and payment processing integration.",
+    prompt:
+      "Build an e-commerce store with a product catalog, shopping cart, checkout flow, and payment processing integration.",
     features: [
       "Product catalog",
       "Shopping cart",
@@ -141,7 +146,8 @@ export const TEMPLATES: Template[] = [
       "A content-rich blog with markdown editor, categories, comments, and RSS feeds.",
     icon: PencilSimple,
     category: "Content",
-    prompt: "Build a blog platform with a markdown editor, categories, tags, comments system, and RSS feed support.",
+    prompt:
+      "Build a blog platform with a markdown editor, categories, tags, comments system, and RSS feed support.",
     features: [
       "Markdown editor",
       "Categories & tags",
@@ -157,7 +163,8 @@ export const TEMPLATES: Template[] = [
       "An AI-powered chat application with streaming responses, tool calling, and conversation history.",
     icon: ChatTeardropDots,
     category: "AI",
-    prompt: "Build an AI chat application with streaming responses, tool calling, conversation history, and markdown rendering.",
+    prompt:
+      "Build an AI chat application with streaming responses, tool calling, conversation history, and markdown rendering.",
     features: [
       "Streaming responses",
       "Tool calling",
@@ -173,7 +180,8 @@ export const TEMPLATES: Template[] = [
       "A production-ready REST API with authentication, CRUD routes, validation, and OpenAPI docs.",
     icon: Cloud,
     category: "Backend",
-    prompt: "Build a REST API backend with authentication, CRUD endpoints, request validation, error handling, and OpenAPI documentation.",
+    prompt:
+      "Build a REST API backend with authentication, CRUD endpoints, request validation, error handling, and OpenAPI documentation.",
     features: [
       "JWT authentication",
       "CRUD endpoints",
@@ -189,7 +197,8 @@ export const TEMPLATES: Template[] = [
       "A command-line tool with subcommands, flags, progress bars, and colorful output.",
     icon: Terminal,
     category: "Backend",
-    prompt: "Build a CLI application with subcommands, flags, progress indicators, and colorful terminal output.",
+    prompt:
+      "Build a CLI application with subcommands, flags, progress indicators, and colorful terminal output.",
     features: [
       "Subcommands",
       "Flag parsing",

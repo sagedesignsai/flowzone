@@ -122,7 +122,7 @@ export function DomainsSection() {
             >
               <div className="flex items-center gap-2">
                 <Globe className="size-4 text-muted-foreground" />
-                <p className="text-sm font-mono">{domain}</p>
+                <p className="font-mono text-sm">{domain}</p>
               </div>
               <Button
                 size="icon-xs"
@@ -136,9 +136,7 @@ export function DomainsSection() {
         </div>
       ) : (
         <div className="rounded-lg border border-dashed border-border p-4 text-center">
-          <p className="text-xs text-muted-foreground">
-            No custom domains yet
-          </p>
+          <p className="text-xs text-muted-foreground">No custom domains yet</p>
         </div>
       )}
     </div>

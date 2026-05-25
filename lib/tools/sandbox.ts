@@ -14,7 +14,7 @@ import { SandboxContext } from "@/lib/tools/sandbox-store"
 function requireSandbox(label: string): never {
   throw new Error(
     `Cannot run "${label}" — no development sandbox is available. ` +
-      "Set E2B_API_KEY to enable sandbox features.",
+      "Set E2B_API_KEY to enable sandbox features."
   )
 }
 
@@ -33,7 +33,7 @@ export const runCommand = tool({
       .string()
       .optional()
       .describe(
-        "Working directory for the command. Defaults to the repo root.",
+        "Working directory for the command. Defaults to the repo root."
       ),
   }),
   execute: async ({ command, workdir }) => {
@@ -41,12 +41,11 @@ export const runCommand = tool({
     if (!ctx) requireSandbox("runCommand")
     const { sandbox, repoPath } = ctx
 
-    const fullCommand =
-      workdir
-        ? `cd ${workdir} && ${command}`
-        : repoPath
-          ? `cd ${repoPath} && ${command}`
-          : command
+    const fullCommand = workdir
+      ? `cd ${workdir} && ${command}`
+      : repoPath
+        ? `cd ${repoPath} && ${command}`
+        : command
 
     const result = await sandbox.commands.run(fullCommand)
 
@@ -114,10 +113,7 @@ export const listFiles = tool({
       .string()
       .describe("Absolute directory path in the sandbox")
       .default("/home/user"),
-    recursive: z
-      .boolean()
-      .optional()
-      .describe("List files recursively"),
+    recursive: z.boolean().optional().describe("List files recursively"),
   }),
   execute: async ({ path, recursive }) => {
     const ctx = SandboxContext.get()
@@ -125,7 +121,7 @@ export const listFiles = tool({
 
     if (recursive) {
       const result = await ctx.sandbox.commands.run(
-        `find ${path} -type f -o -type d | head -200`,
+        `find ${path} -type f -o -type d | head -200`
       )
       return {
         entries: result.stdout

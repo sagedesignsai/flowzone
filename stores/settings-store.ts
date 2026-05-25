@@ -183,6 +183,6 @@ export const useSettingsStore = create<SettingsState>()(
         installations: s.installations,
         repositories: s.repositories,
       }),
-    },
-  ),
+    }
+  )
 )

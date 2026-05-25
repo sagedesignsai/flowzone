@@ -9,7 +9,7 @@ import type { EmitterWebhookEvent } from "@octokit/webhooks"
 import { prisma } from "@/lib/prisma"
 
 export async function handlePullRequest(
-  event: EmitterWebhookEvent<"pull_request">,
+  event: EmitterWebhookEvent<"pull_request">
 ) {
   const { payload } = event
   const action = payload.action
@@ -19,7 +19,7 @@ export async function handlePullRequest(
   const prState = payload.pull_request?.state
 
   console.info(
-    `[webhook:pull_request] ${fullName}#${prNumber} ${action} — "${prTitle}" (${prState})`,
+    `[webhook:pull_request] ${fullName}#${prNumber} ${action} — "${prTitle}" (${prState})`
   )
 
   // Log the event to the database

@@ -15,7 +15,10 @@ export async function GET() {
       envVars: {},
     })
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to fetch environment variables"
+    const message =
+      err instanceof Error
+        ? err.message
+        : "Failed to fetch environment variables"
     return NextResponse.json({ message }, { status: 500 })
   }
 }
@@ -59,7 +62,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ message: "Invalid action" }, { status: 400 })
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to update environment variables"
+    const message =
+      err instanceof Error
+        ? err.message
+        : "Failed to update environment variables"
     return NextResponse.json({ message }, { status: 500 })
   }
 }

@@ -30,20 +30,23 @@ export async function GET(request: NextRequest) {
     if (!owner || !repo) {
       return NextResponse.json(
         { error: "Missing required params: owner, repo" },
-        { status: 400 },
+        { status: 400 }
       )
     }
 
     if (!installationIdParam) {
       return NextResponse.json(
         { error: "Missing required param: installationId" },
-        { status: 400 },
+        { status: 400 }
       )
     }
 
     const installationId = Number(installationIdParam)
     if (isNaN(installationId)) {
-      return NextResponse.json({ error: "Invalid installationId" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Invalid installationId" },
+        { status: 400 }
+      )
     }
 
     const releases = await listReleases({ owner, repo, installationId })
@@ -86,7 +89,7 @@ export async function POST(request: NextRequest) {
           error:
             "Missing required fields: owner, repo, installationId, tagName",
         },
-        { status: 400 },
+        { status: 400 }
       )
     }
 

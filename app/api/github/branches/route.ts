@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     if (!owner || !repo) {
       return NextResponse.json(
         { error: "Missing required params: owner, repo" },
-        { status: 400 },
+        { status: 400 }
       )
     }
 
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     if (installationIdParam && isNaN(installationId!)) {
       return NextResponse.json(
         { error: "Invalid installationId" },
-        { status: 400 },
+        { status: 400 }
       )
     }
 
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
           error:
             "Missing required fields: owner, repo, baseBranch, newBranch, installationId",
         },
-        { status: 400 },
+        { status: 400 }
       )
     }
 
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
       body.repo,
       body.baseBranch,
       body.newBranch,
-      body.installationId,
+      body.installationId
     )
 
     return NextResponse.json({ branch }, { status: 201 })
@@ -162,10 +162,9 @@ export async function DELETE(request: NextRequest) {
     if (!owner || !repo || !branch || !installationId) {
       return NextResponse.json(
         {
-          error:
-            "Missing required fields: owner, repo, branch, installationId",
+          error: "Missing required fields: owner, repo, branch, installationId",
         },
-        { status: 400 },
+        { status: 400 }
       )
     }
 

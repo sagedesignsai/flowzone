@@ -58,13 +58,13 @@ export function ActivityFeed({ items, maxItems = 10 }: ActivityFeedProps) {
           <div key={item.id} className="flex gap-3">
             {/* Timeline line */}
             {index < displayItems.length - 1 && (
-              <div className="absolute left-[15px] top-[40px] h-[calc(100%-20px)] w-px bg-border" />
+              <div className="absolute top-[40px] left-[15px] h-[calc(100%-20px)] w-px bg-border" />
             )}
 
             {/* Icon */}
             <div
               className={cn(
-                "relative mt-1 flex h-8 w-8 items-center justify-center rounded-full flex-shrink-0",
+                "relative mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full",
                 getTypeColor(item.type)
               )}
             >
@@ -72,17 +72,17 @@ export function ActivityFeed({ items, maxItems = 10 }: ActivityFeedProps) {
             </div>
 
             {/* Content */}
-            <div className="flex-1 min-w-0 pt-1">
+            <div className="min-w-0 flex-1 pt-1">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="text-xs font-medium">{item.title}</p>
                   {item.description && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="mt-0.5 text-xs text-muted-foreground">
                       {item.description}
                     </p>
                   )}
                 </div>
-                <span className="text-xs text-muted-foreground flex-shrink-0">
+                <span className="flex-shrink-0 text-xs text-muted-foreground">
                   {formatTime(item.timestamp)}
                 </span>
               </div>

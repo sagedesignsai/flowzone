@@ -23,10 +23,17 @@ export async function listCommits(
     path?: string
     since?: string
     perPage?: number
-  },
+  }
 ) {
-  const { owner, repo, installationId, sha, path, since, perPage = 30 } =
-    options
+  const {
+    owner,
+    repo,
+    installationId,
+    sha,
+    path,
+    since,
+    perPage = 30,
+  } = options
   const octokit = createInstallationOctokit(installationId)
 
   const { data } = await octokit.rest.repos.listCommits({
@@ -53,9 +60,7 @@ export async function listCommits(
 /**
  * Get a single commit by SHA or ref.
  */
-export async function getCommit(
-  options: GitHubPROptions & { ref: string },
-) {
+export async function getCommit(options: GitHubPROptions & { ref: string }) {
   const { owner, repo, ref, installationId } = options
   const octokit = createInstallationOctokit(installationId)
 
@@ -87,7 +92,7 @@ export async function getCommit(
  * Compare two commits or refs.
  */
 export async function compareCommits(
-  options: GitHubPROptions & { base: string; head: string },
+  options: GitHubPROptions & { base: string; head: string }
 ) {
   const { owner, repo, base, head, installationId } = options
   const octokit = createInstallationOctokit(installationId)

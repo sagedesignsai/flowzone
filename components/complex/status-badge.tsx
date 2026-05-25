@@ -38,7 +38,8 @@ export function StatusBadge({ status, label, size = "md" }: StatusBadgeProps) {
   }
 
   const config = statusConfig[status]
-  const sizeClass = size === "sm" ? "text-xs px-2 py-1" : "text-xs px-2.5 py-1.5"
+  const sizeClass =
+    size === "sm" ? "text-xs px-2 py-1" : "text-xs px-2.5 py-1.5"
 
   return (
     <div

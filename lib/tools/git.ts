@@ -16,7 +16,7 @@ import { sandboxGit } from "@/lib/sandbox-git"
 function requireSandbox(label: string): never {
   throw new Error(
     `Cannot run "${label}" — no development sandbox is available. ` +
-      "Set E2B_API_KEY to enable sandbox features.",
+      "Set E2B_API_KEY to enable sandbox features."
   )
 }
 
@@ -46,7 +46,7 @@ export const commitAndPush = tool({
       sandbox,
       repoPath,
       "Flowzone Bot",
-      "bot@flowzone.dev",
+      "bot@flowzone.dev"
     )
 
     // 2. Stage and commit
@@ -83,7 +83,7 @@ export const getDiff = tool({
       .string()
       .optional()
       .describe(
-        "Optional ref to compare against (e.g. 'origin/main'). Defaults to HEAD.",
+        "Optional ref to compare against (e.g. 'origin/main'). Defaults to HEAD."
       ),
     contextLines: z
       .number()

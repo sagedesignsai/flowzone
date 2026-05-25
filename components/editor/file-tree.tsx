@@ -2,12 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { useEditorStore, type FileNode } from "@/stores/editor-store"
-import {
-  CaretRight,
-  File,
-  Folder,
-  FolderOpen,
-} from "@phosphor-icons/react"
+import { CaretRight, File, Folder, FolderOpen } from "@phosphor-icons/react"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 
@@ -70,7 +65,7 @@ function FileTreeNode({
       <button
         onClick={handleFileClick}
         className={cn(
-          "w-full flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors",
+          "flex w-full items-center gap-1.5 rounded px-2 py-1 text-xs transition-colors",
           isSelected
             ? "bg-accent text-accent-foreground"
             : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -88,14 +83,14 @@ function FileTreeNode({
       <button
         onClick={() => toggleFolder(node.path)}
         className={cn(
-          "w-full flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors",
+          "flex w-full items-center gap-1.5 rounded px-2 py-1 text-xs transition-colors",
           "text-muted-foreground hover:bg-muted hover:text-foreground"
         )}
         style={{ paddingLeft: `${level * 16 + 8}px` }}
       >
         <CaretRight
           className={cn(
-            "size-3.5 transition-transform flex-shrink-0",
+            "size-3.5 flex-shrink-0 transition-transform",
             isExpanded && "rotate-90"
           )}
         />
@@ -137,11 +132,7 @@ export function FileTree({ files = [], onFileSelect }: FileTreeProps) {
     <div className="flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto">
         {treesToRender.map((node) => (
-          <FileTreeNode
-            key={node.id}
-            node={node}
-            onFileSelect={onFileSelect}
-          />
+          <FileTreeNode key={node.id} node={node} onFileSelect={onFileSelect} />
         ))}
       </div>
     </div>

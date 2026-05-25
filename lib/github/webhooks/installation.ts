@@ -9,7 +9,7 @@ import type { EmitterWebhookEvent } from "@octokit/webhooks"
 import { prisma } from "@/lib/prisma"
 
 export async function handleInstallation(
-  event: EmitterWebhookEvent<"installation">,
+  event: EmitterWebhookEvent<"installation">
 ) {
   const { payload } = event
   const action = payload.action
@@ -17,7 +17,7 @@ export async function handleInstallation(
   const accountLogin = payload.installation?.account?.login ?? "unknown"
 
   console.info(
-    `[webhook:installation] ${action} — ${accountLogin} (installation: ${installationId})`,
+    `[webhook:installation] ${action} — ${accountLogin} (installation: ${installationId})`
   )
 
   if (action === "deleted") {
@@ -27,7 +27,7 @@ export async function handleInstallation(
         where: { installationId: String(installationId) },
       })
       console.info(
-        `[webhook:installation] Removed ${result.count} repo(s) for deleted installation ${installationId}`,
+        `[webhook:installation] Removed ${result.count} repo(s) for deleted installation ${installationId}`
       )
     } catch (error) {
       console.error("[webhook:installation] Failed to remove repos:", error)

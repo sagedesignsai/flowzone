@@ -12,7 +12,11 @@
  *   SSE stream of UI message chunks (same format as /api/chat)
  */
 
-import { createAgentUIStreamResponse, validateUIMessages, type UIMessage } from "ai"
+import {
+  createAgentUIStreamResponse,
+  validateUIMessages,
+  type UIMessage,
+} from "ai"
 import { createDesktopAgent } from "@/lib/agents/desktop-agent"
 import { DesktopSandboxContext } from "@/lib/tools/desktop/sandbox-context"
 import { getPrimaryModel } from "@/lib/ai/models"
@@ -52,7 +56,7 @@ export async function POST(
     if (!sandboxId) {
       return Response.json(
         { error: "sandboxId is required to use the desktop agent" },
-        { status: 400 },
+        { status: 400 }
       )
     }
 
@@ -60,7 +64,7 @@ export async function POST(
     if (!process.env.E2B_API_KEY) {
       return Response.json(
         { error: "E2B_API_KEY is not configured" },
-        { status: 500 },
+        { status: 500 }
       )
     }
 
@@ -76,7 +80,7 @@ export async function POST(
           error:
             "No AI provider configured. Set AI_GATEWAY_API_KEY in your environment.",
         },
-        { status: 500 },
+        { status: 500 }
       )
     }
 
@@ -108,7 +112,7 @@ export async function POST(
 
     // 13. Keep the sandbox alive for the duration of the agent run
     await desktop.setTimeout(
-      Number(process.env.E2B_DESKTOP_TIMEOUT_MS ?? 300000),
+      Number(process.env.E2B_DESKTOP_TIMEOUT_MS ?? 300000)
     )
 
     // 14. Run the agent inside the desktop sandbox context so that
@@ -121,7 +125,7 @@ export async function POST(
         onFinish: async ({ messages }) => {
           await saveChat({ chatId: id, messages })
         },
-      }),
+      })
     )
   } catch (error) {
     const message =

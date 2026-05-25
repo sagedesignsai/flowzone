@@ -36,17 +36,19 @@ export function SettingsCard({
       )}
       onClick={onClick}
     >
-      <div className="flex items-start gap-3 flex-1">
+      <div className="flex flex-1 items-start gap-3">
         {icon && <div className="mt-0.5 flex-shrink-0">{icon}</div>}
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-sm font-medium">{title}</p>
           {description && (
-            <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {description}
+            </p>
           )}
         </div>
       </div>
 
-      <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+      <div className="ml-4 flex flex-shrink-0 items-center gap-2">
         {toggle && (
           <Switch
             checked={toggle.enabled}

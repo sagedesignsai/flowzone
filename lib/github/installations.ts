@@ -17,11 +17,16 @@ import { createAppOctokit, createInstallationOctokit } from "@/lib/github/auth"
  * hardcoding reposCount to 0.
  */
 export async function listInstallations(): Promise<
-  { id: number; accountLogin: string; accountType: string; reposCount: number }[]
+  {
+    id: number
+    accountLogin: string
+    accountId: number
+    accountType: string
+    reposCount: number
+  }[]
 > {
   const octokit = createAppOctokit()
-  const { data: installations } =
-    await octokit.rest.apps.listInstallations()
+  const { data: installations } = await octokit.rest.apps.listInstallations()
 
   const results = await Promise.allSettled(
     installations.map(async (inst) => {
@@ -29,7 +34,7 @@ export async function listInstallations(): Promise<
       try {
         const instOctokit = createInstallationOctokit(inst.id)
         const repos = await instOctokit.paginate(
-          instOctokit.rest.apps.listReposAccessibleToInstallation,
+          instOctokit.rest.apps.listReposAccessibleToInstallation
         )
         reposCount = repos.length
       } catch {
@@ -39,17 +44,26 @@ export async function listInstallations(): Promise<
       return {
         id: inst.id,
         accountLogin: inst.account?.login ?? "unknown",
+        accountId: inst.account?.id ?? 0,
         accountType: inst.account?.type ?? "unknown",
         reposCount,
       }
-    }),
+    })
   )
 
-  return results.map((result) =>
-    result.status === "fulfilled"
-      ? result.value
-      : { id: 0, accountLogin: "error", accountType: "error", reposCount: 0 },
-  ).filter((inst) => inst.id !== 0)
+  return results
+    .map((result) =>
+      result.status === "fulfilled"
+        ? result.value
+        : {
+            id: 0,
+            accountLogin: "error",
+            accountId: 0,
+            accountType: "error",
+            reposCount: 0,
+          }
+    )
+    .filter((inst) => inst.id !== 0)
 }
 
 // ── Get Repo Installation ─────────────────────────────────
@@ -60,7 +74,7 @@ export async function listInstallations(): Promise<
  */
 export async function getRepoInstallation(
   owner: string,
-  repo: string,
+  repo: string
 ): Promise<{ id: number } | null> {
   try {
     const octokit = createAppOctokit()

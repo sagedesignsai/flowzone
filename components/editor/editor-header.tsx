@@ -38,32 +38,16 @@ export function EditorHeader({
     <div className="flex h-10 shrink-0 items-center gap-3 border-b border-border bg-background px-3">
       {/* Left: Collapse + View Icons */}
       <ButtonGroup>
-        <Button
-          size="icon-xs"
-          variant="ghost"
-          title="Collapse"
-        >
+        <Button size="icon-xs" variant="ghost" title="Collapse">
           <CaretLeft className="size-3.5" />
         </Button>
-        <Button
-          size="icon-xs"
-          variant="ghost"
-          title="Preview"
-        >
+        <Button size="icon-xs" variant="ghost" title="Preview">
           <Eye className="size-3.5" />
         </Button>
-        <Button
-          size="icon-xs"
-          variant="ghost"
-          title="Code"
-        >
+        <Button size="icon-xs" variant="ghost" title="Code">
           <Code className="size-3.5" />
         </Button>
-        <Button
-          size="icon-xs"
-          variant="ghost"
-          title="Files"
-        >
+        <Button size="icon-xs" variant="ghost" title="Files">
           <FileText className="size-3.5" />
         </Button>
       </ButtonGroup>
@@ -102,11 +86,7 @@ export function EditorHeader({
 
       {/* Right: Actions */}
       <div className="ml-auto flex items-center gap-1">
-        <Button
-          size="icon-xs"
-          variant="ghost"
-          title="Open in new tab"
-        >
+        <Button size="icon-xs" variant="ghost" title="Open in new tab">
           <ArrowUpRight className="size-3.5" />
         </Button>
         <Button
@@ -117,11 +97,7 @@ export function EditorHeader({
         >
           <ArrowClockwise className="size-3.5" />
         </Button>
-        <Button
-          size="icon-xs"
-          variant="ghost"
-          title="More options"
-        >
+        <Button size="icon-xs" variant="ghost" title="More options">
           <DotsThree className="size-3.5" />
         </Button>
       </div>
@@ -129,19 +105,11 @@ export function EditorHeader({
       {/* Far Right: Latest Dropdown */}
       <Separator orientation="vertical" className="h-4" />
       <ButtonGroup>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="gap-1 text-xs"
-        >
+        <Button size="sm" variant="ghost" className="gap-1 text-xs">
           Latest
           <CaretDown className="size-3" />
         </Button>
-        <Button
-          size="icon-xs"
-          variant="ghost"
-          title="More"
-        >
+        <Button size="icon-xs" variant="ghost" title="More">
           <DotsThree className="size-3.5" />
         </Button>
       </ButtonGroup>

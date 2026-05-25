@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {
   CodeBlock,
@@ -8,19 +8,19 @@ import {
   CodeBlockFilename,
   CodeBlockHeader,
   CodeBlockTitle,
-} from "@/components/ai-elements/code-block";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useIdeStore } from "@/hooks/use-ide-store";
-import { cn } from "@/lib/utils";
-import { File as FileIcon } from "@phosphor-icons/react";
-import type { BundledLanguage } from "shiki";
+} from "@/components/ai-elements/code-block"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { useIdeStore } from "@/hooks/use-ide-store"
+import { cn } from "@/lib/utils"
+import { File as FileIcon } from "@phosphor-icons/react"
+import type { BundledLanguage } from "shiki"
 
 interface EditorViewProps {
-  className?: string;
+  className?: string
 }
 
 export function EditorView({ className }: EditorViewProps) {
-  const { openFile } = useIdeStore();
+  const { openFile } = useIdeStore()
 
   if (!openFile) {
     return (
@@ -31,9 +31,9 @@ export function EditorView({ className }: EditorViewProps) {
         )}
       >
         <FileIcon className="size-8 text-muted-foreground/40" />
-        <p className="text-muted-foreground text-xs">No file open</p>
+        <p className="text-xs text-muted-foreground">No file open</p>
       </div>
-    );
+    )
   }
 
   return (
@@ -55,5 +55,5 @@ export function EditorView({ className }: EditorViewProps) {
         />
       </CodeBlockContainer>
     </ScrollArea>
-  );
+  )
 }

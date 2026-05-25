@@ -42,7 +42,7 @@ export async function POST(
     // 2. Verify chat ownership
     const chat = await prisma.chat.findUnique({
       where: { id },
-      select: { userId: true }
+      select: { userId: true },
     })
 
     if (!chat) {
@@ -65,10 +65,10 @@ export async function POST(
     // Format history for the prompt (first few messages)
     const historyText = messages
       .slice(0, 4)
-      .map(m => {
+      .map((m) => {
         const text = m.parts
           .filter((p): p is { type: "text"; text: string } => p.type === "text")
-          .map(p => p.text)
+          .map((p) => p.text)
           .join(" ")
         return `${m.role}: ${text}`
       })
@@ -96,11 +96,14 @@ export async function POST(
       temperature: 0.3,
       tools: {
         generateTitle: tool({
-          description: "Generate a concise 3-to-5-word title for a conversation",
+          description:
+            "Generate a concise 3-to-5-word title for a conversation",
           parameters: z.object({
             title: z
               .string()
-              .describe("A 3-to-5-word title describing the conversation topic"),
+              .describe(
+                "A 3-to-5-word title describing the conversation topic"
+              ),
           }),
         }),
       },
@@ -115,7 +118,9 @@ export async function POST(
       )
     }
 
-    const cleanTitle = String((firstToolCall.args as { title: string }).title).trim()
+    const cleanTitle = String(
+      (firstToolCall.args as { title: string }).title
+    ).trim()
 
     // 6. Update the database
     await prisma.chat.update({

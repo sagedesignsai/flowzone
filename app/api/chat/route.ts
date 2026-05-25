@@ -13,7 +13,11 @@
  *   500 { error: string } if no AI provider configured
  */
 
-import { createAgentUIStreamResponse, validateUIMessages, type UIMessage } from "ai"
+import {
+  createAgentUIStreamResponse,
+  validateUIMessages,
+  type UIMessage,
+} from "ai"
 import { createFlowzoneAgent } from "@/lib/agents/flowzone-agent"
 import { createDesktopAgent } from "@/lib/agents/desktop-agent"
 import { SandboxContext } from "@/lib/tools/sandbox-store"
@@ -33,7 +37,10 @@ import { headers } from "next/headers"
  * Returns the sandboxId if found, null otherwise.
  */
 type MessageWithAttachments = UIMessage & {
-  experimental_attachments?: Array<{ mimeType: string; data?: { sandboxId?: string } }>
+  experimental_attachments?: Array<{
+    mimeType: string
+    data?: { sandboxId?: string }
+  }>
 }
 
 function getDesktopSandboxId(messages: UIMessage[]): string | null {
@@ -62,7 +69,9 @@ function getDesktopSandboxId(messages: UIMessage[]): string | null {
  *
  * If no existing sandbox exists, creates a new blank one.
  */
-async function tryCreateSandbox(chatId?: string): Promise<SandboxContextValue | null> {
+async function tryCreateSandbox(
+  chatId?: string
+): Promise<SandboxContextValue | null> {
   if (!process.env.E2B_API_KEY) return null
 
   try {
@@ -81,11 +90,14 @@ async function tryCreateSandbox(chatId?: string): Promise<SandboxContextValue | 
         try {
           // Try to reconnect to the existing sandbox
           const sandbox = await Sandbox.connect(sandboxRun.e2bSandboxId)
-          const repoPath = sandboxRun.repoPath ?? `/home/user/repo/${gitRepo.fullName}`
+          const repoPath =
+            sandboxRun.repoPath ?? `/home/user/repo/${gitRepo.fullName}`
 
           // Get a fresh installation token (tokens are short-lived)
           const instId = Number(gitRepo.installationId)
-          const token = instId ? (await getInstallationToken(instId)).token : undefined
+          const token = instId
+            ? (await getInstallationToken(instId)).token
+            : undefined
 
           return {
             sandbox,
@@ -125,7 +137,7 @@ export async function POST(req: Request) {
           error:
             "No AI provider configured. Set AI_GATEWAY_API_KEY in your environment.",
         },
-        { status: 500 },
+        { status: 500 }
       )
     }
 
@@ -142,7 +154,7 @@ export async function POST(req: Request) {
     const session = await auth.api.getSession({
       headers: await headers(),
     })
-    
+
     if (!session) {
       return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -175,18 +187,20 @@ export async function POST(req: Request) {
       const { Sandbox } = await import("@e2b/desktop")
       const desktop = await Sandbox.connect(desktopSandboxId)
       await desktop.setTimeout(
-        Number(process.env.E2B_DESKTOP_TIMEOUT_MS ?? 300000),
+        Number(process.env.E2B_DESKTOP_TIMEOUT_MS ?? 300000)
       )
 
-      return DesktopSandboxContext.run({ desktop, sandboxId: desktopSandboxId, chatId: id }, () =>
-        createAgentUIStreamResponse({
-          agent,
-          uiMessages: validatedMessages,
-          originalMessages: validatedMessages,
-          onFinish: async ({ messages }) => {
-            await saveChat({ chatId: id, messages })
-          },
-        }),
+      return DesktopSandboxContext.run(
+        { desktop, sandboxId: desktopSandboxId, chatId: id },
+        () =>
+          createAgentUIStreamResponse({
+            agent,
+            uiMessages: validatedMessages,
+            originalMessages: validatedMessages,
+            onFinish: async ({ messages }) => {
+              await saveChat({ chatId: id, messages })
+            },
+          })
       )
     }
 
@@ -200,8 +214,9 @@ export async function POST(req: Request) {
     const latestMessage = incomingMessages[incomingMessages.length - 1]
 
     // Create the chat if it doesn't exist, using the latest user message text for the title
-    const latestTextPart = latestMessage?.parts?.find(p => p.type === "text")
-    const firstMessageText = (latestTextPart as { text?: string } | undefined)?.text
+    const latestTextPart = latestMessage?.parts?.find((p) => p.type === "text")
+    const firstMessageText = (latestTextPart as { text?: string } | undefined)
+      ?.text
     await ensureChat(id, session.user.id, firstMessageText)
 
     // Combine previous messages with the new incoming message
@@ -230,8 +245,8 @@ export async function POST(req: Request) {
           originalMessages: validatedMessages,
           onFinish: async ({ messages }) => {
             await saveChat({ chatId: id, messages })
-          }
-        }),
+          },
+        })
       )
     }
 
@@ -241,7 +256,7 @@ export async function POST(req: Request) {
       originalMessages: validatedMessages,
       onFinish: async ({ messages }) => {
         await saveChat({ chatId: id, messages })
-      }
+      },
     })
   } catch (error) {
     const message =

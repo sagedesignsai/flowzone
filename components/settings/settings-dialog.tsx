@@ -6,10 +6,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  Sidebar,
-  SidebarProvider,
-} from "@/components/ui/sidebar"
+import { Sidebar, SidebarProvider } from "@/components/ui/sidebar"
 import { SettingsSidebar } from "@/components/settings/settings-sidebar"
 import { GitHubSection } from "@/components/settings/settings-sections/github-section"
 import { IntegrationsSection } from "@/components/settings/settings-sections/integrations-section"
@@ -27,7 +24,10 @@ interface SettingsDialogProps {
   chatId?: string
 }
 
-const SECTION_COMPONENTS: Record<string, React.ComponentType<{ chatId?: string }>> = {
+const SECTION_COMPONENTS: Record<
+  string,
+  React.ComponentType<{ chatId?: string }>
+> = {
   github: GitHubSection,
   integrations: IntegrationsSection,
   "env-vars": EnvVarsSection,
@@ -36,7 +36,11 @@ const SECTION_COMPONENTS: Record<string, React.ComponentType<{ chatId?: string }
   analytics: AnalyticsSection,
 }
 
-export function SettingsDialog({ open, onOpenChange, chatId }: SettingsDialogProps) {
+export function SettingsDialog({
+  open,
+  onOpenChange,
+  chatId,
+}: SettingsDialogProps) {
   const activeSection = useSettingsStore((s) => s.activeSection)
   const message = useSettingsStore((s) => s.message)
   const setMessage = useSettingsStore((s) => s.setMessage)
@@ -69,7 +73,9 @@ export function SettingsDialog({ open, onOpenChange, chatId }: SettingsDialogPro
               {message && (
                 <div className="mb-4">
                   <Alert
-                    variant={message.type === "error" ? "destructive" : "default"}
+                    variant={
+                      message.type === "error" ? "destructive" : "default"
+                    }
                   >
                     {message.type === "error" ? (
                       <WarningCircle className="size-4" />

@@ -24,9 +24,7 @@ function getWebhooks(): Webhooks {
   if (!webhooks) {
     const secret = process.env.GITHUB_WEBHOOK_SECRET
     if (!secret) {
-      throw new Error(
-        "Missing GITHUB_WEBHOOK_SECRET environment variable",
-      )
+      throw new Error("Missing GITHUB_WEBHOOK_SECRET environment variable")
     }
     webhooks = new Webhooks({ secret })
 
@@ -44,27 +42,22 @@ function setupHandlers(wh: Webhooks) {
   })
 
   wh.on("pull_request", async (event) => {
-    const { handlePullRequest } = await import(
-      "@/lib/github/webhooks/pull-request"
-    )
+    const { handlePullRequest } =
+      await import("@/lib/github/webhooks/pull-request")
     await handlePullRequest(event)
   })
 
   wh.on("installation", async (event) => {
-    const { handleInstallation } = await import(
-      "@/lib/github/webhooks/installation"
-    )
+    const { handleInstallation } =
+      await import("@/lib/github/webhooks/installation")
     await handleInstallation(event)
   })
 
   wh.on("installation_repositories", async (event) => {
-    const { handleInstallation } = await import(
-      "@/lib/github/webhooks/installation"
-    )
+    const { handleInstallation } =
+      await import("@/lib/github/webhooks/installation")
     // Re-use installation handler for repo-level events
-    console.info(
-      `[webhook] installation_repositories: ${event.payload.action}`,
-    )
+    console.info(`[webhook] installation_repositories: ${event.payload.action}`)
   })
 
   wh.onError((error) => {
@@ -78,11 +71,9 @@ export async function POST(request: NextRequest) {
 
     // Read raw body as text for signature verification
     const body = await request.text()
-    const signature =
-      request.headers.get("x-hub-signature-256") ?? ""
+    const signature = request.headers.get("x-hub-signature-256") ?? ""
     const eventType = request.headers.get("x-github-event") ?? ""
-    const deliveryId =
-      request.headers.get("x-github-delivery") ?? ""
+    const deliveryId = request.headers.get("x-github-delivery") ?? ""
 
     if (!signature || !eventType || !deliveryId) {
       return NextResponse.json(
@@ -90,7 +81,7 @@ export async function POST(request: NextRequest) {
           error:
             "Missing required headers: x-hub-signature-256, x-github-event, x-github-delivery",
         },
-        { status: 400 },
+        { status: 400 }
       )
     }
 
@@ -109,10 +100,7 @@ export async function POST(request: NextRequest) {
     console.error("POST /api/github/webhooks error:", message)
 
     // Signature mismatch = 401
-    if (
-      message.includes("signature") ||
-      message.includes("No matching")
-    ) {
+    if (message.includes("signature") || message.includes("No matching")) {
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
     }
 

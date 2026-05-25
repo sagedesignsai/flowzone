@@ -21,7 +21,7 @@ import { getInstallationToken } from "@/lib/github"
 
 function requireDesktop(label: string): never {
   throw new Error(
-    `Cannot run "${label}" — no desktop sandbox context is active.`,
+    `Cannot run "${label}" — no desktop sandbox context is active.`
   )
 }
 
@@ -101,7 +101,7 @@ export const cloneRepo = tool({
 
       // 2. Checkout (or create) the working branch
       const checkoutResult = await desktop.commands.run(
-        `cd ${path} && git checkout ${branch} 2>/dev/null || git checkout -b ${branch}`,
+        `cd ${path} && git checkout ${branch} 2>/dev/null || git checkout -b ${branch}`
       )
       if (checkoutResult.exitCode !== 0) {
         throw new Error(`git checkout failed: ${checkoutResult.stderr}`)
@@ -109,7 +109,7 @@ export const cloneRepo = tool({
 
       // 3. Configure git identity
       await desktop.commands.run(
-        `cd ${path} && git config user.name "Flowzone Bot" && git config user.email "bot@flowzone.dev"`,
+        `cd ${path} && git config user.name "Flowzone Bot" && git config user.email "bot@flowzone.dev"`
       )
 
       // 4. Store credentials so subsequent push/pull works
@@ -152,7 +152,7 @@ export const getGitStatus = tool({
     if (!ctx) requireDesktop("getGitStatus")
 
     const result = await ctx.desktop.commands.run(
-      `cd ${repoPath} && git status --porcelain`,
+      `cd ${repoPath} && git status --porcelain`
     )
 
     if (result.exitCode !== 0) {
@@ -174,7 +174,7 @@ export const getGitStatus = tool({
 
     // Get current branch name
     const branchResult = await ctx.desktop.commands.run(
-      `cd ${repoPath} && git rev-parse --abbrev-ref HEAD`,
+      `cd ${repoPath} && git rev-parse --abbrev-ref HEAD`
     )
     const currentBranch = branchResult.stdout.trim()
 
@@ -211,7 +211,7 @@ export const getGitDiff = tool({
     if (!ctx) requireDesktop("getGitDiff")
 
     const result = await ctx.desktop.commands.run(
-      `cd ${repoPath} && git diff -U${contextLines} HEAD`,
+      `cd ${repoPath} && git diff -U${contextLines} HEAD`
     )
 
     return {
@@ -244,7 +244,7 @@ export const getGitLog = tool({
     if (!ctx) requireDesktop("getGitLog")
 
     const result = await ctx.desktop.commands.run(
-      `cd ${repoPath} && git log --format="%H|%an|%ai|%s" -${maxCount}`,
+      `cd ${repoPath} && git log --format="%H|%an|%ai|%s" -${maxCount}`
     )
 
     if (!result.stdout.trim()) {

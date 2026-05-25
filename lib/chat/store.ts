@@ -3,7 +3,7 @@ import type { UIMessage } from "ai"
 
 /**
  * Chat Store
- * 
+ *
  * Provides database operations for persisting and loading chat messages.
  */
 
@@ -33,8 +33,8 @@ export async function ensureChat(
     await prisma.chat.create({
       data: {
         id: chatId,
-        title: firstMessageText 
-          ? generateTitleFromMessage(firstMessageText) 
+        title: firstMessageText
+          ? generateTitleFromMessage(firstMessageText)
           : "New Chat",
         userId,
       },
@@ -64,7 +64,7 @@ export async function loadChat(chatId: string): Promise<UIMessage[]> {
 /**
  * Save an array of messages for a specific chat.
  * Overwrites existing messages with the same ID, or creates new ones.
- * 
+ *
  * @param chatId The ID of the chat these messages belong to
  * @param messages The complete array of messages to persist
  */

@@ -5,7 +5,10 @@
  */
 
 import { createInstallationOctokit } from "@/lib/github/auth"
-import type { GitHubPROptions, CreateCommitStatusInput } from "@/lib/github/types"
+import type {
+  GitHubPROptions,
+  CreateCommitStatusInput,
+} from "@/lib/github/types"
 
 // ── Create Commit Status ───────────────────────────────────
 
@@ -16,7 +19,7 @@ export async function createCommitStatus(
   options: GitHubPROptions & {
     sha: string
     status: CreateCommitStatusInput
-  },
+  }
 ) {
   const { owner, repo, sha, installationId, status } = options
   const octokit = createInstallationOctokit(installationId)
@@ -47,7 +50,7 @@ export async function createCommitStatus(
  * List commit statuses for a given ref.
  */
 export async function listCommitStatuses(
-  options: GitHubPROptions & { ref: string },
+  options: GitHubPROptions & { ref: string }
 ) {
   const { owner, repo, ref, installationId } = options
   const octokit = createInstallationOctokit(installationId)
@@ -75,7 +78,7 @@ export async function listCommitStatuses(
  * List check suites for a given commit SHA.
  */
 export async function listCheckSuites(
-  options: GitHubPROptions & { ref: string },
+  options: GitHubPROptions & { ref: string }
 ) {
   const { owner, repo, ref, installationId } = options
   const octokit = createInstallationOctokit(installationId)

@@ -50,7 +50,13 @@ export function DesktopView({ className }: { className?: string }) {
       .finally(() => {
         setIsReconnecting(false)
       })
-  }, [desktopSandboxId, setDesktopSandbox, clearDesktopSandbox, setDesktopStatus, setViewMode])
+  }, [
+    desktopSandboxId,
+    setDesktopSandbox,
+    clearDesktopSandbox,
+    setDesktopStatus,
+    setViewMode,
+  ])
 
   // ── Monitor sandbox status (keep-alive check) ──
   useEffect(() => {
@@ -124,7 +130,9 @@ export function DesktopView({ className }: { className?: string }) {
         <div className="flex size-full flex-col items-center justify-center gap-3 text-center">
           <Monitor className="size-8 text-muted-foreground/40" />
           <div className="space-y-1">
-            <p className="text-sm font-medium text-muted-foreground">Reconnecting to desktop…</p>
+            <p className="text-sm font-medium text-muted-foreground">
+              Reconnecting to desktop…
+            </p>
           </div>
         </div>
       ) : desktopVncUrl ? (
@@ -138,7 +146,9 @@ export function DesktopView({ className }: { className?: string }) {
         <div className="flex size-full flex-col items-center justify-center gap-3 text-center">
           <Monitor className="size-8 text-muted-foreground/40" />
           <div className="space-y-1">
-            <p className="text-sm font-medium text-muted-foreground">No desktop session</p>
+            <p className="text-sm font-medium text-muted-foreground">
+              No desktop session
+            </p>
             <p className="text-xs text-muted-foreground/60">
               Start a desktop sandbox to enable computer-use agent
             </p>

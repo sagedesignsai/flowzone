@@ -6,10 +6,7 @@
  */
 
 import { Octokit } from "@octokit/rest"
-import {
-  createInstallationOctokit,
-  createAppOctokit,
-} from "@/lib/github/auth"
+import { createInstallationOctokit, createAppOctokit } from "@/lib/github/auth"
 import type { GitBranch, GitRepoSummary } from "@/types"
 
 // ── List Repositories ──────────────────────────────────────
@@ -18,13 +15,13 @@ import type { GitBranch, GitRepoSummary } from "@/types"
  * List all repositories accessible to a GitHub App installation.
  */
 export async function listRepositories(
-  installationId: number,
+  installationId: number
 ): Promise<GitRepoSummary[]> {
   const octokit = createInstallationOctokit(installationId)
   const repos: GitRepoSummary[] = []
 
   const repositories = await octokit.paginate(
-    octokit.rest.apps.listReposAccessibleToInstallation,
+    octokit.rest.apps.listReposAccessibleToInstallation
   )
   for (const repo of repositories) {
     repos.push({
@@ -43,8 +40,7 @@ export async function listRepositories(
   }
 
   repos.sort(
-    (a, b) =>
-      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   )
 
   return repos
@@ -60,7 +56,7 @@ export async function listRepositories(
 export async function getRepo(
   owner: string,
   repo: string,
-  installationId?: number,
+  installationId?: number
 ): Promise<GitRepoSummary> {
   const octokit = installationId
     ? createInstallationOctokit(installationId)
@@ -94,7 +90,7 @@ export async function getFileContents(
   repo: string,
   path: string,
   ref?: string,
-  installationId?: number,
+  installationId?: number
 ): Promise<string | null> {
   const octokit = installationId
     ? createInstallationOctokit(installationId)
@@ -136,7 +132,7 @@ export async function forkRepo(
   owner: string,
   repo: string,
   installationId: number,
-  organization?: string,
+  organization?: string
 ): Promise<{ forkFullName: string; forkUrl: string }> {
   const octokit = createInstallationOctokit(installationId)
 
@@ -160,7 +156,7 @@ export async function forkRepo(
  */
 export async function getRepoInstallation(
   owner: string,
-  repo: string,
+  repo: string
 ): Promise<{ id: number } | null> {
   try {
     const octokit = createAppOctokit()

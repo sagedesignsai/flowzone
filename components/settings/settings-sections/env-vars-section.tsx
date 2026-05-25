@@ -61,7 +61,10 @@ export function EnvVarsSection() {
     } catch (err) {
       setMessage({
         type: "error",
-        text: err instanceof Error ? err.message : "Failed to add environment variable",
+        text:
+          err instanceof Error
+            ? err.message
+            : "Failed to add environment variable",
       })
     } finally {
       setSaving(false)
@@ -86,7 +89,10 @@ export function EnvVarsSection() {
     } catch (err) {
       setMessage({
         type: "error",
-        text: err instanceof Error ? err.message : "Failed to delete environment variable",
+        text:
+          err instanceof Error
+            ? err.message
+            : "Failed to delete environment variable",
       })
     } finally {
       setSaving(false)
@@ -129,11 +135,7 @@ export function EnvVarsSection() {
             className="text-xs"
           />
         </div>
-        <Button
-          size="sm"
-          onClick={handleAddEnvVar}
-          className="w-full gap-1.5"
-        >
+        <Button size="sm" onClick={handleAddEnvVar} className="w-full gap-1.5">
           <Plus className="size-3.5" />
           Add Variable
         </Button>
@@ -147,8 +149,8 @@ export function EnvVarsSection() {
               key={key}
               className="flex items-center gap-2 rounded-lg border border-border p-3"
             >
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-mono font-medium truncate">{key}</p>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-mono text-xs font-medium">{key}</p>
                 <p className="text-xs text-muted-foreground">
                   {visibleValues.has(key) ? value : "••••••••"}
                 </p>

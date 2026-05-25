@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     if (!process.env.E2B_API_KEY) {
       return Response.json(
         { error: "E2B_API_KEY is not configured" },
-        { status: 500 },
+        { status: 500 }
       )
     }
 
@@ -41,12 +41,14 @@ export async function POST(req: Request) {
       dpi: 96,
       timeoutMs,
       envs: {
-        FLOWZONE_API_URL: process.env.NEXT_PUBLIC_URL ?? "http://localhost:3000",
+        FLOWZONE_API_URL:
+          process.env.NEXT_PUBLIC_URL ?? "http://localhost:3000",
         FLOWZONE_CHAT_ID: chatId ?? "",
         FLOWZONE_PROJECT_ID: projectId ?? "",
         GITHUB_TOKEN: process.env.GITHUB_TOKEN ?? "",
         GIT_AUTHOR_NAME: process.env.GIT_AUTHOR_NAME ?? session.user.name ?? "",
-        GIT_AUTHOR_EMAIL: process.env.GIT_AUTHOR_EMAIL ?? session.user.email ?? "",
+        GIT_AUTHOR_EMAIL:
+          process.env.GIT_AUTHOR_EMAIL ?? session.user.email ?? "",
         ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ?? "",
         OPENAI_API_KEY: process.env.OPENAI_API_KEY ?? "",
       },
@@ -83,10 +85,7 @@ export async function DELETE(req: Request) {
     const { sandboxId } = await req.json()
 
     if (!sandboxId) {
-      return Response.json(
-        { error: "sandboxId is required" },
-        { status: 400 },
-      )
+      return Response.json({ error: "sandboxId is required" }, { status: 400 })
     }
 
     // Dynamic import — avoids loading @e2b/desktop when not configured

@@ -44,7 +44,7 @@ export const FlowzoneBridge: Plugin = async ({ $ }) => {
     // Inject git credentials into every shell the agent spawns.
     "shell.env": async (
       _input: { cwd: string },
-      output: { env: Record<string, string> },
+      output: { env: Record<string, string> }
     ) => {
       if (process.env.GIT_AUTHOR_NAME) {
         output.env.GIT_AUTHOR_NAME = process.env.GIT_AUTHOR_NAME

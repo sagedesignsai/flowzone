@@ -26,24 +26,24 @@ export interface EditorState {
   fileTree: FileNode[]
   expandedFolders: Set<string>
   selectedFile: string | null
-  
+
   // ─── Tabs ──────────────────────────────────────────────────────────────
   openTabs: EditorTab[]
   activeTabId: string | null
-  
+
   // ─── Actions ───────────────────────────────────────────────────────────
   setFileTree: (tree: FileNode[]) => void
   toggleFolder: (path: string) => void
   expandFolder: (path: string) => void
   collapseFolder: (path: string) => void
   selectFile: (path: string) => void
-  
+
   openTab: (tab: EditorTab) => void
   closeTab: (tabId: string) => void
   closeAllTabs: () => void
   setActiveTab: (tabId: string) => void
   markTabDirty: (tabId: string, isDirty: boolean) => void
-  
+
   reset: () => void
 }
 
@@ -108,7 +108,8 @@ export const useEditorStore = create<EditorState>()((set) => ({
       const filtered = state.openTabs.filter((t) => t.id !== tabId)
       let activeTabId = state.activeTabId
       if (activeTabId === tabId) {
-        activeTabId = filtered.length > 0 ? filtered[filtered.length - 1].id : null
+        activeTabId =
+          filtered.length > 0 ? filtered[filtered.length - 1].id : null
       }
       return { openTabs: filtered, activeTabId }
     }),

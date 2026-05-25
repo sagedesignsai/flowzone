@@ -15,7 +15,8 @@ export async function GET() {
       integrations: {},
     })
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to fetch integrations"
+    const message =
+      err instanceof Error ? err.message : "Failed to fetch integrations"
     return NextResponse.json({ message }, { status: 500 })
   }
 }
@@ -60,7 +61,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ message: "Invalid action" }, { status: 400 })
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to update integration"
+    const message =
+      err instanceof Error ? err.message : "Failed to update integration"
     return NextResponse.json({ message }, { status: 500 })
   }
 }

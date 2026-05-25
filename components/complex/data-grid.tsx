@@ -46,7 +46,7 @@ export function DataGrid<T extends { id: string }>({
     <div className="space-y-3">
       {searchable && (
         <div className="relative">
-          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <MagnifyingGlass className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search..."
             value={search}
@@ -71,7 +71,7 @@ export function DataGrid<T extends { id: string }>({
               )}
               onClick={() => onRowClick?.(item)}
             >
-              <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
                 {columns.map((col) => (
                   <div
                     key={String(col.key)}

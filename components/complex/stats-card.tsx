@@ -31,13 +31,10 @@ export function StatsCard({
 
   return (
     <div
-      className={cn(
-        "rounded-lg border border-border p-4 space-y-2",
-        className
-      )}
+      className={cn("space-y-2 rounded-lg border border-border p-4", className)}
     >
       <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground font-medium">{label}</p>
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
         <div className="text-muted-foreground">{icon}</div>
       </div>
 

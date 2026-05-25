@@ -107,7 +107,8 @@ export const mouseScroll = tool({
 // ── Move ───────────────────────────────────────────────────
 
 export const mouseMove = tool({
-  description: "Move the mouse cursor to the given coordinates without clicking.",
+  description:
+    "Move the mouse cursor to the given coordinates without clicking.",
   inputSchema: z.object({
     x: z.number().describe("X coordinate"),
     y: z.number().describe("Y coordinate"),

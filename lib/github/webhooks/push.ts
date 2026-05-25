@@ -23,7 +23,7 @@ export async function handlePush(event: EmitterWebhookEvent<"push">) {
   const pusher = payload.pusher?.name ?? "unknown"
 
   console.info(
-    `[webhook:push] ${fullName}:${branch} — ${commits.length} commit(s) by ${pusher}`,
+    `[webhook:push] ${fullName}:${branch} — ${commits.length} commit(s) by ${pusher}`
   )
 
   // Log the event to the database

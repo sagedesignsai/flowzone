@@ -87,7 +87,7 @@ function createInstallationOctokit(installationId: number): Octokit {
  * @param installationId — GitHub App installation ID
  */
 export async function getInstallationOctokit(
-  installationId: number,
+  installationId: number
 ): Promise<Octokit> {
   return createInstallationOctokit(installationId)
 }
@@ -100,7 +100,7 @@ export async function getInstallationOctokit(
  * @returns The token string and its expiry ISO date
  */
 export async function getInstallationToken(
-  installationId: number,
+  installationId: number
 ): Promise<{ token: string; expiresAt: string }> {
   const octokit = createInstallationOctokit(installationId)
   const { data } = await octokit.rest.apps.createInstallationAccessToken({
@@ -118,13 +118,15 @@ export async function getInstallationToken(
  * @returns Sorted list of repo summaries (most recently updated first)
  */
 export async function listRepositories(
-  installationId: number,
+  installationId: number
 ): Promise<GitRepoSummary[]> {
   const octokit = createInstallationOctokit(installationId)
   // Use pagination to get all repos
   const repos: GitRepoSummary[] = []
 
-  const repositories = await octokit.paginate(octokit.rest.apps.listReposAccessibleToInstallation)
+  const repositories = await octokit.paginate(
+    octokit.rest.apps.listReposAccessibleToInstallation
+  )
   for (const repo of repositories) {
     repos.push({
       id: repo.id,
@@ -143,8 +145,7 @@ export async function listRepositories(
 
   // Sort: recently updated first
   repos.sort(
-    (a, b) =>
-      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   )
 
   return repos
@@ -158,7 +159,7 @@ export async function listRepositories(
 export async function getRepo(
   owner: string,
   repo: string,
-  installationId?: number,
+  installationId?: number
 ): Promise<GitRepoSummary> {
   const octokit = installationId
     ? createInstallationOctokit(installationId)
@@ -189,7 +190,7 @@ export async function getRepo(
 export async function listBranches(
   owner: string,
   repo: string,
-  installationId?: number,
+  installationId?: number
 ): Promise<GitBranch[]> {
   const octokit = installationId
     ? createInstallationOctokit(installationId)
@@ -222,7 +223,7 @@ export async function createBranch(
   repo: string,
   baseBranch: string,
   newBranch: string,
-  installationId: number,
+  installationId: number
 ): Promise<GitBranch> {
   const octokit = createInstallationOctokit(installationId)
 
@@ -271,7 +272,7 @@ export async function createPullRequest(
   title: string,
   body?: string,
   installationId?: number,
-  draft?: boolean,
+  draft?: boolean
 ): Promise<GitCreatePRResponse> {
   if (!installationId) {
     throw new Error("installationId is required to create a pull request")
@@ -312,7 +313,7 @@ export async function forkRepo(
   owner: string,
   repo: string,
   installationId: number,
-  organization?: string,
+  organization?: string
 ): Promise<{ forkFullName: string; forkUrl: string }> {
   const octokit = createInstallationOctokit(installationId)
 
@@ -345,7 +346,7 @@ export async function getFileContents(
   repo: string,
   path: string,
   ref?: string,
-  installationId?: number,
+  installationId?: number
 ): Promise<string | null> {
   const octokit = installationId
     ? createInstallationOctokit(installationId)
@@ -384,11 +385,15 @@ export async function getFileContents(
  * Uses JWT authentication (app-level).
  */
 export async function listInstallations(): Promise<
-  { id: number; accountLogin: string; accountType: string; reposCount: number }[]
+  {
+    id: number
+    accountLogin: string
+    accountType: string
+    reposCount: number
+  }[]
 > {
   const octokit = createAppOctokit()
-  const { data: installations } =
-    await octokit.rest.apps.listInstallations()
+  const { data: installations } = await octokit.rest.apps.listInstallations()
 
   return installations.map((inst) => ({
     id: inst.id,
@@ -406,7 +411,7 @@ export async function listInstallations(): Promise<
  */
 export async function getRepoInstallation(
   owner: string,
-  repo: string,
+  repo: string
 ): Promise<{ id: number } | null> {
   try {
     const octokit = createAppOctokit()

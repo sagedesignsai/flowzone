@@ -49,7 +49,9 @@ export default async function AccountSettingsPage() {
           {/* Two-Factor Authentication */}
           <div className="space-y-3">
             <div>
-              <Label className="text-sm font-medium">Two-Factor Authentication</Label>
+              <Label className="text-sm font-medium">
+                Two-Factor Authentication
+              </Label>
               <p className="text-xs text-muted-foreground">
                 Add an extra layer of security to your account.
               </p>
@@ -87,7 +89,9 @@ export default async function AccountSettingsPage() {
           {/* Danger Zone */}
           <div className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
             <div>
-              <Label className="text-sm font-medium text-destructive">Danger Zone</Label>
+              <Label className="text-sm font-medium text-destructive">
+                Danger Zone
+              </Label>
               <p className="text-xs text-muted-foreground">
                 Irreversible actions. Proceed with caution.
               </p>

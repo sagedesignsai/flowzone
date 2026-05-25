@@ -59,7 +59,7 @@ function createInstallationOctokit(installationId: number): Octokit {
  * Get an authenticated Octokit instance for a specific installation.
  */
 export async function getInstallationOctokit(
-  installationId: number,
+  installationId: number
 ): Promise<Octokit> {
   return createInstallationOctokit(installationId)
 }
@@ -69,7 +69,7 @@ export async function getInstallationOctokit(
  * Use this when you need a raw token (e.g. for git clone credentials).
  */
 export async function getInstallationToken(
-  installationId: number,
+  installationId: number
 ): Promise<{ token: string; expiresAt: string }> {
   const octokit = createInstallationOctokit(installationId)
   const { data } = await octokit.rest.apps.createInstallationAccessToken({

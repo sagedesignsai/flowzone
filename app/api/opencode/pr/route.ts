@@ -32,7 +32,8 @@ export async function POST(req: Request) {
 
     return Response.json({ ok: true })
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Internal server error"
+    const message =
+      error instanceof Error ? error.message : "Internal server error"
     console.error("POST /api/opencode/pr error:", message)
     return Response.json({ error: message }, { status: 500 })
   }

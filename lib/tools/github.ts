@@ -19,9 +19,15 @@ import {
   createPullRequest as createGithubPR,
   listPullRequests as listGithubPRs,
 } from "@/lib/github/pulls"
-import { createIssue as createGithubIssue, listIssues as listGithubIssues } from "@/lib/github/issues"
+import {
+  createIssue as createGithubIssue,
+  listIssues as listGithubIssues,
+} from "@/lib/github/issues"
 import { dispatchWorkflow as dispatchGithubWorkflow } from "@/lib/github/workflows"
-import { createBranch as createGithubBranch, deleteBranch as deleteGithubBranch } from "@/lib/github/branches"
+import {
+  createBranch as createGithubBranch,
+  deleteBranch as deleteGithubBranch,
+} from "@/lib/github/branches"
 
 // ── Helper ─────────────────────────────────────────────────
 
@@ -81,8 +87,7 @@ export const createPullRequest = tool({
     if (!repo) {
       return {
         success: false,
-        error:
-          "No repository is linked to this chat. Import a repo first.",
+        error: "No repository is linked to this chat. Import a repo first.",
       }
     }
 
@@ -233,15 +238,11 @@ export const dispatchWorkflow = tool({
   inputSchema: z.object({
     workflow_id: z
       .string()
-      .describe(
-        "Workflow ID or filename (e.g. 'deploy.yml' or a numeric ID)",
-      ),
+      .describe("Workflow ID or filename (e.g. 'deploy.yml' or a numeric ID)"),
     ref: z
       .string()
       .optional()
-      .describe(
-        "Branch to run the workflow on (defaults to current branch)",
-      ),
+      .describe("Branch to run the workflow on (defaults to current branch)"),
     inputs: z
       .record(z.string())
       .optional()

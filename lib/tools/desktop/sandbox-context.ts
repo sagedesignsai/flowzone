@@ -63,6 +63,6 @@ export const DesktopSandboxContext = {
  */
 export function requireDesktop(label: string): never {
   throw new Error(
-    `Cannot run "${label}" — no desktop sandbox is available. Set E2B_API_KEY and create a desktop session first.`,
+    `Cannot run "${label}" — no desktop sandbox is available. Set E2B_API_KEY and create a desktop session first.`
   )
 }

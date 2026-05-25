@@ -23,7 +23,7 @@ export const launchApp = tool({
     application: z
       .string()
       .describe(
-        "Application name to launch (e.g. 'google-chrome', 'code', 'xterm')",
+        "Application name to launch (e.g. 'google-chrome', 'code', 'xterm')"
       ),
     uri: z
       .string()
@@ -70,7 +70,7 @@ export const getWindowTitle = tool({
     windowId: z
       .string()
       .describe(
-        "Window ID obtained from getCurrentWindowId or getApplicationWindows",
+        "Window ID obtained from getCurrentWindowId or getApplicationWindows"
       ),
   }),
   execute: async ({ windowId }) => {
@@ -114,6 +114,10 @@ export const runShellCommand = tool({
       timeoutMs: background ? 0 : undefined,
     })
 
-    return { stdout: result.stdout, stderr: result.stderr, exitCode: result.exitCode }
+    return {
+      stdout: result.stdout,
+      stderr: result.stderr,
+      exitCode: result.exitCode,
+    }
   },
 })

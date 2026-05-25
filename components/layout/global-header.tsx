@@ -1,7 +1,7 @@
-"use client";
+"use client"
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,15 +10,15 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Separator } from "@/components/ui/separator";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { SettingsDialog } from "@/components/settings/settings-dialog";
-import { useIdeStore } from "@/hooks/use-ide-store";
-import { useSettingsStore } from "@/stores/settings-store";
-import { useSession, signOut } from "@/lib/auth-client";
-import Link from "next/link";
-import { cn } from "@/lib/utils";
+} from "@/components/ui/dropdown-menu"
+import { Separator } from "@/components/ui/separator"
+import { SidebarTrigger } from "@/components/ui/sidebar"
+import { SettingsDialog } from "@/components/settings/settings-dialog"
+import { useIdeStore } from "@/hooks/use-ide-store"
+import { useSettingsStore } from "@/stores/settings-store"
+import { useSession, signOut } from "@/lib/auth-client"
+import Link from "next/link"
+import { cn } from "@/lib/utils"
 import {
   CaretDown,
   Gear,
@@ -35,17 +35,17 @@ import {
   Monitor,
   Sun,
   Moon,
-} from "@phosphor-icons/react";
-import type { ComponentProps } from "react";
-import { useState } from "react";
-import { BranchDialog } from "@/components/layout/branch-dialog";
+} from "@phosphor-icons/react"
+import type { ComponentProps } from "react"
+import { useState } from "react"
+import { BranchDialog } from "@/components/layout/branch-dialog"
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
 interface GlobalHeaderProps extends ComponentProps<"header"> {
-  breadcrumb?: string;
-  showActions?: boolean;
-  chatId?: string;
+  breadcrumb?: string
+  showActions?: boolean
+  chatId?: string
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -57,7 +57,7 @@ export function GlobalHeader({
   className,
   ...props
 }: GlobalHeaderProps) {
-  const { data: session } = useSession();
+  const { data: session } = useSession()
   const { desktopSandboxId } = useIdeStore()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [branchDialogOpen, setBranchDialogOpen] = useState(false)
@@ -78,10 +78,15 @@ export function GlobalHeader({
     setBranchDialogOpen(true)
   }
 
-  const user = session?.user;
+  const user = session?.user
   const initials = user?.name
-    ? user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
-    : "?";
+    ? user.name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "?"
 
   return (
     <header
@@ -115,36 +120,36 @@ export function GlobalHeader({
         {/* Action buttons (Settings, Share, View Branch) */}
         {showActions && (
           <>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="gap-1.5 text-xs h-7"
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 text-xs"
               onClick={handleSettings}
             >
               <Gear className="size-3.5" />
               Settings
             </Button>
-            
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="gap-1.5 text-xs h-7"
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 text-xs"
               onClick={handleShare}
             >
               <ShareNetwork className="size-3.5" />
               Share
             </Button>
-            
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="gap-1.5 text-xs h-7"
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 text-xs"
               onClick={handleViewBranch}
             >
               <GitBranch className="size-3.5" />
               View Branch
             </Button>
-            
+
             <Separator className="h-4" orientation="vertical" />
           </>
         )}
@@ -156,7 +161,7 @@ export function GlobalHeader({
                 <button
                   className={cn(
                     "inline-flex items-center gap-1.5 rounded-sm px-2 py-1 text-xs",
-                    "hover:bg-muted transition-colors"
+                    "transition-colors hover:bg-muted"
                   )}
                   type="button"
                 />
@@ -164,7 +169,9 @@ export function GlobalHeader({
             >
               <Avatar className="size-5">
                 <AvatarImage src={user.image ?? undefined} />
-                <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
+                <AvatarFallback className="text-[10px]">
+                  {initials}
+                </AvatarFallback>
               </Avatar>
               <span className="max-w-[120px] truncate">{user.name}</span>
               <CaretDown className="size-3 text-muted-foreground" />
@@ -173,7 +180,9 @@ export function GlobalHeader({
             <DropdownMenuContent align="end" className="w-56">
               {/* Email */}
               <div className="px-2 py-1.5">
-                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {user.email}
+                </p>
               </div>
 
               <DropdownMenuSeparator />
@@ -199,16 +208,22 @@ export function GlobalHeader({
               {/* GitHub integration */}
               <DropdownMenuGroup>
                 {ghConfig?.connected ? (
-                  <DropdownMenuItem onClick={() => window.open(ghConfig.url, "_blank")}>
+                  <DropdownMenuItem
+                    onClick={() => window.open(ghConfig.url, "_blank")}
+                  >
                     <GitBranch className="mr-2 size-3.5 text-green-500" />
-                    <span>{ghConfig.owner}/{ghConfig.name}</span>
+                    <span>
+                      {ghConfig.owner}/{ghConfig.name}
+                    </span>
                     <span className="ml-auto flex size-2 rounded-full bg-green-500" />
                   </DropdownMenuItem>
                 ) : (
-                  <DropdownMenuItem onClick={() => {
-                    useSettingsStore.getState().setActiveSection("github")
-                    setSettingsOpen(true)
-                  }}>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      useSettingsStore.getState().setActiveSection("github")
+                      setSettingsOpen(true)
+                    }}
+                  >
                     <GitBranch className="mr-2 size-3.5" />
                     <span>Connect GitHub</span>
                   </DropdownMenuItem>
@@ -219,29 +234,59 @@ export function GlobalHeader({
 
               {/* External links */}
               <DropdownMenuGroup>
-                <DropdownMenuItem onClick={() => window.open("https://pricing.example.com", "_blank")}>
-                  <svg className="mr-2 size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <DropdownMenuItem
+                  onClick={() =>
+                    window.open("https://pricing.example.com", "_blank")
+                  }
+                >
+                  <svg
+                    className="mr-2 size-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
                   <span>Pricing</span>
                   <ArrowUpRight className="ml-auto size-3" />
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => window.open("https://docs.example.com", "_blank")}>
+                <DropdownMenuItem
+                  onClick={() =>
+                    window.open("https://docs.example.com", "_blank")
+                  }
+                >
                   <FileText className="mr-2 size-3.5" />
                   <span>Documentation</span>
                   <ArrowUpRight className="ml-auto size-3" />
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => window.open("https://community.example.com", "_blank")}>
+                <DropdownMenuItem
+                  onClick={() =>
+                    window.open("https://community.example.com", "_blank")
+                  }
+                >
                   <Users className="mr-2 size-3.5" />
                   <span>Community Forum</span>
                   <ArrowUpRight className="ml-auto size-3" />
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => window.open("https://feedback.example.com", "_blank")}>
+                <DropdownMenuItem
+                  onClick={() =>
+                    window.open("https://feedback.example.com", "_blank")
+                  }
+                >
                   <ChatCircle className="mr-2 size-3.5" />
                   <span>Feedback</span>
                   <ArrowUpRight className="ml-auto size-3" />
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => window.open("https://refer.example.com", "_blank")}>
+                <DropdownMenuItem
+                  onClick={() =>
+                    window.open("https://refer.example.com", "_blank")
+                  }
+                >
                   <Gift className="mr-2 size-3.5" />
                   <span>Refer</span>
                   <ArrowUpRight className="ml-auto size-3" />
@@ -251,7 +296,7 @@ export function GlobalHeader({
               <DropdownMenuSeparator />
 
               {/* Credits */}
-              <div className="px-2 py-1.5 flex items-center justify-between">
+              <div className="flex items-center justify-between px-2 py-1.5">
                 <div className="flex items-center gap-2">
                   <Trophy className="size-3.5 text-muted-foreground" />
                   <span className="text-xs">Credits</span>
@@ -263,24 +308,24 @@ export function GlobalHeader({
 
               {/* Preferences */}
               <div className="px-2 py-2">
-                <p className="text-xs font-medium mb-2">Preferences</p>
+                <p className="mb-2 text-xs font-medium">Preferences</p>
                 <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground mb-1.5">Theme</p>
+                  <p className="mb-1.5 text-xs text-muted-foreground">Theme</p>
                   <div className="flex gap-1">
                     <button
-                      className="flex-1 flex items-center justify-center gap-1 rounded px-2 py-1 text-xs bg-muted hover:bg-muted/80 transition-colors"
+                      className="flex flex-1 items-center justify-center gap-1 rounded bg-muted px-2 py-1 text-xs transition-colors hover:bg-muted/80"
                       title="System"
                     >
                       <Monitor className="size-3.5" />
                     </button>
                     <button
-                      className="flex-1 flex items-center justify-center gap-1 rounded px-2 py-1 text-xs bg-muted hover:bg-muted/80 transition-colors"
+                      className="flex flex-1 items-center justify-center gap-1 rounded bg-muted px-2 py-1 text-xs transition-colors hover:bg-muted/80"
                       title="Light"
                     >
                       <Sun className="size-3.5" />
                     </button>
                     <button
-                      className="flex-1 flex items-center justify-center gap-1 rounded px-2 py-1 text-xs bg-muted hover:bg-muted/80 transition-colors"
+                      className="flex flex-1 items-center justify-center gap-1 rounded bg-muted px-2 py-1 text-xs transition-colors hover:bg-muted/80"
                       title="Dark"
                     >
                       <Moon className="size-3.5" />
@@ -322,7 +367,11 @@ export function GlobalHeader({
         )}
       </div>
 
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} chatId={chatId} />
+      <SettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        chatId={chatId}
+      />
 
       {chatId && (
         <BranchDialog
@@ -332,5 +381,5 @@ export function GlobalHeader({
         />
       )}
     </header>
-  );
+  )
 }

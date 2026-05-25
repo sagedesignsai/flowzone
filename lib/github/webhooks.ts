@@ -19,7 +19,7 @@ function getWebhooks(): Webhooks {
     if (!secret) {
       throw new Error(
         "Missing required env var: GITHUB_WEBHOOK_SECRET. " +
-          "Set it to the webhook secret configured in your GitHub App settings.",
+          "Set it to the webhook secret configured in your GitHub App settings."
       )
     }
     _webhooks = new Webhooks({ secret })
@@ -42,7 +42,7 @@ export async function verifyAndReceive(
   payload: string,
   signature: string,
   eventType: string,
-  id: string,
+  id: string
 ): Promise<boolean> {
   const webhooks = getWebhooks()
 
@@ -62,7 +62,7 @@ export async function verifyAndReceive(
  */
 export function onWebhookEvent(
   eventName: string | string[],
-  handler: (event: any) => void | Promise<void>,
+  handler: (event: any) => void | Promise<void>
 ): void {
   const webhooks = getWebhooks()
   webhooks.on(eventName as any, handler)
@@ -72,7 +72,7 @@ export function onWebhookEvent(
  * Register an error handler for webhook processing errors.
  */
 export function onWebhookError(
-  handler: (error: any) => void | Promise<void>,
+  handler: (error: any) => void | Promise<void>
 ): void {
   const webhooks = getWebhooks()
   webhooks.onError(handler)

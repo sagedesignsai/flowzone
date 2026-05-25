@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
   if (!process.env.E2B_API_KEY) {
     return NextResponse.json(
       { error: "E2B_API_KEY is not configured. Sandbox features require it." },
-      { status: 500 },
+      { status: 500 }
     )
   }
 
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     if (!body.chatId || !body.repo?.owner || !body.repo?.name) {
       return NextResponse.json(
         { error: "Missing required fields: chatId, repo.owner, repo.name" },
-        { status: 400 },
+        { status: 400 }
       )
     }
 
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     if (chat.userId !== session.user.id) {
       return NextResponse.json(
         { error: "Chat does not belong to user" },
-        { status: 403 },
+        { status: 403 }
       )
     }
 
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
         const repoDetails = await getRepo(
           repoInput.owner,
           repoInput.name,
-          repoInput.installationId,
+          repoInput.installationId
         )
         gitRepo = await prisma.gitRepo.update({
           where: { id: gitRepo.id },
@@ -171,12 +171,12 @@ export async function POST(request: NextRequest) {
 
     // Checkout the chat branch
     await sandbox.commands.run(
-      `cd ${clonePath} && git checkout ${chatBranch} 2>/dev/null || true`,
+      `cd ${clonePath} && git checkout ${chatBranch} 2>/dev/null || true`
     )
 
     // Configure git identity inside the sandbox
     await sandbox.commands.run(
-      `cd ${clonePath} && git config user.name "Flowzone Bot" && git config user.email "bot@flowzone.dev"`,
+      `cd ${clonePath} && git config user.name "Flowzone Bot" && git config user.email "bot@flowzone.dev"`
     )
 
     // ── Persist sandbox context in DB ───────────────────────

@@ -78,7 +78,7 @@ export function GitHubSection({ chatId }: GitHubSectionProps) {
     const loadRepos = async () => {
       try {
         const res = await fetch(
-          `/api/github/repos?installationId=${selectedInstallation}`,
+          `/api/github/repos?installationId=${selectedInstallation}`
         )
         if (res.ok) {
           const data = await res.json()
@@ -129,7 +129,8 @@ export function GitHubSection({ chatId }: GitHubSectionProps) {
     } catch (err) {
       setMessage({
         type: "error",
-        text: err instanceof Error ? err.message : "Failed to connect repository",
+        text:
+          err instanceof Error ? err.message : "Failed to connect repository",
       })
     } finally {
       setSaving(false)
@@ -154,7 +155,10 @@ export function GitHubSection({ chatId }: GitHubSectionProps) {
     } catch (err) {
       setMessage({
         type: "error",
-        text: err instanceof Error ? err.message : "Failed to disconnect repository",
+        text:
+          err instanceof Error
+            ? err.message
+            : "Failed to disconnect repository",
       })
     } finally {
       setSaving(false)
@@ -197,17 +201,15 @@ export function GitHubSection({ chatId }: GitHubSectionProps) {
               <GithubLogo className="size-6 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-sm font-medium">GitHub Account Not Connected</p>
+              <p className="text-sm font-medium">
+                GitHub Account Not Connected
+              </p>
               <p className="text-xs text-muted-foreground">
                 Connect your GitHub account to access repositories and create
                 pull requests
               </p>
             </div>
-            <Button
-              size="sm"
-              onClick={handleSignIn}
-              className="gap-1.5"
-            >
+            <Button size="sm" onClick={handleSignIn} className="gap-1.5">
               <GithubLogo className="size-3.5" />
               Connect GitHub Account
             </Button>
@@ -248,7 +250,7 @@ export function GitHubSection({ chatId }: GitHubSectionProps) {
                 window.open(
                   process.env.NEXT_PUBLIC_GITHUB_APP_URL ||
                     "https://github.com/apps/flowzone",
-                  "_blank",
+                  "_blank"
                 )
               }
               className="gap-1.5"
@@ -293,14 +295,12 @@ export function GitHubSection({ chatId }: GitHubSectionProps) {
                     <ArrowUpRight className="size-3" />
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">Connected to this project</p>
+                <p className="text-xs text-muted-foreground">
+                  Connected to this project
+                </p>
               </div>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleDisconnect}
-            >
+            <Button size="sm" variant="outline" onClick={handleDisconnect}>
               Disconnect
             </Button>
           </div>
@@ -364,7 +364,11 @@ export function GitHubSection({ chatId }: GitHubSectionProps) {
           </SelectContent>
         </Select>
 
-        <Button onClick={handleConnect} className="w-full" disabled={!selectedRepo}>
+        <Button
+          onClick={handleConnect}
+          className="w-full"
+          disabled={!selectedRepo}
+        >
           Connect Repository
         </Button>
       </div>

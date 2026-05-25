@@ -20,7 +20,7 @@ import type {
  * Create a pull request on a repository.
  */
 export async function createPullRequest(
-  options: GitHubPROptions & CreatePullRequestInput,
+  options: GitHubPROptions & CreatePullRequestInput
 ): Promise<GitCreatePRResponse> {
   const { owner, repo, installationId, title, head, base, body, draft } =
     options
@@ -55,7 +55,7 @@ export async function createPullRequest(
  * Get detailed information about a pull request.
  */
 export async function getPullRequest(
-  options: GitHubPROptions & { prNumber: number },
+  options: GitHubPROptions & { prNumber: number }
 ) {
   const { owner, repo, prNumber, installationId } = options
   const octokit = createInstallationOctokit(installationId)
@@ -77,7 +77,7 @@ export async function getPullRequest(
  * @param state - "open" | "closed" | "all" (default: "open")
  */
 export async function listPullRequests(
-  options: GitHubPROptions & { state?: "open" | "closed" | "all" },
+  options: GitHubPROptions & { state?: "open" | "closed" | "all" }
 ) {
   const { owner, repo, installationId, state = "open" } = options
   const octokit = createInstallationOctokit(installationId)
@@ -119,7 +119,7 @@ export async function updatePullRequest(
   options: GitHubPROptions & {
     prNumber: number
     updates: UpdatePullRequestInput
-  },
+  }
 ) {
   const { owner, repo, prNumber, installationId, updates } = options
   const octokit = createInstallationOctokit(installationId)
@@ -152,7 +152,7 @@ export async function mergePullRequest(
     mergeMethod?: MergeMethod
     commitTitle?: string
     commitMessage?: string
-  },
+  }
 ) {
   const {
     owner,
@@ -187,7 +187,7 @@ export async function mergePullRequest(
  * List reviews on a pull request.
  */
 export async function listPullRequestReviews(
-  options: GitHubPROptions & { prNumber: number },
+  options: GitHubPROptions & { prNumber: number }
 ) {
   const { owner, repo, prNumber, installationId } = options
   const octokit = createInstallationOctokit(installationId)

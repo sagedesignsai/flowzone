@@ -34,7 +34,7 @@ import { DefaultChatTransport, type UIMessage } from "ai"
 import {
   ArrowClockwiseIcon as ArrowClockwise,
   SparkleIcon as Sparkle,
-  StopCircleIcon as StopCircle
+  StopCircleIcon as StopCircle,
 } from "@phosphor-icons/react"
 import { useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useRef } from "react"
@@ -106,7 +106,11 @@ function ErrorBanner({
 
 // ─── Component ───────────────────────────────────────────────
 
-export function ChatPanel({ chatId, initialMessages, className }: ChatPanelProps) {
+export function ChatPanel({
+  chatId,
+  initialMessages,
+  className,
+}: ChatPanelProps) {
   const searchParams = useSearchParams()
   const { updateChatSession, desktopSandboxId } = useIdeStore()
 
@@ -114,14 +118,7 @@ export function ChatPanel({ chatId, initialMessages, className }: ChatPanelProps
   const hasSentInitialRef = useRef(false)
   const titleGeneratedRef = useRef(false)
 
-  const {
-    messages,
-    sendMessage,
-    error,
-    stop,
-    regenerate,
-    status,
-  } = useChat({
+  const { messages, sendMessage, error, stop, regenerate, status } = useChat({
     id: chatId,
     initialMessages,
     transport: new DefaultChatTransport(),
@@ -133,7 +130,7 @@ export function ChatPanel({ chatId, initialMessages, className }: ChatPanelProps
       // (1 user message + 1 assistant message = 2)
       if (!titleGeneratedRef.current && messages.length <= 2) {
         titleGeneratedRef.current = true
-        
+
         fetch(`/api/chat/${chatId}/title`, { method: "POST" })
           .then(async (res) => {
             if (res.ok) {
@@ -169,28 +166,28 @@ export function ChatPanel({ chatId, initialMessages, className }: ChatPanelProps
   const handlePromptSubmit = useCallback(
     (
       _message: { text: string; files?: import("ai").FileUIPart[] },
-      _event: SubmitEvent<HTMLFormElement>,
+      _event: SubmitEvent<HTMLFormElement>
     ) => {
       const text = _message.text
       if (!text.trim() || isLoading) return
 
       // Route to desktop agent if desktop is active
       if (desktopSandboxId) {
-        sendMessage({ 
+        sendMessage({
           text: text.trim(),
           experimental_attachments: [
             {
               type: "custom",
               data: { sandboxId: desktopSandboxId },
-              mimeType: "application/x-desktop-sandbox"
-            }
-          ]
+              mimeType: "application/x-desktop-sandbox",
+            },
+          ],
         })
       } else {
         sendMessage({ text: text.trim() })
       }
     },
-    [isLoading, sendMessage, desktopSandboxId],
+    [isLoading, sendMessage, desktopSandboxId]
   )
 
   // ── Render ────────────────────────────────────────────────
@@ -202,7 +199,7 @@ export function ChatPanel({ chatId, initialMessages, className }: ChatPanelProps
       <div
         className={cn(
           "flex size-full flex-col overflow-hidden bg-background",
-          className,
+          className
         )}
       >
         {/* ── Messages ────────────────────────────────────── */}
@@ -281,9 +278,7 @@ export function ChatPanel({ chatId, initialMessages, className }: ChatPanelProps
               className="min-h-[60px]"
               disabled={isStreaming}
               placeholder={
-                isStreaming
-                  ? "Waiting for response…"
-                  : "Ask a follow-up…"
+                isStreaming ? "Waiting for response…" : "Ask a follow-up…"
               }
             />
 

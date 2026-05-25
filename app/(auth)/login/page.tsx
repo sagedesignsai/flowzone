@@ -1,4 +1,5 @@
-import { LoginForm } from "./login-form"
+import { LoginForm } from "@/components/auth/login-form"
+import { AuthHero } from "@/components/auth/auth-hero"
 
 export const metadata = {
   title: "Sign In — Flowzone",
@@ -7,15 +8,15 @@ export const metadata = {
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-svh items-center justify-center p-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-medium tracking-tight">Welcome back</h1>
-          <p className="text-sm text-muted-foreground">
-            Sign in to your Flowzone account
-          </p>
+    <div className="flex min-h-svh w-full overflow-hidden">
+      {/* Branding Side */}
+      <AuthHero className="w-1/2 flex-none" />
+
+      {/* Form Side */}
+      <div className="flex flex-1 items-center justify-center bg-zinc-50 p-6 lg:p-12 dark:bg-zinc-950/50">
+        <div className="w-full max-w-sm">
+          <LoginForm />
         </div>
-        <LoginForm />
       </div>
     </div>
   )

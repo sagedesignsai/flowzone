@@ -1,35 +1,40 @@
-"use client";
+"use client"
 
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { create } from "zustand"
+import { persist } from "zustand/middleware"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type ViewMode = "preview" | "code" | "terminal" | "desktop";
+export type ViewMode = "preview" | "code" | "terminal" | "desktop"
 
 export interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: number;
+  id: string
+  role: "user" | "assistant"
+  content: string
+  timestamp: number
 }
 
 export interface ChatSession {
-  id: string;
-  title: string;
-  createdAt: number;
-  updatedAt: number;
+  id: string
+  title: string
+  createdAt: number
+  updatedAt: number
 }
 
 export interface IdeFile {
-  path: string;
-  content: string;
-  language: string;
+  path: string
+  content: string
+  language: string
 }
 
-export type DesktopStatus = "idle" | "starting" | "running" | "stopping" | "error"
+export type DesktopStatus =
+  | "idle"
+  | "starting"
+  | "running"
+  | "stopping"
+  | "error"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Store Shape
@@ -37,54 +42,54 @@ export type DesktopStatus = "idle" | "starting" | "running" | "stopping" | "erro
 
 interface IdeState {
   // ─── Editor panel view ────────────────────────────────────────────
-  viewMode: ViewMode;
-  setViewMode: (mode: ViewMode) => void;
+  viewMode: ViewMode
+  setViewMode: (mode: ViewMode) => void
 
   // ─── Active chat session ──────────────────────────────────────────
-  activeChatId: string | null;
-  setActiveChatId: (id: string | null) => void;
+  activeChatId: string | null
+  setActiveChatId: (id: string | null) => void
 
   // ─── Chat history (list of sessions for sidebar) ──────────────────
-  chatSessions: ChatSession[];
-  addChatSession: (session: ChatSession) => void;
-  removeChatSession: (id: string) => void;
-  updateChatSession: (id: string, partial: Partial<ChatSession>) => void;
+  chatSessions: ChatSession[]
+  addChatSession: (session: ChatSession) => void
+  removeChatSession: (id: string) => void
+  updateChatSession: (id: string, partial: Partial<ChatSession>) => void
 
   // ─── Message history for active chat ─────────────────────────────
-  messages: Record<string, ChatMessage[]>;
-  addMessage: (chatId: string, message: ChatMessage) => void;
-  clearMessages: (chatId: string) => void;
+  messages: Record<string, ChatMessage[]>
+  addMessage: (chatId: string, message: ChatMessage) => void
+  clearMessages: (chatId: string) => void
 
   // ─── Open file in editor ──────────────────────────────────────────
-  openFile: IdeFile | null;
-  setOpenFile: (file: IdeFile | null) => void;
+  openFile: IdeFile | null
+  setOpenFile: (file: IdeFile | null) => void
 
   // ─── Terminal output ──────────────────────────────────────────────
-  terminalOutput: string;
-  appendTerminalOutput: (text: string) => void;
-  clearTerminalOutput: () => void;
-  isTerminalStreaming: boolean;
-  setTerminalStreaming: (streaming: boolean) => void;
+  terminalOutput: string
+  appendTerminalOutput: (text: string) => void
+  clearTerminalOutput: () => void
+  isTerminalStreaming: boolean
+  setTerminalStreaming: (streaming: boolean) => void
 
   // ─── Selected model ───────────────────────────────────────────────
-  selectedModel: string;
-  setSelectedModel: (model: string) => void;
+  selectedModel: string
+  setSelectedModel: (model: string) => void
 
   // ─── Desktop sandbox (E2B VNC) ────────────────────────────────────
-  desktopSandboxId: string | null;
-  desktopVncUrl: string | null;
-  desktopStatus: DesktopStatus;
-  setDesktopSandbox: (sandboxId: string, vncUrl: string) => void;
-  setDesktopStatus: (status: DesktopStatus) => void;
-  clearDesktopSandbox: () => void;
+  desktopSandboxId: string | null
+  desktopVncUrl: string | null
+  desktopStatus: DesktopStatus
+  setDesktopSandbox: (sandboxId: string, vncUrl: string) => void
+  setDesktopStatus: (status: DesktopStatus) => void
+  clearDesktopSandbox: () => void
 
   // ─── Git repo info (populated by DesktopAgent) ──────────────────
-  gitBranch: string | null;
-  gitRepoOwner: string | null;
-  gitRepoName: string | null;
-  gitRepoFullName: string | null;
-  setGitBranch: (branch: string | null) => void;
-  setGitRepoInfo: (owner: string, name: string, fullName: string) => void;
+  gitBranch: string | null
+  gitRepoOwner: string | null
+  gitRepoName: string | null
+  gitRepoFullName: string | null
+  setGitBranch: (branch: string | null) => void
+  setGitRepoInfo: (owner: string, name: string, fullName: string) => void
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -153,10 +158,18 @@ export const useIdeStore = create<IdeState>()(
       desktopVncUrl: null,
       desktopStatus: "idle",
       setDesktopSandbox: (sandboxId, vncUrl) =>
-        set({ desktopSandboxId: sandboxId, desktopVncUrl: vncUrl, desktopStatus: "running" }),
+        set({
+          desktopSandboxId: sandboxId,
+          desktopVncUrl: vncUrl,
+          desktopStatus: "running",
+        }),
       setDesktopStatus: (status) => set({ desktopStatus: status }),
       clearDesktopSandbox: () =>
-        set({ desktopSandboxId: null, desktopVncUrl: null, desktopStatus: "idle" }),
+        set({
+          desktopSandboxId: null,
+          desktopVncUrl: null,
+          desktopStatus: "idle",
+        }),
 
       // Git repo info
       gitBranch: null,
@@ -165,7 +178,11 @@ export const useIdeStore = create<IdeState>()(
       gitRepoFullName: null,
       setGitBranch: (branch) => set({ gitBranch: branch }),
       setGitRepoInfo: (owner, name, fullName) =>
-        set({ gitRepoOwner: owner, gitRepoName: name, gitRepoFullName: fullName }),
+        set({
+          gitRepoOwner: owner,
+          gitRepoName: name,
+          gitRepoFullName: fullName,
+        }),
     }),
     {
       name: "flowzone-ide",
@@ -184,4 +201,4 @@ export const useIdeStore = create<IdeState>()(
       }),
     }
   )
-);
+)

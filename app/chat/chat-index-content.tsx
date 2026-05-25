@@ -35,9 +35,7 @@ export function ChatIndexContent({ className }: ChatIndexContentProps) {
       </div>
 
       <div className="space-y-1.5 text-center">
-        <h2 className="text-lg font-semibold tracking-tight">
-          Select a chat
-        </h2>
+        <h2 className="text-lg font-semibold tracking-tight">Select a chat</h2>
         <p className="max-w-xs text-sm text-muted-foreground">
           Choose a conversation from the sidebar or start a new one.
         </p>

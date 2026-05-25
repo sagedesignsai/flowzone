@@ -33,14 +33,14 @@ export async function GET(request: NextRequest) {
     if (!owner || !repo) {
       return NextResponse.json(
         { error: "Missing required params: owner, repo" },
-        { status: 400 },
+        { status: 400 }
       )
     }
 
     if (!installationIdParam) {
       return NextResponse.json(
         { error: "Missing required param: installationId" },
-        { status: 400 },
+        { status: 400 }
       )
     }
 
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     if (isNaN(installationId)) {
       return NextResponse.json(
         { error: "Invalid installationId" },
-        { status: 400 },
+        { status: 400 }
       )
     }
 

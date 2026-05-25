@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {
   Dialog,
@@ -7,85 +7,103 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useIdeStore } from "@/hooks/use-ide-store";
-import { ArrowUpRight, CheckCircle, GitBranch, Spinner, WarningCircle } from "@phosphor-icons/react";
-import { type FormEvent, useState } from "react";
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useIdeStore } from "@/hooks/use-ide-store"
+import {
+  ArrowUpRight,
+  CheckCircle,
+  GitBranch,
+  Spinner,
+  WarningCircle,
+} from "@phosphor-icons/react"
+import { type FormEvent, useState } from "react"
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
 interface BranchDialogProps {
-  chatId: string;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  chatId: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export function BranchDialog({ chatId, open, onOpenChange }: BranchDialogProps) {
-  const { gitBranch, gitRepoOwner, gitRepoName, gitRepoFullName } = useIdeStore();
+export function BranchDialog({
+  chatId,
+  open,
+  onOpenChange,
+}: BranchDialogProps) {
+  const { gitBranch, gitRepoOwner, gitRepoName, gitRepoFullName } =
+    useIdeStore()
 
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [title, setTitle] = useState("")
+  const [body, setBody] = useState("")
+  const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState<{
-    type: "success" | "error";
-    message: string;
-    prUrl?: string;
-  } | null>(null);
+    type: "success" | "error"
+    message: string
+    prUrl?: string
+  } | null>(null)
 
-  const hasRepo = gitRepoOwner && gitRepoName && gitBranch;
+  const hasRepo = gitRepoOwner && gitRepoName && gitBranch
 
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) return;
+    e.preventDefault()
+    if (!title.trim()) return
 
-    setSubmitting(true);
-    setResult(null);
+    setSubmitting(true)
+    setResult(null)
 
     try {
       const res = await fetch("/api/github/pr", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chatId, title: title.trim(), body: body.trim() || undefined }),
-      });
+        body: JSON.stringify({
+          chatId,
+          title: title.trim(),
+          body: body.trim() || undefined,
+        }),
+      })
 
-      const data = await res.json();
+      const data = await res.json()
 
       if (!res.ok) {
-        setResult({ type: "error", message: data.error ?? "Failed to create PR" });
-        return;
+        setResult({
+          type: "error",
+          message: data.error ?? "Failed to create PR",
+        })
+        return
       }
 
       setResult({
         type: "success",
         message: `PR #${data.prNumber} created!`,
         prUrl: data.prUrl,
-      });
+      })
     } catch (err) {
       setResult({
         type: "error",
         message: err instanceof Error ? err.message : "Failed to create PR",
-      });
+      })
     } finally {
-      setSubmitting(false);
+      setSubmitting(false)
     }
-  };
+  }
 
   const handleOpenChange = (next: boolean) => {
     if (!next) {
       // Reset form when closing
-      setTitle("");
-      setBody("");
-      setResult(null);
+      setTitle("")
+      setBody("")
+      setResult(null)
     }
-    onOpenChange(next);
-  };
+    onOpenChange(next)
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -117,7 +135,8 @@ export function BranchDialog({ chatId, open, onOpenChange }: BranchDialogProps) 
             </>
           ) : (
             <span className="italic">
-              No Git repository linked. Start a desktop session and clone a repo first.
+              No Git repository linked. Start a desktop session and clone a repo
+              first.
             </span>
           )}
         </div>
@@ -150,7 +169,9 @@ export function BranchDialog({ chatId, open, onOpenChange }: BranchDialogProps) 
 
           {/* ── Result feedback ────────────────────────── */}
           {result && (
-            <Alert variant={result.type === "error" ? "destructive" : "default"}>
+            <Alert
+              variant={result.type === "error" ? "destructive" : "default"}
+            >
               {result.type === "error" ? (
                 <WarningCircle className="size-4" />
               ) : (
@@ -181,7 +202,10 @@ export function BranchDialog({ chatId, open, onOpenChange }: BranchDialogProps) 
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={!hasRepo || !title.trim() || submitting}>
+            <Button
+              type="submit"
+              disabled={!hasRepo || !title.trim() || submitting}
+            >
               {submitting ? (
                 <>
                   <Spinner className="mr-1 size-3 animate-spin" />
@@ -195,5 +219,5 @@ export function BranchDialog({ chatId, open, onOpenChange }: BranchDialogProps) 
         </form>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

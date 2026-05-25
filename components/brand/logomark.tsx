@@ -1,45 +1,39 @@
-"use client";
+"use client"
 
-import { motion, useReducedMotion } from "motion/react";
-import { cn } from "@/lib/utils";
-import { forwardRef } from "react";
-import type { ComponentPropsWithoutRef } from "react";
+import { motion, useReducedMotion } from "motion/react"
+import { cn } from "@/lib/utils"
+import { forwardRef } from "react"
+import type { ComponentPropsWithoutRef } from "react"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-/** 
+/**
  * Animation variants for the Flowzone brand mark.
  * - `none`: Static brand mark
  * - `subtle`: Gentle breathing opacity
  * - `pulse`: Energetic scale and glow pulse
  * - `draw`: Paths drawing in from 0 to 1
  */
-export type LogomarkVariant = "none" | "subtle" | "pulse" | "draw";
+export type LogomarkVariant = "none" | "subtle" | "pulse" | "draw"
 
 export interface LogomarkProps extends ComponentPropsWithoutRef<"svg"> {
   /** Animation style */
-  variant?: LogomarkVariant;
+  variant?: LogomarkVariant
   /** Width & height in pixels */
-  size?: number;
+  size?: number
   /** Enable or disable animations globally */
-  animate?: boolean;
+  animate?: boolean
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export const Logomark = forwardRef<SVGSVGElement, LogomarkProps>(
   (
-    {
-      variant = "subtle",
-      size = 32,
-      animate = true,
-      className,
-      ...props
-    },
-    ref,
+    { variant = "subtle", size = 32, animate = true, className, ...props },
+    ref
   ) => {
-    const prefersReducedMotion = useReducedMotion();
-    const shouldAnimate = animate && !prefersReducedMotion && variant !== "none";
+    const prefersReducedMotion = useReducedMotion()
+    const shouldAnimate = animate && !prefersReducedMotion && variant !== "none"
 
     // Animation Variant Definitions
     const groupVariants = {
@@ -61,7 +55,7 @@ export const Logomark = forwardRef<SVGSVGElement, LogomarkProps>(
         opacity: 1,
         transition: { staggerChildren: 0.1 },
       },
-    } as const;
+    } as const
 
     const pathVariants = {
       draw: {
@@ -72,7 +66,7 @@ export const Logomark = forwardRef<SVGSVGElement, LogomarkProps>(
       none: { pathLength: 1, opacity: 1 },
       subtle: { opacity: 1 },
       pulse: { opacity: 1 },
-    } as const;
+    } as const
 
     return (
       <svg
@@ -132,10 +126,9 @@ export const Logomark = forwardRef<SVGSVGElement, LogomarkProps>(
             fill="url(#flowzone-gradient)"
           />
         </motion.g>
-
       </svg>
-    );
-  },
-);
+    )
+  }
+)
 
-Logomark.displayName = "Logomark";
+Logomark.displayName = "Logomark"

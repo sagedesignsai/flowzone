@@ -39,7 +39,7 @@ export async function listWorkflows(options: GitHubPROptions) {
  * Trigger a workflow_dispatch event for a GitHub Actions workflow.
  */
 export async function dispatchWorkflow(
-  options: GitHubPROptions & WorkflowDispatchInput,
+  options: GitHubPROptions & WorkflowDispatchInput
 ) {
   const { owner, repo, installationId, workflow_id, ref, inputs } = options
   const octokit = createInstallationOctokit(installationId)
@@ -69,7 +69,7 @@ export async function listWorkflowRuns(
     status?: string
     branch?: string
     perPage?: number
-  },
+  }
 ) {
   const {
     owner,

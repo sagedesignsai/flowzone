@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { github } from "@/lib/github"
+import { prisma } from "@/lib/prisma"
 
 /**
  * GET /api/github/repos
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
       if (isNaN(installationId)) {
         return NextResponse.json(
           { error: "Invalid installationId" },
-          { status: 400 },
+          { status: 400 }
         )
       }
 
@@ -45,21 +46,36 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ repositories })
     }
 
-    // Otherwise, list repos across ALL installations
-    const installations = await github.listInstallations()
+    // Get current user's GitHub account ID
+    const account = await prisma.account.findFirst({
+      where: {
+        userId: session.user.id,
+        providerId: "github",
+      },
+    })
+
+    if (!account) {
+      return NextResponse.json({ repositories: [], installations: [] })
+    }
+
+    // Otherwise, list repos across ALL installations and filter
+    const allInstallations = await github.listInstallations()
+    const installations = allInstallations.filter(
+      (inst) => String(inst.accountId) === account.accountId
+    )
 
     const allRepos = await Promise.allSettled(
-      installations.map((inst) => github.listRepositories(inst.id)),
+      installations.map((inst) => github.listRepositories(inst.id))
     )
 
     const repositories = allRepos.flatMap((result) =>
-      result.status === "fulfilled" ? result.value : [],
+      result.status === "fulfilled" ? result.value : []
     )
 
     // Sort by updatedAt descending
     repositories.sort(
       (a, b) =>
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
     )
 
     return NextResponse.json({ repositories, installations })

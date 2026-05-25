@@ -13,7 +13,7 @@ import type { GitHubPROptions, CreateReleaseInput } from "@/lib/github/types"
  * List releases for a repository.
  */
 export async function listReleases(
-  options: GitHubPROptions & { perPage?: number },
+  options: GitHubPROptions & { perPage?: number }
 ) {
   const { owner, repo, installationId, perPage = 30 } = options
   const octokit = createInstallationOctokit(installationId)
@@ -44,7 +44,7 @@ export async function listReleases(
  * Create a release for a repository.
  */
 export async function createRelease(
-  options: GitHubPROptions & CreateReleaseInput,
+  options: GitHubPROptions & CreateReleaseInput
 ) {
   const {
     owner,
@@ -87,7 +87,7 @@ export async function createRelease(
  * List tags for a repository.
  */
 export async function listTags(
-  options: GitHubPROptions & { perPage?: number },
+  options: GitHubPROptions & { perPage?: number }
 ) {
   const { owner, repo, installationId, perPage = 30 } = options
   const octokit = createInstallationOctokit(installationId)

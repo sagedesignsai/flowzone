@@ -9,7 +9,11 @@
 import { Octokit } from "@octokit/rest"
 import { createInstallationOctokit } from "@/lib/github/auth"
 import type { GitBranch } from "@/types"
-import type { ListBranchesOptions, CreateBranchInput, DeleteBranchInput } from "@/lib/github/types"
+import type {
+  ListBranchesOptions,
+  CreateBranchInput,
+  DeleteBranchInput,
+} from "@/lib/github/types"
 
 // ── List Branches ──────────────────────────────────────────
 
@@ -20,7 +24,7 @@ import type { ListBranchesOptions, CreateBranchInput, DeleteBranchInput } from "
  * have `isDefault` correctly set by comparing against that name.
  */
 export async function listBranches(
-  options: ListBranchesOptions,
+  options: ListBranchesOptions
 ): Promise<GitBranch[]> {
   const { owner, repo, installationId, defaultBranch } = options
   const octokit = installationId
@@ -46,7 +50,7 @@ export async function listBranches(
  * 2. Creates a new ref pointing to that SHA
  */
 export async function createBranch(
-  input: CreateBranchInput,
+  input: CreateBranchInput
 ): Promise<GitBranch> {
   const { owner, repo, baseBranch, newBranch, installationId } = input
   const octokit = createInstallationOctokit(installationId)
@@ -100,7 +104,7 @@ export async function listBranchesLegacy(
   owner: string,
   repo: string,
   installationId?: number,
-  defaultBranch?: string,
+  defaultBranch?: string
 ): Promise<GitBranch[]> {
   return listBranches({ owner, repo, installationId, defaultBranch })
 }

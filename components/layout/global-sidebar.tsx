@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {
   Sidebar,
@@ -14,9 +14,9 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
   useSidebar,
-} from "@/components/ui/sidebar";
-import { useIdeStore } from "@/hooks/use-ide-store";
-import { cn } from "@/lib/utils";
+} from "@/components/ui/sidebar"
+import { useIdeStore } from "@/hooks/use-ide-store"
+import { cn } from "@/lib/utils"
 import {
   ChatTeardropDots,
   DotsThree,
@@ -27,48 +27,53 @@ import {
   Plus,
   Stack,
   Trash,
-} from "@phosphor-icons/react";
-import { motion } from "motion/react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { nanoid } from "nanoid";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+} from "@phosphor-icons/react"
+import { motion } from "motion/react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { nanoid } from "nanoid"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+} from "@/components/ui/dropdown-menu"
+import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 // ----- Navigation Items ──────────────────────────────────────────────────────
 
 const NAV_ITEMS = [
-  { label: "Home",     icon: HouseLine,        href: "/" },
-  { label: "Projects", icon: FolderSimple,      href: "/projects" },
-  { label: "Chats",    icon: ChatTeardropDots,  href: "/chat" },
-  { label: "Templates", icon: Stack,            href: "/templates" },
-];
+  { label: "Home", icon: HouseLine, href: "/" },
+  { label: "Projects", icon: FolderSimple, href: "/projects" },
+  { label: "Chats", icon: ChatTeardropDots, href: "/chat" },
+  { label: "Templates", icon: Stack, href: "/templates" },
+]
 
 // ----- Component ─────────────────────────────────────────────────────────────
 
 export function GlobalSidebar() {
-  const router = useRouter();
-  const { chatSessions, addChatSession, removeChatSession, setActiveChatId, activeChatId } =
-    useIdeStore();
-  const { open } = useSidebar();
+  const router = useRouter()
+  const {
+    chatSessions,
+    addChatSession,
+    removeChatSession,
+    setActiveChatId,
+    activeChatId,
+  } = useIdeStore()
+  const { open } = useSidebar()
 
   function handleNewChat() {
-    const id = nanoid();
+    const id = nanoid()
     addChatSession({
       id,
       title: "New chat",
       createdAt: Date.now(),
       updatedAt: Date.now(),
-    });
-    setActiveChatId(id);
-    router.push(`/chat/${id}`);
+    })
+    setActiveChatId(id)
+    router.push(`/chat/${id}`)
   }
 
   return (
@@ -150,7 +155,8 @@ export function GlobalSidebar() {
                     <SidebarMenuItem key={session.id}>
                       <SidebarMenuButton
                         className={cn(
-                          activeChatId === session.id && "data-[active=true]:bg-sidebar-accent"
+                          activeChatId === session.id &&
+                            "data-[active=true]:bg-sidebar-accent"
                         )}
                         isActive={activeChatId === session.id}
                         render={<Link href={`/chat/${session.id}`} />}
@@ -209,5 +215,5 @@ export function GlobalSidebar() {
         </div>
       </SidebarFooter>
     </Sidebar>
-  );
+  )
 }

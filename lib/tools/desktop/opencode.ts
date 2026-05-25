@@ -27,13 +27,13 @@ export const runOpenCodeTask = tool({
     prompt: z
       .string()
       .describe(
-        "Detailed instructions for what code to write, modify, refactor, or debug. Be specific about file paths, frameworks, and desired behavior.",
+        "Detailed instructions for what code to write, modify, refactor, or debug. Be specific about file paths, frameworks, and desired behavior."
       ),
     workdir: z
       .string()
       .optional()
       .describe(
-        "Working directory to run OpenCode in (e.g. '/home/user/project')",
+        "Working directory to run OpenCode in (e.g. '/home/user/project')"
       ),
   }),
   execute: async ({ prompt, workdir }) => {

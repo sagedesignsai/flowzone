@@ -26,25 +26,31 @@ export async function GET(request: NextRequest) {
     const owner = searchParams.get("owner")
     const repo = searchParams.get("repo")
     const installationIdParam = searchParams.get("installationId")
-    const state = (searchParams.get("state") ?? "open") as "open" | "closed" | "all"
+    const state = (searchParams.get("state") ?? "open") as
+      | "open"
+      | "closed"
+      | "all"
 
     if (!owner || !repo) {
       return NextResponse.json(
         { error: "Missing required params: owner, repo" },
-        { status: 400 },
+        { status: 400 }
       )
     }
 
     if (!installationIdParam) {
       return NextResponse.json(
         { error: "Missing required param: installationId" },
-        { status: 400 },
+        { status: 400 }
       )
     }
 
     const installationId = Number(installationIdParam)
     if (isNaN(installationId)) {
-      return NextResponse.json({ error: "Invalid installationId" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Invalid installationId" },
+        { status: 400 }
+      )
     }
 
     const issues = await listIssues({ owner, repo, installationId, state })
@@ -69,12 +75,22 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { owner, repo, installationId, title, body: issueBody, labels, assignees } = body
+    const {
+      owner,
+      repo,
+      installationId,
+      title,
+      body: issueBody,
+      labels,
+      assignees,
+    } = body
 
     if (!owner || !repo || !installationId || !title) {
       return NextResponse.json(
-        { error: "Missing required fields: owner, repo, installationId, title" },
-        { status: 400 },
+        {
+          error: "Missing required fields: owner, repo, installationId, title",
+        },
+        { status: 400 }
       )
     }
 

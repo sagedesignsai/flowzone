@@ -1,7 +1,10 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { ProjectCard, type ProjectCardData } from "@/components/projects/project-card"
+import {
+  ProjectCard,
+  type ProjectCardData,
+} from "@/components/projects/project-card"
 import { cn } from "@/lib/utils"
 import { FolderSimple } from "@phosphor-icons/react"
 import Link from "next/link"
@@ -16,7 +19,11 @@ interface ProjectListProps {
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export function ProjectList({ projects, className, totalCount }: ProjectListProps) {
+export function ProjectList({
+  projects,
+  className,
+  totalCount,
+}: ProjectListProps) {
   if (projects.length === 0) {
     return (
       <div className="flex flex-col items-center gap-4 py-20 text-center">

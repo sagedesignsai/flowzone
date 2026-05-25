@@ -1,4 +1,5 @@
-import { SignupForm } from "./signup-form"
+import { SignupForm } from "@/components/auth/signup-form"
+import { AuthHero } from "@/components/auth/auth-hero"
 
 export const metadata = {
   title: "Create Account — Flowzone",
@@ -7,17 +8,15 @@ export const metadata = {
 
 export default function SignupPage() {
   return (
-    <div className="flex min-h-svh items-center justify-center p-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-medium tracking-tight">
-            Create an account
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Get started with Flowzone
-          </p>
+    <div className="flex min-h-svh w-full overflow-hidden">
+      {/* Branding Side */}
+      <AuthHero className="w-1/2 flex-none" />
+
+      {/* Form Side */}
+      <div className="flex flex-1 items-center justify-center bg-zinc-50 p-6 lg:p-12 dark:bg-zinc-950/50">
+        <div className="w-full max-w-sm">
+          <SignupForm />
         </div>
-        <SignupForm />
       </div>
     </div>
   )

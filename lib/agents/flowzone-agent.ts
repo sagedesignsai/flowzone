@@ -7,12 +7,7 @@
  */
 
 import { ToolLoopAgent, type LanguageModel } from "ai"
-import {
-  runCommand,
-  writeFile,
-  readFile,
-  listFiles,
-} from "@/lib/tools/sandbox"
+import { runCommand, writeFile, readFile, listFiles } from "@/lib/tools/sandbox"
 import { commitAndPush, getDiff, getStatus, getLog } from "@/lib/tools/git"
 import {
   createPullRequest,

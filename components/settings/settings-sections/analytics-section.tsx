@@ -23,7 +23,9 @@ export function AnalyticsSection() {
   const setAnalyticsProvider = useSettingsStore((s) => s.setAnalyticsProvider)
   const setSaving = useSettingsStore((s) => s.setSaving)
   const setMessage = useSettingsStore((s) => s.setMessage)
-  const [selectedProvider, setSelectedProvider] = useState(analyticsProvider || "")
+  const [selectedProvider, setSelectedProvider] = useState(
+    analyticsProvider || ""
+  )
 
   const handleSave = async () => {
     setSaving(true)
@@ -43,7 +45,10 @@ export function AnalyticsSection() {
     } catch (err) {
       setMessage({
         type: "error",
-        text: err instanceof Error ? err.message : "Failed to update analytics settings",
+        text:
+          err instanceof Error
+            ? err.message
+            : "Failed to update analytics settings",
       })
     } finally {
       setSaving(false)

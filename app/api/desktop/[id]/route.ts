@@ -12,7 +12,7 @@ export const maxDuration = 30
 
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Auth check
@@ -27,10 +27,7 @@ export async function POST(
     const { id } = await params
 
     if (!id) {
-      return Response.json(
-        { error: "Sandbox ID is required" },
-        { status: 400 },
-      )
+      return Response.json({ error: "Sandbox ID is required" }, { status: 400 })
     }
 
     // Dynamic import to avoid loading @e2b/desktop when not needed

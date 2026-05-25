@@ -1,5 +1,5 @@
-import { BrandPreview } from "./brand-preview";
+import { BrandPreview } from "./brand-preview"
 
 export default function BrandPreviewPage() {
-  return <BrandPreview />;
+  return <BrandPreview />
 }

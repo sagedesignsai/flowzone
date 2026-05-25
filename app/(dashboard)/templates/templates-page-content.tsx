@@ -1,6 +1,9 @@
 "use client"
 
-import { TemplateGrid, TemplateCategorySection } from "@/components/templates/template-grid"
+import {
+  TemplateGrid,
+  TemplateCategorySection,
+} from "@/components/templates/template-grid"
 import { useIdeStore } from "@/hooks/use-ide-store"
 import {
   TEMPLATES,
@@ -75,10 +78,7 @@ export function TemplatesPageContent() {
           )
         })
       ) : (
-        <TemplateGrid
-          templates={filteredTemplates}
-          onSelect={handleSelect}
-        />
+        <TemplateGrid templates={filteredTemplates} onSelect={handleSelect} />
       )}
     </div>
   )
