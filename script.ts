@@ -1,13 +1,8 @@
 import "dotenv/config"
 import { PrismaClient } from "./generated/prisma"
-import { PrismaPg } from "@prisma/adapter-pg"
-import { Pool } from "pg"
+import { withAccelerate } from "@prisma/extension-accelerate"
 
-const connectionString =
-  process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL!
-const pool = new Pool({ connectionString })
-const adapter = new PrismaPg(pool)
-const prisma = new PrismaClient({ adapter })
+const prisma = new PrismaClient().$extends(withAccelerate())
 
 async function main() {
   try {
