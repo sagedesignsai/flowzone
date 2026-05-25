@@ -7,7 +7,9 @@ const globalForPrisma = global as unknown as {
 }
 
 function makePrismaClient() {
-  return new PrismaClient().$extends(withAccelerate())
+  return new PrismaClient({
+    accelerateUrl: process.env.DATABASE_URL,
+  }).$extends(withAccelerate())
 }
 
 export const prisma = globalForPrisma.prisma ?? makePrismaClient()

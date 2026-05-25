@@ -26,7 +26,6 @@ import {
   PromptInputTextarea,
 } from "@/components/ai-elements/prompt-input"
 import { Button } from "@/components/ui/button"
-import { DesktopLauncher } from "@/components/editor/desktop-launcher"
 import { useIdeStore } from "@/hooks/use-ide-store"
 import { cn } from "@/lib/utils"
 import { useChat } from "@ai-sdk/react"
@@ -292,7 +291,6 @@ export function ChatPanel({
                     <PromptInputActionAddScreenshot />
                   </PromptInputActionMenuContent>
                 </PromptInputActionMenu>
-                <DesktopLauncher chatId={chatId} />
               </div>
 
               {/* Right side: stop / submit */}

@@ -77,7 +77,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
 
           {/* ── Editor / Preview / Terminal ───────────────────────── */}
           <ResizablePanel defaultSize="65%" minSize="30%">
-            <EditorPanel className="size-full" />
+            <EditorPanel chatId={id} className="size-full" />
           </ResizablePanel>
         </ResizablePanelGroup>
       </SidebarInset>

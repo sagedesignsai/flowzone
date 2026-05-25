@@ -26,6 +26,7 @@ export interface EditorState {
   fileTree: FileNode[]
   expandedFolders: Set<string>
   selectedFile: string | null
+  showFileTree: boolean
 
   // ─── Tabs ──────────────────────────────────────────────────────────────
   openTabs: EditorTab[]
@@ -37,6 +38,8 @@ export interface EditorState {
   expandFolder: (path: string) => void
   collapseFolder: (path: string) => void
   selectFile: (path: string) => void
+  toggleFileTree: () => void
+  setShowFileTree: (show: boolean) => void
 
   openTab: (tab: EditorTab) => void
   closeTab: (tabId: string) => void
@@ -53,6 +56,7 @@ const initialState = {
   fileTree: [],
   expandedFolders: new Set<string>(),
   selectedFile: null,
+  showFileTree: true,
   openTabs: [],
   activeTabId: null,
 }
@@ -90,6 +94,8 @@ export const useEditorStore = create<EditorState>()((set) => ({
     }),
 
   selectFile: (path) => set({ selectedFile: path }),
+  toggleFileTree: () => set((state) => ({ showFileTree: !state.showFileTree })),
+  setShowFileTree: (show) => set({ showFileTree: show }),
 
   openTab: (tab) =>
     set((state) => {

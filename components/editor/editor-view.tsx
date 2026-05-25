@@ -1,19 +1,12 @@
 "use client"
 
-import {
-  CodeBlock,
-  CodeBlockActions,
-  CodeBlockContainer,
-  CodeBlockCopyButton,
-  CodeBlockFilename,
-  CodeBlockHeader,
-  CodeBlockTitle,
-} from "@/components/ai-elements/code-block"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { CodeEditor } from "@/components/editor/code-editor"
+import { FileTree } from "@/components/editor/file-tree"
 import { useIdeStore } from "@/hooks/use-ide-store"
+import { useEditorStore } from "@/stores/editor-store"
 import { cn } from "@/lib/utils"
 import { File as FileIcon } from "@phosphor-icons/react"
-import type { BundledLanguage } from "shiki"
+import { AnimatePresence, motion } from "motion/react"
 
 interface EditorViewProps {
   className?: string
@@ -21,6 +14,7 @@ interface EditorViewProps {
 
 export function EditorView({ className }: EditorViewProps) {
   const { openFile } = useIdeStore()
+  const showFileTree = useEditorStore((s) => s.showFileTree)
 
   if (!openFile) {
     return (
@@ -37,23 +31,34 @@ export function EditorView({ className }: EditorViewProps) {
   }
 
   return (
-    <ScrollArea className={cn("size-full", className)}>
-      <CodeBlockContainer language={openFile.language}>
-        <CodeBlockHeader>
-          <CodeBlockTitle>
-            <FileIcon className="size-3.5" />
-            <CodeBlockFilename>{openFile.path}</CodeBlockFilename>
-          </CodeBlockTitle>
-          <CodeBlockActions>
-            <CodeBlockCopyButton className="size-6" />
-          </CodeBlockActions>
-        </CodeBlockHeader>
-        <CodeBlock
-          code={openFile.content}
-          language={openFile.language as BundledLanguage}
-          showLineNumbers
+    <div className={cn("flex size-full overflow-hidden", className)}>
+      <AnimatePresence initial={false}>
+        {showFileTree && (
+          <motion.aside
+            animate={{ width: 220, opacity: 1 }}
+            className="flex-shrink-0 overflow-hidden border-r border-border"
+            exit={{ width: 0, opacity: 0 }}
+            initial={{ width: 0, opacity: 0 }}
+            transition={{ duration: 0.15, ease: "easeInOut" }}
+          >
+            <div className="w-[220px]">
+              <div className="flex h-9 items-center border-b border-border px-3 text-xs font-medium text-muted-foreground">
+                Files
+              </div>
+              <FileTree />
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
+
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <CodeEditor
+          className="size-full overflow-hidden"
+          language={openFile.path}
+          readOnly
+          value={openFile.content}
         />
-      </CodeBlockContainer>
-    </ScrollArea>
+      </div>
+    </div>
   )
 }

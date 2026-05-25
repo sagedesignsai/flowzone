@@ -16,9 +16,10 @@ import { toast } from "sonner"
 interface DesktopLauncherProps {
   chatId: string
   projectId?: string
+  iconOnly?: boolean
 }
 
-export function DesktopLauncher({ chatId, projectId }: DesktopLauncherProps) {
+export function DesktopLauncher({ chatId, projectId, iconOnly }: DesktopLauncherProps) {
   const [isLoading, setIsLoading] = useState(false)
   const { desktopSandboxId, setDesktopSandbox, setDesktopStatus, setViewMode } =
     useIdeStore()
@@ -65,20 +66,22 @@ export function DesktopLauncher({ chatId, projectId }: DesktopLauncherProps) {
     <Button
       onClick={handleLaunch}
       disabled={isLoading}
-      size="sm"
-      variant="outline"
-      className="gap-2"
+      size={iconOnly ? "icon-xs" : "sm"}
+      variant={iconOnly ? "ghost" : "outline"}
       title={desktopSandboxId ? "Open desktop" : "Launch desktop sandbox"}
     >
       {isLoading ? (
-        <>
-          <Loader2 className="size-4 animate-spin" />
-          Starting...
-        </>
+        <Loader2 className={iconOnly ? "size-3.5 animate-spin" : "size-4 animate-spin"} />
       ) : (
+        <Monitor className={iconOnly ? "size-3.5" : "size-4"} />
+      )}
+      {!iconOnly && (
         <>
-          <Monitor className="size-4" />
-          {desktopSandboxId ? "Desktop" : "Launch Desktop"}
+          {isLoading ? (
+            <>Starting...</>
+          ) : (
+            <>{desktopSandboxId ? "Desktop" : "Launch Desktop"}</>
+          )}
         </>
       )}
     </Button>

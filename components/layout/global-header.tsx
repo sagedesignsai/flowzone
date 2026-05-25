@@ -189,17 +189,13 @@ export function GlobalHeader({
 
               {/* Main menu items */}
               <DropdownMenuGroup>
-                <DropdownMenuItem asChild>
-                  <Link href="/profile">
-                    <User className="mr-2 size-3.5" />
-                    <span>Profile</span>
-                  </Link>
+                <DropdownMenuItem render={<Link href="/profile" />}>
+                  <User className="mr-2 size-3.5" />
+                  <span>Profile</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/account-settings">
-                    <Gear className="mr-2 size-3.5" />
-                    <span>Account Settings</span>
-                  </Link>
+                <DropdownMenuItem render={<Link href="/account-settings" />}>
+                  <Gear className="mr-2 size-3.5" />
+                  <span>Account Settings</span>
                 </DropdownMenuItem>
               </DropdownMenuGroup>
 

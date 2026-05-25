@@ -12,10 +12,12 @@ import { AnimatePresence, motion } from "motion/react"
 import type { ComponentProps } from "react"
 
 interface EditorPanelProps extends ComponentProps<"div"> {
+  chatId?: string
   previewUrl?: string
 }
 
 export function EditorPanel({
+  chatId,
   previewUrl,
   className,
   ...props
@@ -30,7 +32,7 @@ export function EditorPanel({
       )}
       {...props}
     >
-      <EditorHeader />
+      <EditorHeader chatId={chatId ?? ""} />
       <EditorTabs />
 
       <AnimatePresence initial={false} mode="wait">

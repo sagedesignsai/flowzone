@@ -80,10 +80,12 @@ function DropdownMenuItem({
   className,
   inset,
   variant = "default",
+  asChild,
   ...props
 }: MenuPrimitive.Item.Props & {
   inset?: boolean
   variant?: "default" | "destructive"
+  asChild?: boolean
 }) {
   return (
     <MenuPrimitive.Item
