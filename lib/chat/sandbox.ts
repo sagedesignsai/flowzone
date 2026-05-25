@@ -2,8 +2,11 @@ import type { Sandbox } from "e2b"
 import type { SandboxContextValue } from "@/lib/tools/sandbox-store"
 import { prisma } from "@/lib/prisma"
 import { getInstallationToken } from "@/lib/github"
+import { logger } from "@/lib/logger"
+import { retryWithTimeout, withTimeout } from "@/lib/retry"
+import { dedupeSandboxCreate } from "@/lib/sandbox-cache"
 
-// ── Provider env vars to forward to sandbox ──────────────
+const SANDBOX_TIMEOUT_MS = 600_000
 
 const PROVIDER_ENV_PREFIXES = [
   "ANTHROPIC_",
@@ -42,74 +45,148 @@ function collectSandboxEnvs(): Record<string, string> {
   return envs
 }
 
-// ── Sandbox creation with context bridging ─────────────────
+export interface CreateSandboxError {
+  code: "NO_API_KEY" | "CREATE_FAILED" | "RECONNECT_FAILED" | "TIMEOUT"
+  message: string
+  cause?: unknown
+}
 
-/**
- * Try to create or reconnect to an E2B sandbox for a chat session.
- *
- * Bridge fix (BRIDGE-001): If the chat has an existing SandboxRun with
- * an e2bSandboxId, repoPath, and gitBranch, we reconnect to that sandbox
- * and populate the full context (including a fresh token) so agent tools
- * can operate on the cloned repo.
- *
- * If no existing sandbox exists, creates a new blank one.
- */
 export async function tryCreateSandbox(
   chatId?: string,
 ): Promise<SandboxContextValue | null> {
-  if (!process.env.E2B_API_KEY) return null
+  if (!process.env.E2B_API_KEY) {
+    logger.debug("No E2B_API_KEY configured, skipping sandbox")
+    return null
+  }
 
   try {
     const { Sandbox } = await import("e2b")
 
-    // ── Check for existing sandbox with repo context ──────────
+    // ── Try reconnect first ──────────────────────────────
     if (chatId) {
-      const chat = await prisma.chat.findUnique({
-        where: { id: chatId },
-        include: { gitRepo: true, sandboxRun: true },
-      })
-
-      if (chat?.sandboxRun?.e2bSandboxId && chat.gitRepo && chat.gitBranch) {
-        const { sandboxRun, gitRepo, gitBranch } = chat
-
-        try {
-          // Try to reconnect to the existing sandbox
-          const sandbox = await Sandbox.connect(sandboxRun.e2bSandboxId)
-          const repoPath =
-            sandboxRun.repoPath ?? `/home/user/repo/${gitRepo.fullName}`
-
-          // Get a fresh installation token (tokens are short-lived)
-          const instId = Number(gitRepo.installationId)
-          const token = instId
-            ? (await getInstallationToken(instId)).token
-            : undefined
-
-          return {
-            sandbox,
-            repoPath,
-            branch: gitBranch,
-            token,
-          }
-        } catch {
-          // Sandbox expired or unavailable — fall through to create new
-          await prisma.sandboxRun.update({
-            where: { id: sandboxRun.id },
-            data: { status: "stopped" },
-          })
-        }
-      }
+      const result = await tryReconnect(chatId, Sandbox)
+      if (result) return result
     }
 
-    // ── No existing sandbox — create a new one ──────────
-    // Forward AI provider env vars so OpenCode can use them
-    const sandbox = await Sandbox.create({
-      envs: collectSandboxEnvs(),
-      timeoutMs: 600_000, // 10 minutes; extended by keep-alive
+    // ── Create new sandbox (deduplicated) ─────────────────
+    const key = chatId ?? `__global__`
+    const sandbox = await dedupeSandboxCreate(key, () =>
+      retryWithTimeout(
+        () => Sandbox.create({
+          envs: collectSandboxEnvs(),
+          timeoutMs: SANDBOX_TIMEOUT_MS,
+        }),
+        30_000,
+        "Sandbox.create",
+        { maxAttempts: 2, baseDelayMs: 1_000 },
+      ),
+    )
+
+    logger.info("Sandbox created", {
+      sandboxId: sandbox.sandboxId,
+      chatId,
     })
+
+    // ── Persist SandboxRun ───────────────────────────────
+    if (chatId) {
+      await persistSandboxRun(chatId, sandbox.sandboxId)
+    }
+
     return { sandbox }
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    console.warn("Failed to create E2B sandbox:", message)
+    const isTimeout = error instanceof Error && error.name === "TimeoutError"
+    logger.warn("Failed to create E2B sandbox", {
+      chatId,
+      error: String(error),
+      isTimeout,
+    })
     return null
+  }
+}
+
+async function tryReconnect(
+  chatId: string,
+  Sandbox: typeof import("e2b")["Sandbox"],
+): Promise<SandboxContextValue | null> {
+  const chat = await prisma.chat.findUnique({
+    where: { id: chatId },
+    include: { gitRepo: true, sandboxRun: true },
+  })
+
+  if (!chat?.sandboxRun?.e2bSandboxId || !chat.gitRepo || !chat.gitBranch) {
+    return null
+  }
+
+  const { sandboxRun, gitRepo, gitBranch } = chat
+
+  try {
+    const sandbox = await Sandbox.connect(sandboxRun.e2bSandboxId)
+    const repoPath = sandboxRun.repoPath ?? `/home/user/repo/${gitRepo.fullName}`
+
+    const instId = Number(gitRepo.installationId)
+    const token = instId
+      ? (await withTimeout(
+          () => getInstallationToken(instId),
+          10_000,
+          "getInstallationToken",
+        )).token
+      : undefined
+
+    await prisma.sandboxRun.update({
+      where: { id: sandboxRun.id },
+      data: {
+        status: "running",
+        expiresAt: new Date(Date.now() + SANDBOX_TIMEOUT_MS),
+      },
+    })
+
+    logger.info("Reconnected to existing sandbox", {
+      sandboxId: sandbox.sandboxId,
+      chatId,
+    })
+
+    return { sandbox, repoPath, branch: gitBranch, token }
+  } catch (error) {
+    logger.warn("Failed to reconnect sandbox, will create new", {
+      chatId,
+      sandboxId: sandboxRun.e2bSandboxId,
+      error: String(error),
+    })
+
+    await prisma.sandboxRun.update({
+      where: { id: sandboxRun.id },
+      data: { status: "stopped" },
+    })
+
+    return null
+  }
+}
+
+async function persistSandboxRun(
+  chatId: string,
+  e2bSandboxId: string,
+): Promise<void> {
+  try {
+    await prisma.sandboxRun.upsert({
+      where: { chatId },
+      update: {
+        e2bSandboxId,
+        status: "running",
+        expiresAt: new Date(Date.now() + SANDBOX_TIMEOUT_MS),
+      },
+      create: {
+        chatId,
+        e2bSandboxId,
+        status: "running",
+        expiresAt: new Date(Date.now() + SANDBOX_TIMEOUT_MS),
+      },
+    })
+  } catch (error) {
+    // Non-critical: sandbox works without DB persistence
+    logger.warn("Failed to persist SandboxRun", {
+      chatId,
+      e2bSandboxId,
+      error: String(error),
+    })
   }
 }

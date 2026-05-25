@@ -24,6 +24,10 @@ import { handleDesktopChat } from "@/lib/chat/handlers/desktop"
 import { handleOpenCodeChat } from "@/lib/chat/handlers/opencode"
 import { handleFlowzoneChat } from "@/lib/chat/handlers/flowzone"
 import { headers } from "next/headers"
+import { logger } from "@/lib/logger"
+
+// OpenCode prompts can run several minutes. Desktop agents are even longer.
+export const maxDuration = 300
 
 function errorResponse(status: number, message: string): Response {
   return Response.json({ error: message }, { status })
@@ -41,7 +45,16 @@ async function prepareChat(
   combinedMessages: UIMessage[]
   latestTextPartText: string
 }> {
-  const previousMessages = await loadChat(chatId)
+  let previousMessages: UIMessage[] = []
+  try {
+    previousMessages = await loadChat(chatId)
+  } catch (error) {
+    logger.warn("Failed to load previous messages", {
+      chatId,
+      error: String(error),
+    })
+  }
+
   const latestMessage = incomingMessages[incomingMessages.length - 1]
   const latestTextPart = latestMessage?.parts?.find((p) => p.type === "text")
   const latestTextPartText = (
@@ -49,7 +62,14 @@ async function prepareChat(
   )?.text ?? ""
   const firstMessageText = latestTextPartText
 
-  await ensureChat(chatId, userId, firstMessageText)
+  try {
+    await ensureChat(chatId, userId, firstMessageText)
+  } catch (error) {
+    logger.warn("Failed to ensure chat exists", {
+      chatId,
+      error: String(error),
+    })
+  }
 
   let combinedMessages: UIMessage[] = incomingMessages
   if (incomingMessages.length === 1 && previousMessages.length > 0) {
@@ -105,10 +125,11 @@ export async function POST(req: Request) {
           latestTextPartText,
         })
       } catch (openCodeError) {
-        console.warn(
-          "OpenCode sandbox agent failed, falling back to FlowzoneAgent:",
-          openCodeError,
-        )
+        logger.warn("OpenCode sandbox agent failed, falling back to FlowzoneAgent", {
+          chatId: id,
+          error: openCodeError instanceof Error ? openCodeError.message : String(openCodeError),
+          stack: openCodeError instanceof Error ? openCodeError.stack?.split("\n").slice(0, 3).join("\n") : undefined,
+        })
       }
     }
 
@@ -117,7 +138,10 @@ export async function POST(req: Request) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Internal server error"
-    console.error("POST /api/chat error:", message)
+    logger.error("POST /api/chat error", {
+      message,
+      stack: error instanceof Error ? error.stack : undefined,
+    })
     return Response.json({ error: message }, { status: 500 })
   }
 }

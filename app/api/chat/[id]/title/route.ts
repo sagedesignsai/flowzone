@@ -98,7 +98,7 @@ export async function POST(
         generateTitle: tool({
           description:
             "Generate a concise 3-to-5-word title for a conversation",
-          parameters: z.object({
+          inputSchema: z.object({
             title: z
               .string()
               .describe(
@@ -111,7 +111,10 @@ export async function POST(
     })
 
     const firstToolCall = toolCalls?.[0]
-    if (!firstToolCall?.args || typeof firstToolCall.args !== "object") {
+    if (
+      !firstToolCall?.input ||
+      typeof firstToolCall.input !== "object"
+    ) {
       return NextResponse.json(
         { error: "Failed to generate title" },
         { status: 500 }
@@ -119,7 +122,7 @@ export async function POST(
     }
 
     const cleanTitle = String(
-      (firstToolCall.args as { title: string }).title
+      (firstToolCall.input as { title: string }).title
     ).trim()
 
     // 6. Update the database

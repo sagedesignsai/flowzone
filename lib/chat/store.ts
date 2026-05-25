@@ -1,73 +1,56 @@
 import { prisma } from "@/lib/prisma"
 import type { UIMessage } from "ai"
-
-/**
- * Chat Store
- *
- * Provides database operations for persisting and loading chat messages.
- */
-
-// ── Helpers ────────────────────────────────────────────────
+import { logger } from "@/lib/logger"
 
 function generateTitleFromMessage(message: string): string {
   return message.split("\n")[0]?.slice(0, 60) || "New Chat"
 }
 
-// ── Chat Operations ────────────────────────────────────────
-
-/**
- * Ensure a chat exists in the database.
- * If it doesn't exist, it creates one with the provided title and user ID.
- */
 export async function ensureChat(
   chatId: string,
   userId: string,
-  firstMessageText?: string
+  firstMessageText?: string,
 ): Promise<void> {
-  const chat = await prisma.chat.findUnique({
-    where: { id: chatId },
-    select: { id: true },
-  })
-
-  if (!chat) {
-    await prisma.chat.create({
-      data: {
-        id: chatId,
-        title: firstMessageText
-          ? generateTitleFromMessage(firstMessageText)
-          : "New Chat",
-        userId,
-      },
+  try {
+    const chat = await prisma.chat.findUnique({
+      where: { id: chatId },
+      select: { id: true },
     })
+
+    if (!chat) {
+      await prisma.chat.create({
+        data: {
+          id: chatId,
+          title: firstMessageText
+            ? generateTitleFromMessage(firstMessageText)
+            : "New Chat",
+          userId,
+        },
+      })
+    }
+  } catch (error) {
+    logger.warn("ensureChat failed", { chatId, error: String(error) })
   }
 }
 
-// ── Message Operations ─────────────────────────────────────
-
-/**
- * Load all messages for a specific chat.
- * Transforms the Prisma message records into AI SDK UIMessage format.
- */
 export async function loadChat(chatId: string): Promise<UIMessage[]> {
-  const records = await prisma.message.findMany({
-    where: { chatId },
-    orderBy: { createdAt: "asc" },
-  })
+  try {
+    const records = await prisma.message.findMany({
+      where: { chatId },
+      orderBy: { createdAt: "asc" },
+    })
 
-  return records.map((record) => ({
-    id: record.id,
-    role: record.role as UIMessage["role"],
-    parts: record.parts as unknown as UIMessage["parts"],
-  }))
+    return records.map((record) => ({
+      id: record.id,
+      role: record.role as UIMessage["role"],
+      parts: record.parts as unknown as UIMessage["parts"],
+    }))
+  } catch (error) {
+    logger.warn("loadChat failed", { chatId, error: String(error) })
+    return []
+  }
 }
 
-/**
- * Save an array of messages for a specific chat.
- * Overwrites existing messages with the same ID, or creates new ones.
- *
- * @param chatId The ID of the chat these messages belong to
- * @param messages The complete array of messages to persist
- */
 export async function saveChat({
   chatId,
   messages,
@@ -77,33 +60,41 @@ export async function saveChat({
 }): Promise<void> {
   if (!messages || messages.length === 0) return
 
-  // Use a transaction to perform upserts efficiently
-  await prisma.$transaction(
-    messages.map((message) => {
-      // Extract concatenated text content for the database summary field
-      const textContent = message.parts
-        .filter((part) => part.type === "text")
-        // @ts-ignore - We know text parts have a text property
-        .map((part) => part.text || "")
-        .join("")
+  // Only persist the new assistant message, not the entire history.
+  // The client Zustand store handles full history persistence;
+  // the DB is for server-side session continuity on reconnect.
+  const newMessages = messages.filter((m) => {
+    // Keep only user & assistant messages that likely aren't persisted yet.
+    // We use a heuristic: check if the message is the last assistant message.
+    return m.role === "assistant"
+  })
 
-      return prisma.message.upsert({
-        where: { id: message.id },
-        update: {
-          role: message.role,
-          content: textContent,
-          // @ts-ignore - Prisma Json matches any JSON-serializable object
-          parts: message.parts,
-        },
-        create: {
-          id: message.id,
-          chatId,
-          role: message.role,
-          content: textContent,
-          // @ts-ignore - Prisma Json matches any JSON-serializable object
-          parts: message.parts,
-        },
-      })
+  // Take only the last assistant message (the one we just generated)
+  const lastAssistant = newMessages[newMessages.length - 1]
+  if (!lastAssistant) return
+
+  try {
+    const textContent = lastAssistant.parts
+      .filter((part) => part.type === "text")
+      .map((part) => (part as { text: string }).text || "")
+      .join("")
+
+    await prisma.message.upsert({
+      where: { id: lastAssistant.id },
+      update: {
+        role: lastAssistant.role,
+        content: textContent,
+        parts: lastAssistant.parts as unknown as Record<string, unknown>,
+      },
+      create: {
+        id: lastAssistant.id,
+        chatId,
+        role: lastAssistant.role,
+        content: textContent,
+        parts: lastAssistant.parts as unknown as Record<string, unknown>,
+      },
     })
-  )
+  } catch (error) {
+    logger.warn("saveChat failed", { chatId, error: String(error) })
+  }
 }

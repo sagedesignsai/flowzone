@@ -64,6 +64,15 @@ export function GlobalSidebar() {
   } = useIdeStore()
   const { open } = useSidebar()
 
+  async function handleDeleteChat(id: string) {
+    try {
+      await fetch(`/api/chat/${id}`, { method: "DELETE" })
+    } catch {
+      // Optimistic delete — proceed even if server fails
+    }
+    removeChatSession(id)
+  }
+
   function handleNewChat() {
     const id = nanoid()
     addChatSession({
@@ -176,7 +185,7 @@ export function GlobalSidebar() {
                           <DropdownMenuContent align="end" side="right">
                             <DropdownMenuItem
                               className="text-destructive"
-                              onClick={() => removeChatSession(session.id)}
+                              onClick={() => handleDeleteChat(session.id)}
                             >
                               <Trash className="mr-2 size-3.5" />
                               Delete

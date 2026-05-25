@@ -1,22 +1,19 @@
 import type { OpencodeClient } from "@opencode-ai/sdk"
 import { prisma } from "@/lib/prisma"
+import { logger } from "@/lib/logger"
+import { retryWithTimeout } from "@/lib/retry"
 
-// Maps Flowzone chatId → OpenCode session ID.
-// Lives in memory since OpenCode server is tied to the E2B sandbox lifecycle.
 const opencodeSessionMap = new Map<string, string>()
 
-/**
- * Resolve or create an OpenCode session for the given chat.
- *
- * Lookup order:
- *   1. In-memory map (fastest — survives within a server instance)
- *   2. SandboxRun.metadata (persisted — survives server restarts)
- *   3. Create a new OpenCode session
- */
+export interface ResolvedSession {
+  sessionId: string
+  isNew: boolean
+}
+
 export async function resolveOpenCodeSession(
   client: OpencodeClient,
   chatId: string,
-): Promise<string> {
+): Promise<ResolvedSession> {
   let sessionId = opencodeSessionMap.get(chatId)
 
   if (!sessionId) {
@@ -24,27 +21,55 @@ export async function resolveOpenCodeSession(
   }
 
   if (sessionId) {
-    const getResult = await client.session.get({
-      path: { id: sessionId },
-    })
-    if (!getResult.data) {
+    const exists = await retryWithTimeout(
+      async () => {
+        const getResult = await client.session.get({
+          path: { id: sessionId },
+        })
+        return !!getResult.data
+      },
+      10_000,
+      "session.get",
+      { maxAttempts: 2, baseDelayMs: 500 },
+    )
+
+    if (!exists) {
+      logger.warn("Cached OpenCode session not found on server, creating new", {
+        chatId,
+        sessionId,
+      })
       sessionId = undefined
     }
   }
 
   if (!sessionId) {
-    const createResult = await client.session.create({
-      body: { title: "Flowzone Chat" },
-    })
-    if (!createResult.data) {
-      throw new Error("Failed to create OpenCode session")
-    }
-    sessionId = createResult.data.id
+    const sessionData = await retryWithTimeout(
+      async () => {
+        const createResult = await client.session.create({
+          body: { title: "Flowzone Chat" },
+        })
+        if (!createResult.data) {
+          throw new Error("Session create returned no data")
+        }
+        return createResult.data
+      },
+      15_000,
+      "session.create",
+    )
+
+    sessionId = sessionData.id
     opencodeSessionMap.set(chatId, sessionId)
-    await persistSessionMapping(chatId, sessionId)
+    persistSessionMapping(chatId, sessionId).catch((err) => {
+      logger.warn("Failed to persist session mapping", {
+        chatId,
+        sessionId,
+        error: String(err),
+      })
+    })
+    return { sessionId, isNew: true }
   }
 
-  return sessionId
+  return { sessionId, isNew: false }
 }
 
 async function lookupPersistedSession(
@@ -55,12 +80,21 @@ async function lookupPersistedSession(
       where: { chatId },
       select: { metadata: true },
     })
-    const meta = (run?.metadata ?? {}) as Record<string, unknown>
+    if (!run?.metadata) return undefined
+
+    const meta = run.metadata as Record<string, unknown>
     if (typeof meta.opencodeSessionId === "string") {
+      logger.debug("Found persisted session ID", {
+        chatId,
+        sessionId: meta.opencodeSessionId,
+      })
       return meta.opencodeSessionId
     }
-  } catch {
-    // ignore
+  } catch (error) {
+    logger.warn("Failed to lookup persisted session", {
+      chatId,
+      error: String(error),
+    })
   }
   return undefined
 }
@@ -82,7 +116,11 @@ async function persistSessionMapping(
         },
       })
     }
-  } catch {
-    // non-critical — in-memory map is sufficient for sandbox lifetime
+  } catch (error) {
+    logger.warn("Failed to persist session mapping", {
+      chatId,
+      sessionId,
+      error: String(error),
+    })
   }
 }

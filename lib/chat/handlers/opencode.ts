@@ -1,11 +1,32 @@
 import type { UIMessage } from "ai"
 import type { SandboxContextValue } from "@/lib/tools/sandbox-store"
 import { createOpenCodeManager } from "@/lib/opencode-sandbox/manager"
-import { createOpenCodeUIStreamResponse } from "@/lib/opencode-sandbox/stream"
+import { streamOpenCodePrompt } from "@/lib/opencode-sandbox/stream-prompt"
 import { convertOpenCodePartsToUIMessageParts } from "@/lib/opencode-sandbox/convert"
 import { resolveOpenCodeSession } from "@/lib/opencode-sandbox/session"
 import { saveChat } from "@/lib/chat/store"
-import type { TextPartInput } from "@opencode-ai/sdk"
+import { logger } from "@/lib/logger"
+import { withTimeout } from "@/lib/retry"
+
+function buildContextReplay(
+  combinedMessages: UIMessage[],
+  latestTextPartText: string,
+): string {
+  if (combinedMessages.length <= 1) return latestTextPartText
+
+  const history = combinedMessages
+    .slice(0, -1)
+    .map((m) => {
+      const text = m.parts
+        .filter((p) => p.type === "text")
+        .map((p) => (p as { text: string }).text)
+        .join(" ")
+      return `${m.role}: ${text}`
+    })
+    .join("\n\n")
+
+  return `Previous conversation:\n\n${history}\n\n---\n\nContinue the conversation. User's new message:\n${latestTextPartText}`
+}
 
 export async function handleOpenCodeChat(options: {
   sandboxCtx: SandboxContextValue
@@ -15,42 +36,56 @@ export async function handleOpenCodeChat(options: {
 }): Promise<Response> {
   const { sandboxCtx, chatId, combinedMessages, latestTextPartText } = options
 
-  const opencode = await createOpenCodeManager(sandboxCtx.sandbox)
+  logger.info("Handling chat via OpenCode sandbox agent", {
+    chatId,
+    sandboxId: sandboxCtx.sandbox.sandboxId,
+    messageCount: combinedMessages.length,
+  })
 
-  const opencodeSessionId = await resolveOpenCodeSession(
+  const opencode = await withTimeout(
+    () => createOpenCodeManager(sandboxCtx.sandbox),
+    30_000,
+    "createOpenCodeManager",
+  )
+
+  const { sessionId, isNew } = await resolveOpenCodeSession(
     opencode.client,
     chatId,
   )
 
-  const result = await opencode.client.session.prompt({
-    path: { id: opencodeSessionId },
-    body: {
-      parts: [{ type: "text", text: latestTextPartText } as TextPartInput],
+  const promptText =
+    isNew && combinedMessages.length > 1
+      ? buildContextReplay(combinedMessages, latestTextPartText)
+      : latestTextPartText
+
+  logger.debug("Prompting OpenCode", {
+    sessionId,
+    isNew,
+    promptLength: promptText.length,
+  })
+
+  const response = await streamOpenCodePrompt({
+    client: opencode.client,
+    sessionId,
+    promptText,
+    originalMessages: combinedMessages,
+    onFinish: async (result) => {
+      const assistantParts = convertOpenCodePartsToUIMessageParts(result.parts)
+      const assistantMessage: UIMessage = {
+        id: result.id,
+        role: "assistant",
+        parts: assistantParts,
+      }
+      await saveChat({
+        chatId,
+        messages: [...combinedMessages, assistantMessage],
+      })
+      logger.debug("Chat saved after stream", {
+        chatId,
+        partCount: result.parts.length,
+      })
     },
   })
 
-  if (result.error) {
-    throw new Error(
-      `OpenCode prompt failed: ${JSON.stringify(result.error)}`,
-    )
-  }
-
-  const data = result.data
-  const assistantParts = convertOpenCodePartsToUIMessageParts(data.parts)
-
-  const assistantMessage: UIMessage = {
-    id: data.info.id,
-    role: "assistant",
-    parts: assistantParts,
-  }
-
-  await saveChat({
-    chatId,
-    messages: [...combinedMessages, assistantMessage],
-  })
-
-  return createOpenCodeUIStreamResponse(
-    { info: data.info, parts: data.parts },
-    combinedMessages,
-  )
+  return response
 }
