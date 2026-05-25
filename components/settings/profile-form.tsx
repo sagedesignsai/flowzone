@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useSession } from "@/lib/auth-client"
 import { useSettingsStore } from "@/stores/settings-store"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
@@ -21,14 +21,20 @@ export function ProfileForm() {
   const setAvatarUrl = useSettingsStore((s) => s.setAvatarUrl)
   const setSaving = useSettingsStore((s) => s.setSaving)
   const setMessage = useSettingsStore((s) => s.setMessage)
-  const hydrate = useSettingsStore((s) => s.hydrate)
+  const setUserData = useSettingsStore((s) => s.setUserData)
+
+  const [mounted, setMounted] = useState(false)
 
   // Hydrate store from session once it loads
   useEffect(() => {
     if (user) {
-      hydrate(user.name ?? "", user.image ?? "")
+      setUserData({ name: user.name ?? "", avatarUrl: user.image ?? "" })
     }
-  }, [user, hydrate])
+  }, [user, setUserData])
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   async function handleSave(e: React.SubmitEvent) {
     e.preventDefault()
@@ -58,7 +64,7 @@ export function ProfileForm() {
     }
   }
 
-  if (isPending) {
+  if (!mounted || isPending) {
     return (
       <div className="space-y-4">
         <div className="h-5 w-24 animate-pulse rounded bg-muted" />

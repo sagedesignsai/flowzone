@@ -5,7 +5,7 @@
  * yielding UI message chunks progressively as the model generates them.
  */
 
-import { createUIMessageStream, createUIMessageStreamResponse, type UIMessage } from "ai"
+import { createUIMessageStream, createUIMessageStreamResponse, type UIMessage, type UIMessageChunk, type UIMessageStreamWriter } from "ai"
 import type { OpencodeClient } from "@opencode-ai/sdk"
 import type {
   TextPartInput,
@@ -36,7 +36,7 @@ export interface StreamOpenCodeOptions {
 }
 
 /**
- * Stream an OpenCode prompt with real-time token-by-token output.
+ * Execute an OpenCode prompt and write UI message chunks to the writer.
  *
  * Architecture:
  *   1. Subscribe to OpenCode events (SSE)
@@ -46,149 +46,158 @@ export interface StreamOpenCodeOptions {
  *   5. Finish when the session becomes idle
  *   6. Invoke onFinish with the completed message parts for persistence
  */
-export async function streamOpenCodePrompt(
+export async function executeOpenCodePrompt(options: {
+  client: OpencodeClient
+  sessionId: string
+  promptText: string
+  writer: UIMessageStreamWriter
+  onFinish?: (message: { id: string; parts: Part[] }) => void | Promise<void>
+}): Promise<void> {
+  const { client, sessionId, promptText, writer, onFinish } = options
+  const messageId = generateId()
+  const accumulatedParts: Map<string, Part> = new Map()
+
+  // 1. Subscribe to events (with timeout)
+  logger.debug("Subscribing to OpenCode events", { sessionId })
+  const eventResult = await withTimeout(
+    () => client.event.subscribe(),
+    15_000,
+    "event.subscribe",
+  )
+
+  // 2. Start the prompt (non-blocking — returns 204 No Content)
+  logger.debug("Starting promptAsync", { sessionId })
+  await withTimeout(
+    () =>
+      client.session.promptAsync({
+        path: { id: sessionId },
+        body: {
+          parts: [{ type: "text", text: promptText } as TextPartInput],
+        },
+      }),
+    15_000,
+    "session.promptAsync",
+  )
+
+  writer.write({ type: "start", messageId })
+
+  // 3. Track state
+  const textPartContents = new Map<string, string>()
+  const activeTextParts = new Set<string>()
+  const toolCallInputs = new Map<string, { toolName: string; input: unknown }>()
+  const completedParts = new Set<string>()
+  let hasDrawnFinish = false
+  let lastEventTime = Date.now()
+
+  function done(): void {
+    if (hasDrawnFinish) return
+    hasDrawnFinish = true
+    for (const partId of activeTextParts) {
+      writer.write({ type: "text-end", id: partId })
+    }
+    activeTextParts.clear()
+    writer.write({ type: "finish", finishReason: "stop" })
+  }
+
+  function closeTextPart(partId: string): void {
+    if (activeTextParts.has(partId)) {
+      writer.write({ type: "text-end", id: partId })
+      activeTextParts.delete(partId)
+    }
+  }
+
+  // 4. Iterate over event stream with idle timeout
+  //    Also set an overall timeout for the entire prompt execution.
+  const overallTimer = setTimeout(() => {
+    logger.warn("Stream prompt overall timeout reached", { sessionId })
+    done()
+  }, PROMPT_TIMEOUT_MS)
+
+  try {
+    for await (const event of eventResult.stream) {
+      lastEventTime = Date.now()
+      const sessionMatch = getEventSessionId(event)
+      if (sessionMatch !== undefined && sessionMatch !== sessionId) continue
+
+      if (event.type === "message.part.updated") {
+        const { part, delta } = event.properties
+
+        if (completedParts.has(part.id)) continue
+
+        if (part.type === "text" && !delta && part.text) {
+          completedParts.add(part.id)
+        }
+
+        accumulatedParts.set(part.id, part)
+
+        switch (part.type) {
+          case "text":
+            handleTextPartUpdate(writer, part as TextPart, delta, textPartContents, activeTextParts)
+            break
+          case "reasoning":
+            handleReasoningPartUpdate(writer, part as ReasoningPart, delta, textPartContents, activeTextParts)
+            break
+          case "tool":
+            handleToolPartUpdate(writer, part as ToolPart, toolCallInputs)
+            break
+          case "file":
+            handleFilePartUpdate(writer, part as FilePart)
+            break
+        }
+      } else if (event.type === "message.updated") {
+        if (event.properties.info.time?.completed) {
+          for (const partId of activeTextParts) {
+            writer.write({ type: "text-end", id: partId })
+          }
+          activeTextParts.clear()
+          done()
+        }
+      } else if (event.type === "session.idle" || event.type === "session.compacted") {
+        logger.debug("Session idle/compacted — stream complete", { sessionId, eventType: event.type })
+        done()
+        await onFinish?.({ id: messageId, parts: Array.from(accumulatedParts.values()) })
+        return
+      }
+
+      if (Date.now() - lastEventTime > EVENT_IDLE_TIMEOUT_MS) {
+        logger.warn("Event stream idle timeout", { sessionId, idleMs: Date.now() - lastEventTime })
+        break
+      }
+    }
+
+    logger.debug("Event stream iteration ended", { sessionId, hasDrawnFinish })
+    done()
+    await onFinish?.({ id: messageId, parts: Array.from(accumulatedParts.values()) })
+  } finally {
+    clearTimeout(overallTimer)
+  }
+}
+
+/**
+ * Stream an OpenCode prompt as a UIMessage stream (for API route usage).
+ * Wraps `executeOpenCodePrompt` in a UIMessageStream with persistence support.
+ */
+export function createOpenCodeUIStream(
   options: StreamOpenCodeOptions,
-): Promise<Response> {
+): ReadableStream<UIMessageChunk> {
   const { client, sessionId, promptText, originalMessages, onFinish } = options
 
-  const stream = createUIMessageStream({
+  return createUIMessageStream({
     execute: async ({ writer }) => {
-      const messageId = generateId()
-      const accumulatedParts: Map<string, Part> = new Map()
-
-      // 1. Subscribe to events (with timeout)
-      logger.debug("Subscribing to OpenCode events", { sessionId })
-      const eventResult = await withTimeout(
-        () => client.event.subscribe(),
-        15_000,
-        "event.subscribe",
-      )
-
-      // 2. Start the prompt (non-blocking — returns 204 No Content)
-      logger.debug("Starting promptAsync", { sessionId })
-      await withTimeout(
-        () =>
-          client.session.promptAsync({
-            path: { id: sessionId },
-            body: {
-              parts: [{ type: "text", text: promptText } as TextPartInput],
-            },
-          }),
-        15_000,
-        "session.promptAsync",
-      )
-
-      writer.write({ type: "start", messageId })
-
-      // 3. Track state
-      const textPartContents = new Map<string, string>()
-      const activeTextParts = new Set<string>()
-      const toolCallInputs = new Map<string, { toolName: string; input: unknown }>()
-      const completedParts = new Set<string>()
-      let hasDrawnFinish = false
-      let lastEventTime = Date.now()
-
-      function done(): void {
-        if (hasDrawnFinish) return
-        hasDrawnFinish = true
-        for (const partId of activeTextParts) {
-          writer.write({ type: "text-end", id: partId })
-        }
-        activeTextParts.clear()
-        writer.write({ type: "finish", finishReason: "stop" })
-      }
-
-      function closeTextPart(partId: string): void {
-        if (activeTextParts.has(partId)) {
-          writer.write({ type: "text-end", id: partId })
-          activeTextParts.delete(partId)
-        }
-      }
-
-      // 4. Iterate over event stream with idle timeout
-      //    Also set an overall timeout for the entire prompt execution.
-      const overallTimer = setTimeout(() => {
-        logger.warn("Stream prompt overall timeout reached", { sessionId })
-        done()
-      }, PROMPT_TIMEOUT_MS)
-
-      try {
-        for await (const event of eventResult.stream) {
-          lastEventTime = Date.now()
-          const sessionMatch = getEventSessionId(event)
-          if (sessionMatch !== undefined && sessionMatch !== sessionId) continue
-
-        if (event.type === "message.part.updated") {
-          const { part, delta } = event.properties
-
-          if (completedParts.has(part.id)) continue
-
-          // Mark complete parts — if a text part has no delta and the
-          // full text matches, it's done
-          if (part.type === "text" && !delta && part.text) {
-            completedParts.add(part.id)
-          }
-
-          accumulatedParts.set(part.id, part)
-
-          switch (part.type) {
-            case "text":
-              handleTextPartUpdate(writer, part as TextPart, delta, textPartContents, activeTextParts)
-              break
-            case "reasoning":
-              handleReasoningPartUpdate(writer, part as ReasoningPart, delta, textPartContents, activeTextParts)
-              break
-            case "tool":
-              handleToolPartUpdate(writer, part as ToolPart, toolCallInputs)
-              break
-            case "file":
-              handleFilePartUpdate(writer, part as FilePart)
-              break
-          }
-        } else if (event.type === "message.updated") {
-          // Message metadata update — could contain time.completed
-          if (event.properties.info.time?.completed) {
-            for (const partId of activeTextParts) {
-              writer.write({ type: "text-end", id: partId })
-            }
-            activeTextParts.clear()
-
-            // Fallback: also close on message completion
-            done()
-          }
-        } else if (event.type === "session.idle" || event.type === "session.compacted") {
-          logger.debug("Session idle/compacted — stream complete", { sessionId, eventType: event.type })
-          done()
-          await onFinish?.({
-            id: messageId,
-            parts: Array.from(accumulatedParts.values()),
-          })
-          return
-        }
-
-        // Idle timeout: if no events for EVENT_IDLE_TIMEOUT_MS, force-finish
-        if (Date.now() - lastEventTime > EVENT_IDLE_TIMEOUT_MS) {
-          logger.warn("Event stream idle timeout", {
-            sessionId,
-            idleMs: Date.now() - lastEventTime,
-          })
-          break
-        }
-      }
-
-      // 5. Event stream ended or idle timeout
-      logger.debug("Event stream iteration ended", { sessionId, hasDrawnFinish })
-      done()
-      await onFinish?.({
-        id: messageId,
-        parts: Array.from(accumulatedParts.values()),
-      })
-    } finally {
-      clearTimeout(overallTimer)
+      await executeOpenCodePrompt({ client, sessionId, promptText, writer, onFinish })
     },
     originalMessages,
   })
+}
 
+/**
+ * Stream an OpenCode prompt and return an HTTP Response.
+ * Convenience wrapper around createOpenCodeUIStream.
+ */
+export async function streamOpenCodePrompt(
+  options: StreamOpenCodeOptions,
+): Promise<Response> {
+  const stream = createOpenCodeUIStream(options)
   return createUIMessageStreamResponse({ stream })
 }
 
@@ -213,7 +222,7 @@ function getEventSessionId(event: Record<string, unknown>): string | undefined {
 }
 
 function handleTextPartUpdate(
-  writer: { write: (chunk: Record<string, unknown>) => void },
+  writer: UIMessageStreamWriter,
   part: TextPart,
   delta: string | undefined,
   textPartContents: Map<string, string>,
@@ -241,7 +250,7 @@ function handleTextPartUpdate(
 }
 
 function handleReasoningPartUpdate(
-  writer: { write: (chunk: Record<string, unknown>) => void },
+  writer: UIMessageStreamWriter,
   part: ReasoningPart,
   delta: string | undefined,
   textPartContents: Map<string, string>,
@@ -268,7 +277,7 @@ function handleReasoningPartUpdate(
 }
 
 function handleToolPartUpdate(
-  writer: { write: (chunk: Record<string, unknown>) => void },
+  writer: UIMessageStreamWriter,
   part: ToolPart,
   toolCallInputs: Map<string, { toolName: string; input: unknown }>,
 ): void {
@@ -319,7 +328,7 @@ function handleToolPartUpdate(
 }
 
 function handleFilePartUpdate(
-  writer: { write: (chunk: Record<string, unknown>) => void },
+  writer: UIMessageStreamWriter,
   part: FilePart,
 ): void {
   writer.write({

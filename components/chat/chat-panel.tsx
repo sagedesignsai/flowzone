@@ -111,6 +111,7 @@ export function ChatPanel({
   className,
 }: ChatPanelProps) {
   const searchParams = useSearchParams()
+  const projectId = searchParams.get("projectId") ?? undefined
   const { updateChatSession, desktopSandboxId } = useIdeStore()
 
   // Guard against React Strict Mode double-fire
@@ -120,6 +121,7 @@ export function ChatPanel({
   const { messages, sendMessage, error, stop, regenerate, status } = useChat({
     id: chatId,
     initialMessages,
+    body: { projectId },
     transport: new DefaultChatTransport(),
     onError: (err) => {
       console.error("Chat error:", err)

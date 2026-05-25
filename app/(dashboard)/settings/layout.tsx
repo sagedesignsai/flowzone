@@ -1,15 +1,11 @@
-import { AppLayout } from "@/components/layout/app-layout"
-import { GlobalHeader } from "@/components/layout/global-header"
-import { SidebarInset } from "@/components/ui/sidebar"
 import type { ReactNode } from "react"
 
 export default function SettingsLayout({ children }: { children: ReactNode }) {
   return (
-    <AppLayout>
-      <SidebarInset className="overflow-hidden">
-        <GlobalHeader breadcrumb="Settings" />
+    <div className="flex flex-1 overflow-y-auto">
+      <div className="mx-auto w-full max-w-2xl p-6">
         {children}
-      </SidebarInset>
-    </AppLayout>
+      </div>
+    </div>
   )
 }

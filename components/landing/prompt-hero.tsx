@@ -1,8 +1,15 @@
 "use client"
 
 import {
+  Attachments,
+  Attachment,
+  AttachmentPreview,
+  AttachmentRemove,
+} from "@/components/ai-elements/attachments"
+import {
   PromptInput,
   PromptInputFooter,
+  PromptInputHeader,
   PromptInputProvider,
   PromptInputSubmit,
   PromptInputTextarea,
@@ -11,10 +18,13 @@ import {
   PromptInputActionMenuContent,
   PromptInputActionAddAttachments,
   PromptInputActionAddScreenshot,
+  usePromptInputAttachments,
 } from "@/components/ai-elements/prompt-input"
 import { Logomark } from "@/components/brand/logomark"
+import { ProjectContextSelector } from "@/components/landing/project-context-selector"
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion"
 import { useIdeStore } from "@/hooks/use-ide-store"
+import { useSettingsStore } from "@/stores/settings-store"
 import { cn } from "@/lib/utils"
 import {
   ArrowCircleRight,
@@ -29,6 +39,7 @@ import type { PromptInputMessage } from "@/components/ai-elements/prompt-input"
 import { nanoid } from "nanoid"
 import { useRouter } from "next/navigation"
 import type { SubmitEvent } from "react"
+import { useEffect, useState } from "react"
 
 // ─── Quick-start suggestions ─────────────────────────────────────────────────
 
@@ -39,6 +50,31 @@ const SUGGESTIONS = [
   { label: "SaaS Dashboard", icon: Globe },
 ]
 
+// ─── Inner: attachment preview inside PromptInput ────────────────────────────
+
+function HeroAttachmentPreviews() {
+  const attachments = usePromptInputAttachments()
+
+  if (attachments.files.length === 0) return null
+
+  return (
+    <PromptInputHeader>
+      <Attachments variant="inline">
+        {attachments.files.map((file) => (
+          <Attachment
+            key={file.id}
+            data={file}
+            onRemove={() => attachments.remove(file.id)}
+          >
+            <AttachmentPreview />
+            <AttachmentRemove />
+          </Attachment>
+        ))}
+      </Attachments>
+    </PromptInputHeader>
+  )
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 interface PromptHeroProps {
@@ -48,6 +84,23 @@ interface PromptHeroProps {
 export function PromptHero({ className }: PromptHeroProps) {
   const router = useRouter()
   const { addChatSession, setActiveChatId } = useIdeStore()
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null)
+
+  // Initialize from existing settings store on mount
+  useEffect(() => {
+    const gh = useSettingsStore.getState().github
+    if (gh?.projectId && !activeProjectId) {
+      setActiveProjectId(gh.projectId)
+    }
+  }, [activeProjectId])
+
+  function navigateToChat(id: string, prompt: string) {
+    const params = new URLSearchParams({ q: prompt })
+    if (activeProjectId) {
+      params.set("projectId", activeProjectId)
+    }
+    router.push(`/chat/${id}?${params}`)
+  }
 
   function handleSubmit(
     message: PromptInputMessage,
@@ -63,8 +116,7 @@ export function PromptHero({ className }: PromptHeroProps) {
       updatedAt: Date.now(),
     })
     setActiveChatId(id)
-    // Pass prompt as query param so ChatPanel auto-sends it
-    router.push(`/chat/${id}?q=${encodeURIComponent(message.text)}`)
+    navigateToChat(id, message.text)
   }
 
   function handleSuggestion(suggestion: string) {
@@ -77,7 +129,7 @@ export function PromptHero({ className }: PromptHeroProps) {
       updatedAt: Date.now(),
     })
     setActiveChatId(id)
-    router.push(`/chat/${id}?q=${encodeURIComponent(prompt)}`)
+    navigateToChat(id, prompt)
   }
 
   return (
@@ -125,6 +177,7 @@ export function PromptHero({ className }: PromptHeroProps) {
               className="min-h-[80px] text-sm"
               placeholder="Ask Flowzone to build…"
             />
+            <HeroAttachmentPreviews />
             <PromptInputFooter>
               {/* Attachment action menu */}
               <PromptInputActionMenu>
@@ -136,9 +189,15 @@ export function PromptHero({ className }: PromptHeroProps) {
               </PromptInputActionMenu>
 
               {/* Submit */}
-              <PromptInputSubmit>
-                <ArrowCircleRight className="size-4" />
-              </PromptInputSubmit>
+              <div className="flex items-center gap-1">
+                <ProjectContextSelector
+                  selectedProjectId={activeProjectId}
+                  onSelectProject={setActiveProjectId}
+                />
+                <PromptInputSubmit>
+                  <ArrowCircleRight className="size-4" />
+                </PromptInputSubmit>
+              </div>
             </PromptInputFooter>
           </PromptInput>
         </motion.div>

@@ -19,10 +19,9 @@ import {
 
 export const runOpenCodeTask = tool({
   description:
-    "Delegate a complex coding task to the OpenCode CLI agent running inside the desktop sandbox. " +
-    "OpenCode will autonomously scaffold, edit, refactor, or debug code based on your instructions. " +
-    "Use this for multi-file changes, complex refactors, or when you want an AI-assisted coding loop inside the sandbox. " +
-    "Returns the full terminal output.",
+    "[LEGACY FALLBACK] Use submitToOpenCode instead. " +
+    "This tool runs opencode run in a desktop shell (blocking, no streaming). " +
+    "Only use if submitToOpenCode is unavailable.",
   inputSchema: z.object({
     prompt: z
       .string()

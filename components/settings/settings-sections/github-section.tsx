@@ -13,7 +13,7 @@ import {
   type GitHubInstallation,
   type GitHubRepository,
 } from "@/stores/settings-store"
-import { useSession, signIn } from "@/lib/auth-client"
+import { useSession, linkSocial } from "@/lib/auth-client"
 import { GitBranch, ArrowUpRight, GithubLogo } from "@phosphor-icons/react"
 import { useEffect, useState } from "react"
 
@@ -40,34 +40,69 @@ export function GitHubSection({ chatId }: GitHubSectionProps) {
   const [selectedRepo, setSelectedRepo] = useState("")
   const [loading, setLoading] = useState(true)
 
+  // ── Abort controller for cleanup ───────────────────────────
+
+  useEffect(() => {
+    const controller = new AbortController()
+    return () => controller.abort()
+  }, [])
+
   // ── Load GitHub config on mount ────────────────────────────
 
   useEffect(() => {
     if (!session?.user.id) return
+
+    let cancelled = false
+    const timeout = setTimeout(() => {
+      if (!cancelled) {
+        setLoading(false)
+        setMessage({
+          type: "error",
+          text: "Timed out loading GitHub config. Please try again.",
+        })
+      }
+    }, 15_000)
 
     const loadGitHub = async () => {
       try {
         const params = new URLSearchParams()
         if (chatId) params.set("chatId", chatId)
         const res = await fetch(`/api/settings/github?${params}`)
-        if (res.ok) {
-          const data = await res.json()
-          setHasOAuth(data.hasOAuth ?? false)
-          setGithub(data.github)
-          setInstallations(data.installations || [])
+        if (!cancelled) {
+          if (res.ok) {
+            const data = await res.json()
+            setHasOAuth(data.hasOAuth ?? false)
+            setGithub(data.github)
+            setInstallations(data.installations || [])
 
-          if (data.installations?.length > 0 && !selectedInstallation) {
-            setSelectedInstallation(String(data.installations[0].id))
+            if (data.installations?.length > 0 && !selectedInstallation) {
+              setSelectedInstallation(String(data.installations[0].id))
+            }
+          } else {
+            setMessage({
+              type: "error",
+              text: "Failed to load GitHub configuration",
+            })
           }
         }
       } catch (err) {
-        console.error("Failed to load GitHub config:", err)
+        if (!cancelled) {
+          console.error("Failed to load GitHub config:", err)
+        }
       } finally {
-        setLoading(false)
+        if (!cancelled) {
+          clearTimeout(timeout)
+          setLoading(false)
+        }
       }
     }
 
     loadGitHub()
+
+    return () => {
+      cancelled = true
+      clearTimeout(timeout)
+    }
   }, [session?.user.id, chatId, setGithub, setHasOAuth, setInstallations])
 
   // ── Load repos when installation changes ───────────────────
@@ -101,7 +136,13 @@ export function GitHubSection({ chatId }: GitHubSectionProps) {
     }
 
     const repo = repositories.find((r) => r.fullName === selectedRepo)
-    if (!repo) return
+    if (!repo) {
+      setMessage({
+        type: "error",
+        text: "Selected repository not found. Please try again.",
+      })
+      return
+    }
 
     setSaving(true)
     try {
@@ -124,7 +165,10 @@ export function GitHubSection({ chatId }: GitHubSectionProps) {
           text: "GitHub repository connected to this project",
         })
       } else {
-        throw new Error("Failed to connect repository")
+        const err = await res.json().catch(() => null)
+        throw new Error(
+          err?.message ?? "Failed to connect repository"
+        )
       }
     } catch (err) {
       setMessage({
@@ -150,7 +194,10 @@ export function GitHubSection({ chatId }: GitHubSectionProps) {
         setGithub(null)
         setMessage({ type: "success", text: "GitHub repository disconnected" })
       } else {
-        throw new Error("Failed to disconnect repository")
+        const err = await res.json().catch(() => null)
+        throw new Error(
+          err?.message ?? "Failed to disconnect repository"
+        )
       }
     } catch (err) {
       setMessage({
@@ -166,9 +213,9 @@ export function GitHubSection({ chatId }: GitHubSectionProps) {
   }
 
   const handleSignIn = () => {
-    signIn.social({
+    linkSocial({
       provider: "github",
-      callbackURL: "/settings",
+      callbackURL: "/settings/github",
     })
   }
 
@@ -331,7 +378,9 @@ export function GitHubSection({ chatId }: GitHubSectionProps) {
         {installations.length > 1 && (
           <Select
             value={selectedInstallation}
-            onValueChange={setSelectedInstallation}
+            onValueChange={(val) => {
+              if (val) setSelectedInstallation(val)
+            }}
           >
             <SelectTrigger className="text-xs">
               <SelectValue placeholder="Select a GitHub account" />
@@ -348,7 +397,12 @@ export function GitHubSection({ chatId }: GitHubSectionProps) {
           </Select>
         )}
 
-        <Select value={selectedRepo} onValueChange={setSelectedRepo}>
+        <Select
+          value={selectedRepo}
+          onValueChange={(val) => {
+            if (val) setSelectedRepo(val)
+          }}
+        >
           <SelectTrigger className="text-xs">
             <SelectValue placeholder="Select a repository" />
           </SelectTrigger>

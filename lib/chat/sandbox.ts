@@ -51,12 +51,18 @@ export interface CreateSandboxError {
   cause?: unknown
 }
 
+export type SandboxResult =
+  | { ok: true; value: SandboxContextValue }
+  | { ok: false; error: CreateSandboxError }
+
 export async function tryCreateSandbox(
   chatId?: string,
-): Promise<SandboxContextValue | null> {
+): Promise<SandboxResult> {
   if (!process.env.E2B_API_KEY) {
-    logger.debug("No E2B_API_KEY configured, skipping sandbox")
-    return null
+    return {
+      ok: false,
+      error: { code: "NO_API_KEY", message: "E2B_API_KEY not configured" },
+    }
   }
 
   try {
@@ -65,7 +71,7 @@ export async function tryCreateSandbox(
     // ── Try reconnect first ──────────────────────────────
     if (chatId) {
       const result = await tryReconnect(chatId, Sandbox)
-      if (result) return result
+      if (result) return { ok: true, value: result }
     }
 
     // ── Create new sandbox (deduplicated) ─────────────────
@@ -92,15 +98,56 @@ export async function tryCreateSandbox(
       await persistSandboxRun(chatId, sandbox.sandboxId)
     }
 
-    return { sandbox }
+    // ── Init git for project-only chats (no imported repo) ─
+    let repoPath: string | undefined
+    if (chatId) {
+      const chat = await prisma.chat.findUnique({
+        where: { id: chatId },
+        select: { projectId: true, gitRepoId: true },
+      })
+
+      if (chat?.projectId && !chat.gitRepoId) {
+        repoPath = `/home/user/project`
+        try {
+          await sandbox.commands.run(
+            `mkdir -p ${repoPath} && cd ${repoPath} && git init && git config user.name "Flowzone Bot" && git config user.email "bot@flowzone.dev"`,
+          )
+
+          await prisma.sandboxRun.update({
+            where: { chatId },
+            data: { repoPath },
+          })
+
+          logger.info("Initialized git repo for new project", {
+            chatId,
+            repoPath,
+          })
+        } catch (initError) {
+          logger.warn("Failed to init git repo in sandbox", {
+            chatId,
+            error: String(initError),
+          })
+        }
+      }
+    }
+
+    return { ok: true, value: { sandbox, repoPath } }
   } catch (error) {
     const isTimeout = error instanceof Error && error.name === "TimeoutError"
+    const cause = error instanceof Error ? error : undefined
     logger.warn("Failed to create E2B sandbox", {
       chatId,
       error: String(error),
       isTimeout,
     })
-    return null
+    return {
+      ok: false,
+      error: {
+        code: isTimeout ? "TIMEOUT" : "CREATE_FAILED",
+        message: error instanceof Error ? error.message : "Unknown error",
+        cause,
+      },
+    }
   }
 }
 
@@ -113,7 +160,17 @@ async function tryReconnect(
     include: { gitRepo: true, sandboxRun: true },
   })
 
-  if (!chat?.sandboxRun?.e2bSandboxId || !chat.gitRepo || !chat.gitBranch) {
+  if (!chat?.sandboxRun?.e2bSandboxId) {
+    return null
+  }
+
+  // Two reconnect modes:
+  //   1. Git-imported chat — needs gitRepo + gitBranch
+  //   2. Project-only chat — needs projectId + repoPath on SandboxRun
+  const isRepoImport = Boolean(chat.gitRepo && chat.gitBranch)
+  const isProjectOnly = Boolean(chat.projectId && chat.sandboxRun.repoPath)
+
+  if (!isRepoImport && !isProjectOnly) {
     return null
   }
 
@@ -121,16 +178,20 @@ async function tryReconnect(
 
   try {
     const sandbox = await Sandbox.connect(sandboxRun.e2bSandboxId)
-    const repoPath = sandboxRun.repoPath ?? `/home/user/repo/${gitRepo.fullName}`
+    const repoPath = sandboxRun.repoPath ?? `/home/user/repo/${gitRepo!.fullName}`
 
-    const instId = Number(gitRepo.installationId)
-    const token = instId
-      ? (await withTimeout(
-          () => getInstallationToken(instId),
-          10_000,
-          "getInstallationToken",
-        )).token
-      : undefined
+    let token: string | undefined
+
+    if (gitRepo) {
+      const instId = Number(gitRepo.installationId)
+      token = instId
+        ? (await withTimeout(
+            () => getInstallationToken(instId),
+            10_000,
+            "getInstallationToken",
+          )).token
+        : undefined
+    }
 
     await prisma.sandboxRun.update({
       where: { id: sandboxRun.id },
@@ -145,7 +206,7 @@ async function tryReconnect(
       chatId,
     })
 
-    return { sandbox, repoPath, branch: gitBranch, token }
+    return { sandbox, repoPath, branch: gitBranch ?? undefined, token }
   } catch (error) {
     logger.warn("Failed to reconnect sandbox, will create new", {
       chatId,

@@ -18,29 +18,36 @@ import {
 import { useIdeStore } from "@/hooks/use-ide-store"
 import { cn } from "@/lib/utils"
 import {
+  ArrowLeft,
   ChatTeardropDots,
-  DotsThree,
   FolderSimple,
+  GitBranch,
+  Globe,
   HouseLine,
+  Key,
+  Layout,
   MagnifyingGlass,
-  PencilSimple,
+  NotePencil,
+  ChartBar,
+  Plugs,
   Plus,
+  SignOut,
   Stack,
   Trash,
+  Gear,
+  User,
 } from "@phosphor-icons/react"
 import { motion } from "motion/react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { nanoid } from "nanoid"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { useSession, signOut } from "@/lib/auth-client"
+import { useState } from "react"
+import { SettingsDialog } from "@/components/settings/settings-dialog"
+import { Logomark } from "@/components/brand"
 
 // ----- Navigation Items ──────────────────────────────────────────────────────
 
@@ -51,10 +58,78 @@ const NAV_ITEMS = [
   { label: "Templates", icon: Stack, href: "/templates" },
 ]
 
+const SETTINGS_ITEMS = [
+  { label: "Profile", icon: User, href: "/settings/profile" },
+  { label: "GitHub", icon: GitBranch, href: "/settings/github" },
+  { label: "Integrations", icon: Plugs, href: "/settings/integrations" },
+  { label: "Environment Variables", icon: Key, href: "/settings/env-vars" },
+  { label: "Template", icon: Layout, href: "/settings/template" },
+  { label: "Domains", icon: Globe, href: "/settings/domains" },
+  { label: "Analytics", icon: ChartBar, href: "/settings/analytics" },
+]
+
+// ----- Helpers ───────────────────────────────────────────────────────────────
+
+function formatRelativeTime(timestamp: number): string {
+  const diff = Date.now() - timestamp
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return "now"
+  if (mins < 60) return `${mins}m`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days}d`
+  return `${Math.floor(days / 7)}w`
+}
+
+// ----- Side Menu Item ────────────────────────────────────────────────────────
+
+function SideMenuItem({
+  icon: Icon,
+  label,
+  href,
+  isActive,
+}: {
+  icon: React.ElementType
+  label: string
+  href: string
+  isActive: boolean
+}) {
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        isActive={isActive}
+        render={<Link href={href} />}
+        tooltip={label}
+        className={cn(
+          "group/menu-button relative overflow-visible",
+          isActive && "font-medium"
+        )}
+      >
+        {/* Active indicator bar */}
+        {isActive && (
+          <span className="absolute inset-y-1.5 -left-2 w-0.5 rounded-full bg-sidebar-foreground" />
+        )}
+        <Icon
+          className={cn(
+            "size-4 shrink-0",
+            isActive ? "opacity-100" : "opacity-70"
+          )}
+        />
+        <span>{label}</span>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  )
+}
+
 // ----- Component ─────────────────────────────────────────────────────────────
 
 export function GlobalSidebar() {
+  const pathname = usePathname()
   const router = useRouter()
+  const isSettings = pathname.startsWith("/settings")
+  const { data: session } = useSession()
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const {
     chatSessions,
     addChatSession,
@@ -85,120 +160,169 @@ export function GlobalSidebar() {
     router.push(`/chat/${id}`)
   }
 
+  const user = session?.user
+  const initials = user?.name
+    ? user.name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "?"
+
   return (
     <Sidebar collapsible="offcanvas">
       {/* ── Header ─────────────────────────────────────────────── */}
       <SidebarHeader className="gap-0 pb-0">
-        {/* Logo / brand */}
-        <div className="flex items-center gap-2 px-2 py-3">
-          <div className="flex size-6 items-center justify-center rounded-sm bg-foreground">
-            <span className="text-xs font-bold text-background">F</span>
-          </div>
+        {/* Brand */}
+        <div className="flex items-center gap-2.5 px-3 py-3.5">
+          <Logomark animate={false} size={20} variant="none" />
           {open && (
             <motion.span
               animate={{ opacity: 1, x: 0 }}
-              className="text-sm font-semibold"
+              className="text-[13px] font-semibold tracking-tight"
               initial={{ opacity: 0, x: -4 }}
               transition={{ duration: 0.15 }}
             >
-              Flowzone
+              {isSettings ? "Settings" : "Flowzone"}
             </motion.span>
           )}
         </div>
 
-        <SidebarSeparator />
-
-        {/* New Chat button */}
-        <div className="px-2 py-2">
-          <Button
-            className="w-full justify-start gap-2"
-            onClick={handleNewChat}
-            size="sm"
-            variant="outline"
-          >
-            <Plus className="size-3.5" />
-            {open && "New Chat"}
-          </Button>
-        </div>
+        {isSettings ? (
+          /* Settings back button */
+          <div className="px-2 pb-2">
+            <Button
+              className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
+              onClick={() => router.push("/")}
+              size="sm"
+              variant="ghost"
+            >
+              <ArrowLeft className="size-3.5" />
+              {open && "Back to app"}
+            </Button>
+          </div>
+        ) : (
+          /* New Chat button */
+          <div className="px-2 pb-2">
+            <Button
+              className="w-full justify-start gap-2"
+              onClick={handleNewChat}
+              size="sm"
+            >
+              <Plus className="size-3.5" />
+              {open && "New Chat"}
+            </Button>
+          </div>
+        )}
       </SidebarHeader>
 
       {/* ── Content ────────────────────────────────────────────── */}
       <SidebarContent>
-        {/* Navigation */}
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {NAV_ITEMS.map(({ label, icon: Icon, href }) => (
-                <SidebarMenuItem key={label}>
-                  <SidebarMenuButton
-                    render={<Link href={href} />}
-                    tooltip={label}
-                  >
-                    <Icon className="size-4" />
-                    <span>{label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-
-              {/* Search */}
-              <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Search">
-                  <MagnifyingGlass className="size-4" />
-                  <span>Search</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarSeparator />
-
-        {/* Recent chats */}
-        {chatSessions.length > 0 && (
+        {isSettings ? (
+          /* Settings navigation */
           <SidebarGroup>
-            <SidebarGroupLabel>Recent Chats</SidebarGroupLabel>
             <SidebarGroupContent>
-              <ScrollArea className="max-h-[340px]">
-                <SidebarMenu>
-                  {chatSessions.slice(0, 20).map((session) => (
-                    <SidebarMenuItem key={session.id}>
-                      <SidebarMenuButton
-                        className={cn(
-                          activeChatId === session.id &&
-                            "data-[active=true]:bg-sidebar-accent"
-                        )}
-                        isActive={activeChatId === session.id}
-                        render={<Link href={`/chat/${session.id}`} />}
-                        onClick={() => setActiveChatId(session.id)}
-                        tooltip={session.title}
-                      >
-                        <PencilSimple className="size-3.5 shrink-0 opacity-60" />
-                        <span className="truncate">{session.title}</span>
-                      </SidebarMenuButton>
-
-                      {/* Actions menu */}
-                      <SidebarMenuAction render={<span />} showOnHover>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger>
-                            <DotsThree className="size-4" />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" side="right">
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => handleDeleteChat(session.id)}
-                            >
-                              <Trash className="mr-2 size-3.5" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </SidebarMenuAction>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </ScrollArea>
+              <SidebarMenu>
+                {SETTINGS_ITEMS.map(({ label, icon, href }) => (
+                  <SideMenuItem
+                    key={href}
+                    icon={icon}
+                    label={label}
+                    href={href}
+                    isActive={pathname === href}
+                  />
+                ))}
+              </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+        ) : (
+          <>
+            {/* Primary Navigation */}
+            <SidebarGroup>
+              <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {NAV_ITEMS.map(({ label, icon, href }) => (
+                    <SideMenuItem
+                      key={href}
+                      icon={icon}
+                      label={label}
+                      href={href}
+                      isActive={
+                        href === "/"
+                          ? pathname === "/"
+                          : pathname.startsWith(href)
+                      }
+                    />
+                  ))}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton tooltip="Search">
+                      <MagnifyingGlass className="size-4 opacity-70" />
+                      <span>Search</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            <SidebarSeparator />
+
+            {/* Recent Chats */}
+            <SidebarGroup>
+              <SidebarGroupLabel>Recent Chats</SidebarGroupLabel>
+              <SidebarGroupContent>
+                {chatSessions.length > 0 ? (
+                  <ScrollArea
+                    className={cn(
+                      "max-h-[280px]",
+                      !open && "max-h-[200px]"
+                    )}
+                  >
+                    <SidebarMenu>
+                      {chatSessions.slice(0, 20).map((session) => (
+                        <SidebarMenuItem key={session.id}>
+                          <SidebarMenuButton
+                            isActive={activeChatId === session.id}
+                            render={<Link href={`/chat/${session.id}`} />}
+                            onClick={() => setActiveChatId(session.id)}
+                            tooltip={session.title}
+                            className="group/menu-button"
+                          >
+                            <NotePencil className="size-3.5 shrink-0 opacity-50" />
+                            <span className="flex-1 truncate">
+                              {session.title}
+                            </span>
+                            {open && (
+                              <span className="shrink-0 text-[10px] text-sidebar-foreground/40 tabular-nums">
+                                {formatRelativeTime(session.updatedAt)}
+                              </span>
+                            )}
+                          </SidebarMenuButton>
+
+                          <SidebarMenuAction render={<span />} showOnHover>
+                            <button
+                              className="flex size-4 items-center justify-center rounded text-sidebar-foreground/50 transition-colors hover:text-destructive"
+                              onClick={() => handleDeleteChat(session.id)}
+                              aria-label={`Delete ${session.title}`}
+                            >
+                              <Trash className="size-3" />
+                            </button>
+                          </SidebarMenuAction>
+                        </SidebarMenuItem>
+                      ))}
+                    </SidebarMenu>
+                  </ScrollArea>
+                ) : (
+                  open && (
+                    <p className="px-2 text-xs text-sidebar-foreground/40">
+                      No chats yet
+                    </p>
+                  )
+                )}
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
         )}
       </SidebarContent>
 
@@ -206,23 +330,58 @@ export function GlobalSidebar() {
       <SidebarFooter>
         <SidebarSeparator />
         <div className="px-2 py-2">
-          <div
-            className={cn(
-              "flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-sidebar-accent",
-              !open && "justify-center"
-            )}
-          >
-            <Avatar className="size-5">
-              <AvatarFallback className="text-[10px]">U</AvatarFallback>
-            </Avatar>
-            {open && (
-              <span className="truncate text-sidebar-foreground/70">
-                Personal
-              </span>
-            )}
-          </div>
+          {open ? (
+            /* Expanded user card */
+            <div className="flex items-center gap-2 rounded-[5px] px-2 py-1.5 text-xs transition-colors hover:bg-sidebar-accent">
+              <Avatar className="size-6 shrink-0">
+                <AvatarImage src={user?.image ?? undefined} />
+                <AvatarFallback className="text-[10px]">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-[12px] font-medium leading-tight">
+                  {user?.name ?? "User"}
+                </span>
+                <span className="truncate text-[10px] text-sidebar-foreground/50 leading-tight">
+                  {user?.email ?? ""}
+                </span>
+              </div>
+              <div className="flex items-center gap-0.5">
+                <button
+                  className="flex size-6 items-center justify-center rounded text-sidebar-foreground/50 transition-colors hover:text-sidebar-foreground"
+                  onClick={() => setSettingsOpen(true)}
+                  aria-label="Settings"
+                >
+                  <Gear className="size-3.5" />
+                </button>
+                <button
+                  className="flex size-6 items-center justify-center rounded text-sidebar-foreground/50 transition-colors hover:text-destructive"
+                  onClick={() => signOut()}
+                  aria-label="Sign out"
+                >
+                  <SignOut className="size-3.5" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Collapsed: just avatar */
+            <div className="flex justify-center">
+              <Avatar className="size-6">
+                <AvatarImage src={user?.image ?? undefined} />
+                <AvatarFallback className="text-[10px]">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+          )}
         </div>
       </SidebarFooter>
+
+      <SettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+      />
     </Sidebar>
   )
 }

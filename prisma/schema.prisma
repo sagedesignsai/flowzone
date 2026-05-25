@@ -164,6 +164,23 @@ model SandboxRun {
   @@index([status])
 }
 
+/// Flowzone: A GitHub webhook event log
+model WebhookEvent {
+  id             String   @id @default(cuid())
+  eventType      String
+  action         String?
+  payload        Json     @default("{}")
+  installationId String?
+  gitRepoId      String?
+  processed      Boolean  @default(false)
+  processedAt    DateTime?
+  createdAt      DateTime @default(now())
+
+  @@index([eventType])
+  @@index([installationId])
+  @@index([createdAt])
+}
+
 /// Flowzone: A Trigger.dev durable agent execution
 model AgentRun {
   id           String    @id @default(cuid())

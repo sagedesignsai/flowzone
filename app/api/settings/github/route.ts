@@ -128,11 +128,37 @@ export async function POST(request: Request) {
         )
       }
 
-      const [owner, name] = repoFullName.split("/")
-      if (!owner || !name) {
+      if (level !== "project" && level !== "user") {
+        return NextResponse.json(
+          { message: 'Invalid level. Must be "project" or "user"' },
+          { status: 400 }
+        )
+      }
+
+      const parts = repoFullName.split("/")
+      if (parts.length !== 2 || !parts[0] || !parts[1]) {
         return NextResponse.json(
           { message: "Invalid repository format. Use owner/name" },
           { status: 400 }
+        )
+      }
+      const [owner, name] = parts
+
+      // Check if repo is already connected to a different project
+      const existingRepo = await prisma.gitRepo.findUnique({
+        where: { fullName: repoFullName },
+        select: { projectId: true, id: true },
+      })
+
+      if (
+        existingRepo?.projectId &&
+        existingRepo.projectId !== projectId
+      ) {
+        return NextResponse.json(
+          {
+            message: `Repository ${repoFullName} is already connected to another project`,
+          },
+          { status: 409 }
         )
       }
 
@@ -210,7 +236,16 @@ export async function POST(request: Request) {
       })
     } else if (action === "disconnect") {
       if (projectId) {
-        // Project-level: Remove link for specific project
+        // Project-level: Remove link for specific project (verify ownership)
+        const project = await prisma.project.findUnique({
+          where: { id: projectId, userId: session.user.id },
+        })
+        if (!project) {
+          return NextResponse.json(
+            { message: "Project not found" },
+            { status: 404 }
+          )
+        }
         await prisma.gitRepo.updateMany({
           where: { projectId },
           data: { projectId: null },

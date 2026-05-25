@@ -41,6 +41,10 @@ export interface SaveMessage {
 }
 
 export interface SettingsState {
+  // ─── Profile ───────────────────────────────────────────────────────────
+  name: string
+  avatarUrl: string
+
   // ─── GitHub ────────────────────────────────────────────────────────────
   github: GitHubConfig | null
   hasOAuth: boolean
@@ -71,6 +75,8 @@ export interface SettingsState {
   activeSection: string
 
   // ─── Actions ───────────────────────────────────────────────────────────
+  setName: (name: string) => void
+  setAvatarUrl: (url: string) => void
   setGithub: (github: GitHubConfig | null) => void
   setHasOAuth: (hasOAuth: boolean) => void
   setInstallations: (installations: GitHubInstallation[]) => void
@@ -87,13 +93,15 @@ export interface SettingsState {
   setSaving: (saving: boolean) => void
   setMessage: (message: SaveMessage | null) => void
   setActiveSection: (section: string) => void
-  hydrate: (data: Partial<SettingsState>) => void
+  setUserData: (data: Partial<SettingsState>) => void
   reset: () => void
 }
 
 // ─── Initial State ─────────────────────────────────────────────────────────
 
 const initialState = {
+  name: "",
+  avatarUrl: "",
   github: null,
   hasOAuth: false,
   installations: [],
@@ -115,6 +123,10 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       ...initialState,
+
+      // ── Profile ────────────────────────────────────────────────────
+      setName: (name) => set({ name }),
+      setAvatarUrl: (avatarUrl) => set({ avatarUrl }),
 
       // ── GitHub ─────────────────────────────────────────────────────
       setGithub: (github) => set({ github }),
@@ -171,7 +183,7 @@ export const useSettingsStore = create<SettingsState>()(
       setMessage: (message) => set({ message }),
       setActiveSection: (section) => set({ activeSection: section }),
 
-      hydrate: (data) => set(data),
+      setUserData: (data) => set(data),
       reset: () => set(initialState),
     }),
     {
@@ -182,6 +194,7 @@ export const useSettingsStore = create<SettingsState>()(
         hasOAuth: s.hasOAuth,
         installations: s.installations,
         repositories: s.repositories,
+        activeSection: s.activeSection,
       }),
     }
   )

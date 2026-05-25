@@ -189,13 +189,9 @@ export function GlobalHeader({
 
               {/* Main menu items */}
               <DropdownMenuGroup>
-                <DropdownMenuItem render={<Link href="/profile" />}>
+                <DropdownMenuItem render={<Link href="/settings/profile" />}>
                   <User className="mr-2 size-3.5" />
                   <span>Profile</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem render={<Link href="/account-settings" />}>
-                  <Gear className="mr-2 size-3.5" />
-                  <span>Account Settings</span>
                 </DropdownMenuItem>
               </DropdownMenuGroup>
 
@@ -214,12 +210,7 @@ export function GlobalHeader({
                     <span className="ml-auto flex size-2 rounded-full bg-green-500" />
                   </DropdownMenuItem>
                 ) : (
-                  <DropdownMenuItem
-                    onClick={() => {
-                      useSettingsStore.getState().setActiveSection("github")
-                      setSettingsOpen(true)
-                    }}
-                  >
+                  <DropdownMenuItem render={<Link href="/settings/github" />}>
                     <GitBranch className="mr-2 size-3.5" />
                     <span>Connect GitHub</span>
                   </DropdownMenuItem>

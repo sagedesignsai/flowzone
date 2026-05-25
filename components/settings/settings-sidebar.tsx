@@ -1,5 +1,7 @@
 "use client"
 
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import {
   SidebarContent,
   SidebarGroup,
@@ -16,12 +18,14 @@ import {
   Layout,
   Globe,
   ChartBar,
+  User,
 } from "@phosphor-icons/react"
 import { cn } from "@/lib/utils"
 
 // ─── Settings Sections ──────────────────────────────────────────────────────
 
-const SECTIONS = [
+export const SETTINGS_SECTIONS = [
+  { id: "profile", label: "Profile", icon: User },
   { id: "github", label: "GitHub", icon: GitBranch },
   { id: "integrations", label: "Integrations", icon: Plugs },
   { id: "env-vars", label: "Environment Variables", icon: Key },
@@ -30,30 +34,56 @@ const SECTIONS = [
   { id: "analytics", label: "Analytics", icon: ChartBar },
 ]
 
+// ─── Props ──────────────────────────────────────────────────────────────────
+
+interface SettingsSidebarProps {
+  mode?: "dialog" | "page"
+}
+
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export function SettingsSidebar() {
-  const activeSection = useSettingsStore((s) => s.activeSection)
+export function SettingsSidebar({ mode = "dialog" }: SettingsSidebarProps) {
+  const pathname = usePathname()
+  const storeActiveSection = useSettingsStore((s) => s.activeSection)
   const setActiveSection = useSettingsStore((s) => s.setActiveSection)
+
+  const activeSection =
+    mode === "page"
+      ? pathname.split("/").pop() ?? "github"
+      : storeActiveSection
 
   return (
     <SidebarContent>
       <SidebarGroup>
         <SidebarGroupContent>
           <SidebarMenu>
-            {SECTIONS.map((section) => (
+            {SETTINGS_SECTIONS.map((section) => (
               <SidebarMenuItem key={section.id}>
-                <SidebarMenuButton
-                  isActive={activeSection === section.id}
-                  onClick={() => setActiveSection(section.id)}
-                  className={cn(
-                    "cursor-pointer",
-                    activeSection === section.id && "bg-accent"
-                  )}
-                >
-                  <section.icon className="size-4" />
-                  <span>{section.label}</span>
-                </SidebarMenuButton>
+                {mode === "page" ? (
+                  <Link
+                    href={`/settings/${section.id}`}
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-xs",
+                      "transition-colors hover:bg-muted",
+                      activeSection === section.id && "bg-accent font-medium"
+                    )}
+                  >
+                    <section.icon className="size-4" />
+                    <span>{section.label}</span>
+                  </Link>
+                ) : (
+                  <SidebarMenuButton
+                    isActive={activeSection === section.id}
+                    onClick={() => setActiveSection(section.id)}
+                    className={cn(
+                      "cursor-pointer",
+                      activeSection === section.id && "bg-accent"
+                    )}
+                  >
+                    <section.icon className="size-4" />
+                    <span>{section.label}</span>
+                  </SidebarMenuButton>
+                )}
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
