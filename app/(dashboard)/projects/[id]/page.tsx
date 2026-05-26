@@ -103,7 +103,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             <h2 className="text-sm font-medium">Recent Chats</h2>
             <Button
               nativeButton={false}
-              render={<Link href="/chat" />}
+              render={<Link href={`/chat?projectId=${id}`} />}
               size="sm"
               variant="outline"
             >

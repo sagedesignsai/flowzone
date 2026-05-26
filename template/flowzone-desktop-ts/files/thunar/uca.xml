@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+  <action>
+    <icon>emblem-shared</icon>
+    <name>Push to Flowzone</name>
+    <unique-id>flowzone-push</unique-id>
+    <command>sh -c 'cd %f; flowzone-bridge push-changes "$(xclip -o -selection clipboard 2>/dev/null || echo "Update")"; flowzone-notify push "Changes pushed"'</command>
+    <description>Git add, commit, and push via Flowzone bridge</description>
+    <patterns>*</patterns>
+    <startup-notify>true</startup-notify>
+  </action>
+  <action>
+    <icon>utilities-terminal</icon>
+    <name>Open Flowzone Terminal</name>
+    <unique-id>flowzone-terminal</unique-id>
+    <command>exo-open --launch TerminalEmulator --working-directory %f</command>
+    <description>Open terminal in this directory</description>
+    <patterns>*</patterns>
+    <startup-notify>false</startup-notify>
+  </action>
+  <action>
+    <icon>edit-copy</icon>
+    <name>Copy Git Remote URL</name>
+    <unique-id>flowzone-copy-remote</unique-id>
+    <command>sh -c 'cd %f; git remote get-url origin 2>/dev/null | tr -d "\n" | xclip -selection clipboard; flowzone-notify info "Remote URL copied"'</command>
+    <description>Copy the git remote URL to clipboard</description>
+    <patterns>*</patterns>
+    <startup-notify>false</startup-notify>
+  </action>
+  <action>
+    <icon>applications-engineering</icon>
+    <name>OpenCode Prompt Here</name>
+    <unique-id>flowzone-opencode</unique-id>
+    <command>sh -c 'cd %f; opencode prompt "Review the code in this directory and suggest improvements"'</command>
+    <description>Run OpenCode prompt starting from this directory</description>
+    <patterns>*</patterns>
+    <startup-notify>true</startup-notify>
+  </action>
+</actions>

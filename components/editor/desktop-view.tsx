@@ -2,48 +2,55 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { useIdeStore } from "@/hooks/use-ide-store"
+import { useChatDesktop, useIdeStore } from "@/hooks/use-ide-store"
 import { cn } from "@/lib/utils"
 import { Monitor, Power } from "@phosphor-icons/react"
 import { deleteDesktop } from "@/lib/desktop-client"
 import { toast } from "sonner"
 
-export function DesktopView({ className }: { className?: string }) {
-  const {
-    desktopSandboxId,
-    desktopVncUrl,
-    setDesktopSandbox,
-    clearDesktopSandbox,
-    setDesktopStatus,
-    setViewMode,
-  } = useIdeStore()
+interface DesktopViewProps {
+  chatId: string
+  className?: string
+}
+
+export function DesktopView({ chatId, className }: DesktopViewProps) {
+  const desktop = useChatDesktop(chatId)
+  const setChatDesktop = useIdeStore((s) => s.setChatDesktop)
+  const clearChatDesktop = useIdeStore((s) => s.clearChatDesktop)
+  const setChatDesktopStatus = useIdeStore((s) => s.setChatDesktopStatus)
+  const setViewMode = useIdeStore((s) => s.setViewMode)
+
+  const sandboxId = desktop?.sandboxId ?? null
+  const vncUrl = desktop?.vncUrl ?? null
 
   const [isStopping, setIsStopping] = useState(false)
   const [isReconnecting, setIsReconnecting] = useState(false)
   const hasAttemptedReconnect = useRef(false)
 
-  // ── Reconnect on mount if sandboxId is set but VNC may be stale ──
   useEffect(() => {
-    if (!desktopSandboxId || hasAttemptedReconnect.current) return
+    if (!sandboxId || vncUrl || hasAttemptedReconnect.current) return
     hasAttemptedReconnect.current = true
 
-    // If we have a sandboxId on mount (e.g. after page reload), reconnect to refresh VNC stream
-    setDesktopStatus("starting")
+    setChatDesktopStatus(chatId, "starting")
     setIsReconnecting(true)
 
-    fetch(`/api/desktop/${desktopSandboxId}`, { method: "POST" })
+    fetch(`/api/desktop/${sandboxId}`, { method: "POST" })
       .then(async (res) => {
         if (!res.ok) {
-          clearDesktopSandbox()
+          clearChatDesktop(chatId)
           setViewMode("preview")
           return
         }
         const data = await res.json()
-        setDesktopSandbox(data.sandboxId, data.vncUrl)
+        setChatDesktop(chatId, {
+          sandboxId: data.sandboxId,
+          vncUrl: data.vncUrl,
+          status: "running",
+        })
         toast.success("Desktop reconnected")
       })
       .catch(() => {
-        clearDesktopSandbox()
+        clearChatDesktop(chatId)
         setViewMode("preview")
         toast.info("Desktop session expired")
       })
@@ -51,46 +58,51 @@ export function DesktopView({ className }: { className?: string }) {
         setIsReconnecting(false)
       })
   }, [
-    desktopSandboxId,
-    setDesktopSandbox,
-    clearDesktopSandbox,
-    setDesktopStatus,
+    sandboxId,
+    vncUrl,
+    chatId,
+    setChatDesktop,
+    clearChatDesktop,
+    setChatDesktopStatus,
     setViewMode,
   ])
 
-  // ── Monitor sandbox status (keep-alive check) ──
   useEffect(() => {
-    if (!desktopSandboxId) return
+    hasAttemptedReconnect.current = false
+  }, [chatId])
+
+  useEffect(() => {
+    if (!sandboxId) return
 
     const interval = setInterval(async () => {
       try {
-        const response = await fetch(`/api/desktop/${desktopSandboxId}/status`)
+        const response = await fetch(`/api/desktop/${sandboxId}/status`)
         if (!response.ok) {
-          clearDesktopSandbox()
+          clearChatDesktop(chatId)
           setViewMode("preview")
           toast.info("Desktop session expired")
         }
-      } catch (error) {
-        console.error("Failed to check desktop status:", error)
+      } catch (err) {
+        console.error("Failed to check desktop status:", err)
       }
     }, 30000)
 
     return () => clearInterval(interval)
-  }, [desktopSandboxId, clearDesktopSandbox, setViewMode])
+  }, [sandboxId, chatId, clearChatDesktop, setViewMode])
 
   const handleStop = async () => {
-    if (!desktopSandboxId) return
+    if (!sandboxId) return
     setIsStopping(true)
     try {
-      await deleteDesktop(desktopSandboxId)
-      clearDesktopSandbox()
+      await deleteDesktop(sandboxId, chatId)
+      clearChatDesktop(chatId)
       setViewMode("preview")
       toast.success("Desktop stopped")
-    } catch (error) {
+    } catch (err) {
       const message =
-        error instanceof Error ? error.message : "Failed to stop desktop"
+        err instanceof Error ? err.message : "Failed to stop desktop"
       toast.error(message)
-      clearDesktopSandbox()
+      clearChatDesktop(chatId)
       setViewMode("preview")
     } finally {
       setIsStopping(false)
@@ -99,19 +111,18 @@ export function DesktopView({ className }: { className?: string }) {
 
   return (
     <div className={cn("flex size-full flex-col overflow-hidden", className)}>
-      {/* Header bar */}
       <div className="flex h-9 shrink-0 items-center justify-between border-b border-border bg-background px-3">
         <div className="flex items-center gap-2">
           <Monitor className="size-3.5 text-muted-foreground" />
           <span className="text-xs font-medium">Desktop</span>
-          {desktopSandboxId && (
+          {sandboxId && (
             <span className="flex items-center gap-1 rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-medium text-green-600 dark:text-green-400">
               <span className="size-1.5 animate-pulse rounded-full bg-green-500" />
               {isReconnecting ? "Reconnecting…" : "Running"}
             </span>
           )}
         </div>
-        {desktopSandboxId && (
+        {sandboxId && (
           <Button
             disabled={isStopping}
             onClick={handleStop}
@@ -125,19 +136,16 @@ export function DesktopView({ className }: { className?: string }) {
         )}
       </div>
 
-      {/* Content */}
       {isReconnecting ? (
         <div className="flex size-full flex-col items-center justify-center gap-3 text-center">
           <Monitor className="size-8 text-muted-foreground/40" />
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-muted-foreground">
-              Reconnecting to desktop…
-            </p>
-          </div>
+          <p className="text-sm font-medium text-muted-foreground">
+            Reconnecting to desktop…
+          </p>
         </div>
-      ) : desktopVncUrl ? (
+      ) : vncUrl ? (
         <iframe
-          src={desktopVncUrl}
+          src={vncUrl}
           className="size-full border-0"
           allow="clipboard-read; clipboard-write"
           title="Desktop Sandbox"
@@ -150,7 +158,7 @@ export function DesktopView({ className }: { className?: string }) {
               No desktop session
             </p>
             <p className="text-xs text-muted-foreground/60">
-              Start a desktop sandbox to enable computer-use agent
+              Start a desktop sandbox to enable computer-use tools
             </p>
           </div>
         </div>

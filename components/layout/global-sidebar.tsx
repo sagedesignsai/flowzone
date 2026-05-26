@@ -48,6 +48,7 @@ import { useSession, signOut } from "@/lib/auth-client"
 import { useState } from "react"
 import { SettingsDialog } from "@/components/settings/settings-dialog"
 import { Logomark } from "@/components/brand"
+import { useChatSessionsSync } from "@/hooks/use-chat-sessions-sync"
 
 // ----- Navigation Items ──────────────────────────────────────────────────────
 
@@ -129,6 +130,8 @@ export function GlobalSidebar() {
   const router = useRouter()
   const isSettings = pathname.startsWith("/settings")
   const { data: session } = useSession()
+
+  useChatSessionsSync()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const {
     chatSessions,
@@ -139,12 +142,15 @@ export function GlobalSidebar() {
   } = useIdeStore()
   const { open } = useSidebar()
 
+  const clearChatDesktop = useIdeStore((s) => s.clearChatDesktop)
+
   async function handleDeleteChat(id: string) {
     try {
       await fetch(`/api/chat/${id}`, { method: "DELETE" })
     } catch {
       // Optimistic delete — proceed even if server fails
     }
+    clearChatDesktop(id)
     removeChatSession(id)
   }
 

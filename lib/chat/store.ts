@@ -2,6 +2,11 @@ import { prisma } from "@/lib/prisma"
 import { createBranch } from "@/lib/github/branches"
 import type { UIMessage } from "ai"
 import { logger } from "@/lib/logger"
+import {
+  mergeChatMessages,
+  persistIncomingUserMessages,
+  persistMessages,
+} from "@/lib/chat/messages"
 
 function generateTitleFromMessage(message: string): string {
   return message.split("\n")[0]?.slice(0, 60) || "New Chat"
@@ -10,7 +15,6 @@ function generateTitleFromMessage(message: string): string {
 /**
  * When a new chat is created under a project that has a linked GitRepo,
  * auto-create the dedicated branch and link the chat to the repo.
- * The sandbox is created lazily when the first message is processed.
  */
 async function autoImportRepoForChat(
   chatId: string,
@@ -61,7 +65,7 @@ export async function ensureChat(
   try {
     const chat = await prisma.chat.findUnique({
       where: { id: chatId },
-      select: { id: true },
+      select: { id: true, projectId: true },
     })
 
     if (!chat) {
@@ -76,10 +80,18 @@ export async function ensureChat(
         },
       })
 
-      // Auto-import repo if project has one linked
       if (projectId) {
         await autoImportRepoForChat(chatId, projectId)
       }
+      return
+    }
+
+    if (projectId && !chat.projectId) {
+      await prisma.chat.update({
+        where: { id: chatId },
+        data: { projectId },
+      })
+      await autoImportRepoForChat(chatId, projectId)
     }
   } catch (error) {
     logger.warn("ensureChat failed", { chatId, error: String(error) })
@@ -109,10 +121,6 @@ export interface ChatContext {
   latestTextPartText: string
 }
 
-/**
- * Load previous messages from DB and merge with incoming.
- * Returns combined messages and the latest user text.
- */
 export async function prepareChat(
   chatId: string,
   userId: string,
@@ -131,13 +139,11 @@ export async function prepareChat(
 
   const latestMessage = incomingMessages[incomingMessages.length - 1]
   const latestTextPart = latestMessage?.parts?.find((p) => p.type === "text")
-  const latestTextPartText = (
-    latestTextPart as { text?: string } | undefined
-  )?.text ?? ""
-  const firstMessageText = latestTextPartText
+  const latestTextPartText =
+    (latestTextPart as { text?: string } | undefined)?.text ?? ""
 
   try {
-    await ensureChat(chatId, userId, firstMessageText, projectId)
+    await ensureChat(chatId, userId, latestTextPartText, projectId)
   } catch (error) {
     logger.warn("Failed to ensure chat exists", {
       chatId,
@@ -145,10 +151,9 @@ export async function prepareChat(
     })
   }
 
-  let combinedMessages: UIMessage[] = incomingMessages
-  if (incomingMessages.length === 1 && previousMessages.length > 0) {
-    combinedMessages = [...previousMessages, incomingMessages[0]]
-  }
+  await persistIncomingUserMessages(chatId, incomingMessages)
+
+  const combinedMessages = mergeChatMessages(previousMessages, incomingMessages)
 
   return { combinedMessages, latestTextPartText }
 }
@@ -160,43 +165,5 @@ export async function saveChat({
   chatId: string
   messages: UIMessage[]
 }): Promise<void> {
-  if (!messages || messages.length === 0) return
-
-  // Only persist the new assistant message, not the entire history.
-  // The client Zustand store handles full history persistence;
-  // the DB is for server-side session continuity on reconnect.
-  const newMessages = messages.filter((m) => {
-    // Keep only user & assistant messages that likely aren't persisted yet.
-    // We use a heuristic: check if the message is the last assistant message.
-    return m.role === "assistant"
-  })
-
-  // Take only the last assistant message (the one we just generated)
-  const lastAssistant = newMessages[newMessages.length - 1]
-  if (!lastAssistant) return
-
-  try {
-    const textContent = lastAssistant.parts
-      .filter((part) => part.type === "text")
-      .map((part) => (part as { text: string }).text || "")
-      .join("")
-
-    await prisma.message.upsert({
-      where: { id: lastAssistant.id },
-      update: {
-        role: lastAssistant.role,
-        content: textContent,
-        parts: lastAssistant.parts as unknown as Record<string, unknown>,
-      },
-      create: {
-        id: lastAssistant.id,
-        chatId,
-        role: lastAssistant.role,
-        content: textContent,
-        parts: lastAssistant.parts as unknown as Record<string, unknown>,
-      },
-    })
-  } catch (error) {
-    logger.warn("saveChat failed", { chatId, error: String(error) })
-  }
+  await persistMessages(chatId, messages)
 }

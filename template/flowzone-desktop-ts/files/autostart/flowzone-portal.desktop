@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Flowzone Portal
+Comment=Open Flowzone sandbox status dashboard in browser
+Exec=sh -c "sleep 3; x-www-browser http://localhost:9090"
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+X-XFCE-Autostart-enabled=true

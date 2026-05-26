@@ -1,15 +1,17 @@
 /**
  * GET /api/desktop/[id]/status
- *
- * Get the status of a desktop sandbox.
  */
 
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
+import {
+  assertDesktopSandboxAccess,
+  DesktopAccessError,
+} from "@/lib/desktop/auth"
 
 export async function GET(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params
@@ -23,26 +25,26 @@ export async function GET(
     if (!process.env.E2B_API_KEY) {
       return Response.json(
         { error: "E2B_API_KEY is not configured" },
-        { status: 500 }
+        { status: 500 },
       )
     }
 
-    // Dynamic import — avoids loading @e2b/desktop when not configured
+    await assertDesktopSandboxAccess(session.user.id, id)
+
     const { Sandbox } = await import("@e2b/desktop")
 
     try {
-      const desktop = await Sandbox.connect(id)
-
-      // If we can connect, sandbox is still running
+      await Sandbox.connect(id)
       return Response.json({
-        status: "running",
-        timeRemaining: 300, // Placeholder — E2B doesn't expose remaining time
+        status: "running" as const,
       })
-    } catch (error) {
-      // Sandbox not found or already terminated
+    } catch {
       return Response.json({ error: "Sandbox not found" }, { status: 404 })
     }
   } catch (error) {
+    if (error instanceof DesktopAccessError) {
+      return Response.json({ error: error.message }, { status: error.status })
+    }
     const message =
       error instanceof Error ? error.message : "Internal server error"
     console.error("GET /api/desktop/[id]/status error:", message)

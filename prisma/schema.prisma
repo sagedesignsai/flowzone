@@ -99,9 +99,13 @@ model Chat {
   gitRepo   GitRepo?  @relation(fields: [gitRepoId], references: [id], onDelete: SetNull)
   gitBranch String?   /// The working branch created for this chat (e.g. "flowzone/abc123")
 
-  messages   Message[]
-  sandboxRun SandboxRun?
-  agentRun   AgentRun?
+  /// When true, the user chose chat-only mode (no desktop sandbox attachment).
+  desktopOptOut Boolean @default(false)
+
+  messages    Message[]
+  sandboxRun  SandboxRun?
+  desktopRun  DesktopRun?
+  agentRun    AgentRun?
 
   @@index([projectId])
   @@index([userId])
@@ -160,6 +164,22 @@ model SandboxRun {
   repoPath    String?  /// Path inside sandbox where repo is cloned
   gitBranch   String?  /// Branch checked out in sandbox
 
+  @@index([e2bSandboxId])
+  @@index([status])
+}
+
+/// Flowzone: E2B desktop (VNC) sandbox tied to a chat
+model DesktopRun {
+  id           String   @id @default(cuid())
+  chatId       String   @unique
+  chat         Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  userId       String
+  e2bSandboxId String   @unique
+  status       String   @default("running") // creating | running | stopped
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime?
+
+  @@index([userId])
   @@index([e2bSandboxId])
   @@index([status])
 }

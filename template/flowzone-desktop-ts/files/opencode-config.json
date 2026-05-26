@@ -1,29 +1,24 @@
 {
   "provider": {
-    "anthropic": {
-      "model": "claude-sonnet-4-20250514",
-      "apiKey": "${ANTHROPIC_API_KEY}"
-    },
-    "openai": {
-      "model": "gpt-4o",
-      "apiKey": "${OPENAI_API_KEY}"
-    },
+    "providers": [],
     "fallback": true
   },
   "permissions": {
     "file": {
       "read": ["**/*"],
-      "write": ["**/*.{ts,tsx,js,jsx,css,md,json,yaml,yml,html,prisma,env}"],
-      "deny": [".env", ".env.*", "**/node_modules/**", "**/.git/**"]
+      "write": ["**/*"],
+      "deny": []
     },
     "command": {
-      "allow": ["pnpm", "npm", "npx", "git", "ls", "cat", "mkdir", "rm", "cp", "mv"],
-      "deny": ["sudo", "rm -rf /", "chmod 777"]
+      "allow": ["pnpm", "npm", "npx", "git", "ls", "cat", "mkdir", "rm", "cp", "mv", "python3", "go", "cargo", "rustc", "gh", "code", "jq", "rg", "fzf", "curl", "wget", "tar", "gzip", "make"],
+      "deny": ["sudo.*", "rm -rf /", "chmod 777.*"]
     }
   },
   "agent": {
-    "name": "flowzone-desktop",
+    "name": "flowzone-desktop-dev",
     "working_directory": "/home/user/project",
     "max_iterations": 50
-  }
+  },
+  "autoupdate": "notify",
+  "telemetry": "off"
 }

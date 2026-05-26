@@ -1,14 +1,8 @@
 "use client"
 
-/**
- * Desktop Launcher
- *
- * Button to launch a desktop sandbox with loading state and error handling.
- */
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { useIdeStore } from "@/hooks/use-ide-store"
+import { useChatDesktop, useIdeStore } from "@/hooks/use-ide-store"
 import { createDesktop } from "@/lib/desktop-client"
 import { Monitor, Loader2 } from "lucide-react"
 import { toast } from "sonner"
@@ -19,37 +13,40 @@ interface DesktopLauncherProps {
   iconOnly?: boolean
 }
 
-export function DesktopLauncher({ chatId, projectId, iconOnly }: DesktopLauncherProps) {
+export function DesktopLauncher({
+  chatId,
+  projectId,
+  iconOnly,
+}: DesktopLauncherProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const { desktopSandboxId, setDesktopSandbox, setDesktopStatus, setViewMode } =
-    useIdeStore()
+  const desktop = useChatDesktop(chatId)
+  const setChatDesktop = useIdeStore((s) => s.setChatDesktop)
+  const setChatDesktopStatus = useIdeStore((s) => s.setChatDesktopStatus)
+  const setViewMode = useIdeStore((s) => s.setViewMode)
 
   const handleLaunch = async () => {
-    if (desktopSandboxId) {
+    if (desktop?.sandboxId && desktop.vncUrl) {
       setViewMode("desktop")
       return
     }
 
     setIsLoading(true)
-    setDesktopStatus("starting")
+    setChatDesktopStatus(chatId, "starting")
 
     try {
       const { sandboxId, vncUrl } = await createDesktop(chatId, projectId)
-      setDesktopSandbox(sandboxId, vncUrl)
+      setChatDesktop(chatId, { sandboxId, vncUrl, status: "running" })
       setViewMode("desktop")
       toast.success("Desktop started")
     } catch (error) {
-      setDesktopStatus("error")
+      setChatDesktopStatus(chatId, "error")
 
-      // Provide specific error messages
       let message = "Failed to start desktop"
       if (error instanceof Error) {
         if (error.message.includes("E2B_API_KEY")) {
           message = "Desktop feature not configured. Contact admin."
         } else if (error.message.includes("timeout")) {
           message = "Sandbox creation timed out. Try again."
-        } else if (error.message.includes("VNC")) {
-          message = "Failed to connect to desktop stream."
         } else {
           message = error.message
         }
@@ -62,27 +59,27 @@ export function DesktopLauncher({ chatId, projectId, iconOnly }: DesktopLauncher
     }
   }
 
+  const hasDesktop = Boolean(desktop?.sandboxId)
+
   return (
     <Button
       onClick={handleLaunch}
       disabled={isLoading}
       size={iconOnly ? "icon-xs" : "sm"}
       variant={iconOnly ? "ghost" : "outline"}
-      title={desktopSandboxId ? "Open desktop" : "Launch desktop sandbox"}
+      title={hasDesktop ? "Open desktop" : "Launch desktop sandbox"}
     >
       {isLoading ? (
-        <Loader2 className={iconOnly ? "size-3.5 animate-spin" : "size-4 animate-spin"} />
+        <Loader2
+          className={
+            iconOnly ? "size-3.5 animate-spin" : "size-4 animate-spin"
+          }
+        />
       ) : (
         <Monitor className={iconOnly ? "size-3.5" : "size-4"} />
       )}
       {!iconOnly && (
-        <>
-          {isLoading ? (
-            <>Starting...</>
-          ) : (
-            <>{desktopSandboxId ? "Desktop" : "Launch Desktop"}</>
-          )}
-        </>
+        <>{isLoading ? "Starting..." : hasDesktop ? "Desktop" : "Launch Desktop"}</>
       )}
     </Button>
   )

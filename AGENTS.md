@@ -70,7 +70,7 @@ prisma/schema.prisma   # Database schema
 ### E2B Sandboxes
 - Code Interpreter: `lib/tools/sandbox.ts`
 - Desktop Sandbox: `lib/tools/desktop/` (mouse, keyboard, screen, git operations)
-- Template: `E2B_DESKTOP_TEMPLATE="flowzone-desktop"`
+- Template: `E2B_DESKTOP_TEMPLATE="flowzone-desktop-dev"`
 
 ### GitHub App
 - Webhooks: `lib/github/webhooks/` (push, PR, installation)

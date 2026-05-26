@@ -200,4 +200,48 @@
   html {
     @apply font-mono;
   }
+
+  /* Thin scrollbars with auto-hide via theme tokens */
+
+  :root {
+    scrollbar-width: thin;
+  }
+
+  :root::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+  }
+
+  :root::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /*
+   * .scroller — apply to any scrollable container for thin,
+   * auto-hiding themed scrollbars.
+   *
+   * The thumb is semi-transparent by default (visible when scrolling
+   * or on hover) and becomes more opaque on direct hover.
+   */
+  .scroller {
+    scrollbar-color: color-mix(in oklch, var(--foreground) 12%, transparent) transparent;
+  }
+
+  .scroller::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+  }
+
+  .scroller::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scroller::-webkit-scrollbar-thumb {
+    background: color-mix(in oklch, var(--foreground) 12%, transparent);
+    border-radius: 999px;
+  }
+
+  .scroller::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklch, var(--foreground) 22%, transparent);
+  }
 }

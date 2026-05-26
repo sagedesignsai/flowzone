@@ -12,6 +12,7 @@ export * from "./app"
 export * from "./opencode"
 export * from "./sandbox-context"
 export * from "./git"
+export * from "./notifications"
 
 import {
   mouseLeftClick,
@@ -26,6 +27,7 @@ import { takeScreenshot, getScreenSize, getCursorPosition } from "./screen"
 import { launchApp, openFile, getWindowTitle, runShellCommand } from "./app"
 import { runOpenCodeTask } from "./opencode"
 import { cloneRepo, getGitStatus, getGitDiff, getGitLog } from "./git"
+import { sendNotification } from "./notifications"
 
 export const allDesktopTools = {
   mouseLeftClick,
@@ -49,4 +51,5 @@ export const allDesktopTools = {
   getGitStatus,
   getGitDiff,
   getGitLog,
+  sendNotification,
 }

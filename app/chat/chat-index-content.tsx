@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { useIdeStore } from "@/hooks/use-ide-store"
 import { ChatTeardropDots, Plus } from "@phosphor-icons/react"
 import { useRouter } from "nextjs-toploader/app"
+import { useSearchParams } from "next/navigation"
 import { nanoid } from "nanoid"
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -14,6 +15,8 @@ interface ChatIndexContentProps {
 
 export function ChatIndexContent({ className }: ChatIndexContentProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const projectId = searchParams.get("projectId")
   const { addChatSession, setActiveChatId } = useIdeStore()
 
   function handleNewChat() {
@@ -23,9 +26,11 @@ export function ChatIndexContent({ className }: ChatIndexContentProps) {
       title: "New chat",
       createdAt: Date.now(),
       updatedAt: Date.now(),
+      projectId,
     })
     setActiveChatId(id)
-    router.push(`/chat/${id}`)
+    const query = projectId ? `?projectId=${encodeURIComponent(projectId)}` : ""
+    router.push(`/chat/${id}${query}`)
   }
 
   return (

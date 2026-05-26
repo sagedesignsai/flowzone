@@ -67,7 +67,7 @@ The virtual desktop system enables AI agents to control a full Linux GUI environ
 ### 2. Backend Layer
 
 **POST /api/desktop** (`app/api/desktop/route.ts`)
-- Creates E2B sandbox with template `flowzone-desktop`
+- Creates E2B sandbox with template `flowzone-desktop-dev`
 - Starts VNC stream
 - Returns `{ sandboxId, vncUrl }`
 - Env vars: `E2B_API_KEY`, `E2B_DESKTOP_TIMEOUT_MS` (default 5min)
@@ -121,7 +121,7 @@ User clicks "Launch Desktop"
     ↓
 ChatPanel calls POST /api/desktop { chatId, projectId }
     ↓
-Backend creates E2B Sandbox with flowzone-desktop template
+Backend creates E2B Sandbox with flowzone-desktop-dev template
     ↓
 Sandbox starts VNC stream
     ↓

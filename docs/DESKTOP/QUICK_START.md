@@ -99,7 +99,7 @@ Click "Launch Desktop"
   ↓
 POST /api/desktop { chatId, projectId }
   ↓
-E2B creates sandbox with flowzone-desktop template
+E2B creates sandbox with flowzone-desktop-dev template
   ↓
 VNC stream starts
   ↓

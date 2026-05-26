@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flowzone Desktop</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1c25;
+    --border: #2a2c35;
+    --text: #e4e6ef;
+    --muted: #8b8fa3;
+    --accent: #6366f1;
+    --success: #22c55e;
+    --warn: #f59e0b;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.875rem;
+    margin-bottom: 2rem;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .card h2 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+  }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.875rem;
+  }
+  .row:last-child { border-bottom: none; }
+  .label { color: var(--muted); }
+  .value { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.8125rem; }
+  .dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+  }
+  .dot.connected { background: var(--success); }
+  .dot.disconnected { background: var(--warn); }
+  .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: var(--accent); border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); }
+  .btn.primary:hover { filter: brightness(1.15); }
+  #log {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+  }
+  #log div { padding: 0.125rem 0; }
+</style>
+</head>
+<body>
+  <h1>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+      <path d="M2 17l10 5 10-5"/>
+      <path d="M2 12l10 5 10-5"/>
+    </svg>
+    Flowzone Desktop
+  </h1>
+  <p class="subtitle">Sandbox status dashboard &mdash; auto-refreshes every 10s</p>
+
+  <div class="card" id="status-card">
+    <h2>Platform Connection</h2>
+    <div class="row">
+      <span class="label">Status</span>
+      <span class="value" id="connection-status">
+        <span class="dot disconnected"></span> Checking...
+      </span>
+    </div>
+    <div class="row">
+      <span class="label">API URL</span>
+      <span class="value" id="api-url">--</span>
+    </div>
+    <div class="row">
+      <span class="label">Chat ID</span>
+      <span class="value" id="chat-id">--</span>
+    </div>
+  </div>
+
+  <div class="card" id="git-card">
+    <h2>Git</h2>
+    <div class="row">
+      <span class="label">Branch</span>
+      <span class="value" id="git-branch">--</span>
+    </div>
+    <div class="row">
+      <span class="label">Remote</span>
+      <span class="value" id="git-remote">--</span>
+    </div>
+    <div class="row">
+      <span class="label">Changes</span>
+      <span class="value" id="git-changes">--</span>
+    </div>
+  </div>
+
+  <div class="card" id="opencode-card">
+    <h2>OpenCode Agent</h2>
+    <div class="row">
+      <span class="label">Status</span>
+      <span class="value" id="opencode-status">
+        <span class="dot disconnected"></span> Unknown
+      </span>
+    </div>
+    <div class="row">
+      <span class="label">Config</span>
+      <span class="value" id="opencode-config">--</span>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn" onclick="refreshStatus()">Refresh Now</button>
+  </div>
+
+  <div class="card" style="margin-top: 1rem;">
+    <h2>Log</h2>
+    <div id="log"><div>Waiting for first update...</div></div>
+  </div>
+
+<script>
+const LS = (id) => document.getElementById(id)
+
+function log(msg) {
+  const el = LS('log')
+  const time = new Date().toLocaleTimeString()
+  el.innerHTML = `<div>[${time}] ${msg}</div>` + el.innerHTML
+  if (el.children.length > 50) el.removeChild(el.lastChild)
+}
+
+async function refreshStatus() {
+  log('Refreshing status...')
+
+  let info = { connected: false, apiUrl: '', chatId: '' }
+  try {
+    const res = await fetch('/info.json')
+    if (res.ok) info = await res.json()
+  } catch {}
+
+  const statusEl = LS('connection-status')
+  if (info.apiUrl) {
+    statusEl.innerHTML = '<span class="dot connected"></span> Connected'
+    LS('api-url').textContent = info.apiUrl
+  } else {
+    statusEl.innerHTML = '<span class="dot disconnected"></span> Local Only'
+    LS('api-url').textContent = '(no Flowzone config)'
+  }
+  LS('chat-id').textContent = info.chatId || '--'
+
+  try {
+    const [branchRes, remoteRes, statusRes] = await Promise.all([
+      fetch('/git-branch.txt').catch(() => null),
+      fetch('/git-remote.txt').catch(() => null),
+      fetch('/git-status.txt').catch(() => null),
+    ])
+    if (branchRes?.ok) LS('git-branch').textContent = (await branchRes.text()).trim()
+    if (remoteRes?.ok) LS('git-remote').textContent = (await remoteRes.text()).trim()
+    if (statusRes?.ok) {
+      const text = (await statusRes.text()).trim()
+      LS('git-changes').textContent = text || '(clean)'
+    }
+  } catch {}
+
+  try {
+    const ocRes = await fetch('/opencode-config-check.txt').catch(() => null)
+    if (ocRes?.ok) {
+      LS('opencode-status').innerHTML = '<span class="dot connected"></span> Configured'
+      LS('opencode-config').textContent = (await ocRes.text()).trim()
+    }
+  } catch {}
+
+  log('Status refreshed')
+}
+
+refreshStatus()
+setInterval(refreshStatus, 10000)
+
+async function refreshEnvInfo() {
+  try {
+    const res = await fetch('/env-info.json')
+    if (res.ok) {
+      const data = await res.json()
+      LS('connection-status').innerHTML = data.flowzoneUrl
+        ? '<span class="dot connected"></span> Connected'
+        : '<span class="dot disconnected"></span> Local Only'
+      LS('api-url').textContent = data.flowzoneUrl || '--'
+      LS('chat-id').textContent = data.chatId || '--'
+      LS('git-branch').textContent = data.branch || '--'
+      LS('git-remote').textContent = data.remote || '--'
+      LS('git-changes').textContent = data.gitChanges || '--'
+      LS('opencode-config').textContent = data.opencodeConfig || '--'
+    }
+  } catch {}
+}
+setInterval(refreshEnvInfo, 15000)
+</script>
+</body>
+</html>

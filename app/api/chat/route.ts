@@ -7,7 +7,7 @@
  * sandbox capabilities for visual verification.
  *
  * Request body:
- *   { messages: UIMessage[], id?: string, projectId?: string }
+ *   { messages: UIMessage[], id?: string, projectId?: string, webSearch?: boolean }
  *
  * Response:
  *   SSE stream of UI message chunks
@@ -25,11 +25,13 @@ export const maxDuration = 300
 
 export async function POST(req: Request) {
   try {
-    const { messages: incomingMessages, id, projectId } = (await req.json()) as {
-      messages: UIMessage[]
-      id?: string
-      projectId?: string
-    }
+    const { messages: incomingMessages, id, projectId, webSearch } =
+      (await req.json()) as {
+        messages: UIMessage[]
+        id?: string
+        projectId?: string
+        webSearch?: boolean
+      }
 
     if (!id) {
       return Response.json({ error: "Chat ID is required" }, { status: 400 })
@@ -50,6 +52,7 @@ export async function POST(req: Request) {
       userId: session.user.id,
       incomingMessages,
       projectId,
+      webSearch: Boolean(webSearch),
     })
   } catch (error) {
     const message =

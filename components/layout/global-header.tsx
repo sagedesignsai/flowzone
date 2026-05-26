@@ -58,7 +58,10 @@ export function GlobalHeader({
   ...props
 }: GlobalHeaderProps) {
   const { data: session } = useSession()
-  const { desktopSandboxId } = useIdeStore()
+  const chatDesktop = useIdeStore((s) =>
+    chatId ? s.chatDesktops[chatId] : null,
+  )
+  const desktopSandboxId = chatDesktop?.sandboxId ?? null
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [branchDialogOpen, setBranchDialogOpen] = useState(false)
 

@@ -17,14 +17,14 @@ export const aiProvider = customProvider({
   languageModels: {
     // Primary model for complex agent tasks (coding, tool loops, reasoning).
     // Google Gemini 3 Flash: excellent tool calling, fast, cost-effective.
-    primary: gateway("google/gemini-3.1-pro-preview"),
+    primary: gateway("alibaba/qwen3-coder-next"),
 
     // Fast, cheap model for simple tasks (title gen, summarisation, classification).
     // Google Gemini 3.1 Flash Lite: extremely cheap, fine for simple structured output.
     fast: gateway("google/gemini-3.1-flash-lite"),
 
     // Coding-specialist fallback — Qwen Coder has strong code + tool performance.
-    coder: gateway("alibaba/qwen3-coder"),
+    coder: gateway("alibaba/qwen3-coder-next"),
   },
   fallbackProvider: gateway,
 })

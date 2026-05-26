@@ -84,7 +84,7 @@ export function EditorPanel({
             initial={{ opacity: 0 }}
             transition={{ duration: 0.12 }}
           >
-            <DesktopView />
+            <DesktopView chatId={chatId ?? ""} />
           </motion.div>
         )}
       </AnimatePresence>

@@ -3,31 +3,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────────────────────────────────────
-
 export type ViewMode = "preview" | "code" | "terminal" | "desktop"
-
-export interface ChatMessage {
-  id: string
-  role: "user" | "assistant"
-  content: string
-  timestamp: number
-}
-
-export interface ChatSession {
-  id: string
-  title: string
-  createdAt: number
-  updatedAt: number
-}
-
-export interface IdeFile {
-  path: string
-  content: string
-  language: string
-}
 
 export type DesktopStatus =
   | "idle"
@@ -36,54 +12,60 @@ export type DesktopStatus =
   | "stopping"
   | "error"
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Store Shape
-// ─────────────────────────────────────────────────────────────────────────────
+export interface ChatSession {
+  id: string
+  title: string
+  createdAt: number
+  updatedAt: number
+  projectId?: string | null
+}
+
+export interface ChatDesktopRecord {
+  sandboxId: string
+  vncUrl: string
+  status: DesktopStatus
+}
+
+export interface IdeFile {
+  path: string
+  content: string
+  language: string
+}
 
 interface IdeState {
-  // ─── Editor panel view ────────────────────────────────────────────
   viewMode: ViewMode
   setViewMode: (mode: ViewMode) => void
 
-  // ─── Active chat session ──────────────────────────────────────────
   activeChatId: string | null
   setActiveChatId: (id: string | null) => void
 
-  // ─── Chat history (list of sessions for sidebar) ──────────────────
   chatSessions: ChatSession[]
+  setChatSessions: (sessions: ChatSession[]) => void
   addChatSession: (session: ChatSession) => void
   removeChatSession: (id: string) => void
   updateChatSession: (id: string, partial: Partial<ChatSession>) => void
 
-  // ─── Message history for active chat ─────────────────────────────
-  messages: Record<string, ChatMessage[]>
-  addMessage: (chatId: string, message: ChatMessage) => void
-  clearMessages: (chatId: string) => void
+  /** Per-chat desktop sandbox (keyed by chatId). */
+  chatDesktops: Record<string, ChatDesktopRecord>
+  setChatDesktop: (
+    chatId: string,
+    record: Omit<ChatDesktopRecord, "status"> & { status?: DesktopStatus },
+  ) => void
+  setChatDesktopStatus: (chatId: string, status: DesktopStatus) => void
+  clearChatDesktop: (chatId: string) => void
 
-  // ─── Open file in editor ──────────────────────────────────────────
   openFile: IdeFile | null
   setOpenFile: (file: IdeFile | null) => void
 
-  // ─── Terminal output ──────────────────────────────────────────────
   terminalOutput: string
   appendTerminalOutput: (text: string) => void
   clearTerminalOutput: () => void
   isTerminalStreaming: boolean
   setTerminalStreaming: (streaming: boolean) => void
 
-  // ─── Selected model ───────────────────────────────────────────────
   selectedModel: string
   setSelectedModel: (model: string) => void
 
-  // ─── Desktop sandbox (E2B VNC) ────────────────────────────────────
-  desktopSandboxId: string | null
-  desktopVncUrl: string | null
-  desktopStatus: DesktopStatus
-  setDesktopSandbox: (sandboxId: string, vncUrl: string) => void
-  setDesktopStatus: (status: DesktopStatus) => void
-  clearDesktopSandbox: () => void
-
-  // ─── Git repo info (populated by DesktopAgent) ──────────────────
   gitBranch: string | null
   gitRepoOwner: string | null
   gitRepoName: string | null
@@ -92,55 +74,73 @@ interface IdeState {
   setGitRepoInfo: (owner: string, name: string, fullName: string) => void
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Store
-// ─────────────────────────────────────────────────────────────────────────────
-
 export const useIdeStore = create<IdeState>()(
   persist(
     (set) => ({
-      // View
       viewMode: "preview",
       setViewMode: (mode) => set({ viewMode: mode }),
 
-      // Active chat
       activeChatId: null,
       setActiveChatId: (id) => set({ activeChatId: id }),
 
-      // Sessions
       chatSessions: [],
+      setChatSessions: (sessions) => set({ chatSessions: sessions }),
       addChatSession: (session) =>
-        set((s) => ({ chatSessions: [session, ...s.chatSessions] })),
+        set((s) => {
+          const filtered = s.chatSessions.filter((c) => c.id !== session.id)
+          return { chatSessions: [session, ...filtered] }
+        }),
       removeChatSession: (id) =>
-        set((s) => ({
-          chatSessions: s.chatSessions.filter((c) => c.id !== id),
-        })),
+        set((s) => {
+          const { [id]: _removed, ...restDesktops } = s.chatDesktops
+          return {
+            chatSessions: s.chatSessions.filter((c) => c.id !== id),
+            chatDesktops: restDesktops,
+            activeChatId: s.activeChatId === id ? null : s.activeChatId,
+          }
+        }),
       updateChatSession: (id, partial) =>
         set((s) => ({
           chatSessions: s.chatSessions.map((c) =>
-            c.id === id ? { ...c, ...partial } : c
+            c.id === id ? { ...c, ...partial, updatedAt: Date.now() } : c,
           ),
         })),
 
-      // Messages
-      messages: {},
-      addMessage: (chatId, message) =>
+      chatDesktops: {},
+      setChatDesktop: (chatId, record) =>
         set((s) => ({
-          messages: {
-            ...s.messages,
-            [chatId]: [...(s.messages[chatId] ?? []), message],
+          chatDesktops: {
+            ...s.chatDesktops,
+            [chatId]: {
+              sandboxId: record.sandboxId,
+              vncUrl: record.vncUrl,
+              status: record.status ?? "running",
+            },
           },
         })),
-      clearMessages: (chatId) =>
-        set((s) => ({
-          messages: { ...s.messages, [chatId]: [] },
-        })),
+      setChatDesktopStatus: (chatId, status) =>
+        set((s) => {
+          const current = s.chatDesktops[chatId]
+          return {
+            chatDesktops: {
+              ...s.chatDesktops,
+              [chatId]: {
+                sandboxId: current?.sandboxId ?? "",
+                vncUrl: current?.vncUrl ?? "",
+                status,
+              },
+            },
+          }
+        }),
+      clearChatDesktop: (chatId) =>
+        set((s) => {
+          const { [chatId]: _removed, ...rest } = s.chatDesktops
+          return { chatDesktops: rest }
+        }),
 
-      // File
       openFile: null,
       setOpenFile: (file) => set({ openFile: file }),
 
-      // Terminal
       terminalOutput: "",
       appendTerminalOutput: (text) =>
         set((s) => ({ terminalOutput: s.terminalOutput + text })),
@@ -149,29 +149,9 @@ export const useIdeStore = create<IdeState>()(
       setTerminalStreaming: (streaming) =>
         set({ isTerminalStreaming: streaming }),
 
-      // Model
       selectedModel: "claude-4-5-opus",
       setSelectedModel: (model) => set({ selectedModel: model }),
 
-      // Desktop sandbox
-      desktopSandboxId: null,
-      desktopVncUrl: null,
-      desktopStatus: "idle",
-      setDesktopSandbox: (sandboxId, vncUrl) =>
-        set({
-          desktopSandboxId: sandboxId,
-          desktopVncUrl: vncUrl,
-          desktopStatus: "running",
-        }),
-      setDesktopStatus: (status) => set({ desktopStatus: status }),
-      clearDesktopSandbox: () =>
-        set({
-          desktopSandboxId: null,
-          desktopVncUrl: null,
-          desktopStatus: "idle",
-        }),
-
-      // Git repo info
       gitBranch: null,
       gitRepoOwner: null,
       gitRepoName: null,
@@ -188,17 +168,19 @@ export const useIdeStore = create<IdeState>()(
       name: "flowzone-ide",
       partialize: (s) => ({
         chatSessions: s.chatSessions,
-        messages: s.messages,
         selectedModel: s.selectedModel,
         viewMode: s.viewMode,
-        desktopSandboxId: s.desktopSandboxId,
-        desktopVncUrl: s.desktopVncUrl,
-        desktopStatus: s.desktopStatus,
+        chatDesktops: s.chatDesktops,
         gitBranch: s.gitBranch,
         gitRepoOwner: s.gitRepoOwner,
         gitRepoName: s.gitRepoName,
         gitRepoFullName: s.gitRepoFullName,
       }),
-    }
-  )
+    },
+  ),
 )
+
+/** Select desktop state for a specific chat. */
+export function useChatDesktop(chatId: string) {
+  return useIdeStore((s) => s.chatDesktops[chatId] ?? null)
+}

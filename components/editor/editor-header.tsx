@@ -35,7 +35,7 @@ export function EditorHeader({
   onNavigateForward,
   onRefresh,
 }: EditorHeaderProps) {
-  const { viewMode, setViewMode, desktopSandboxId } = useIdeStore()
+  const { viewMode, setViewMode } = useIdeStore()
   const activeTabId = useEditorStore((s) => s.activeTabId)
   const openTabs = useEditorStore((s) => s.openTabs)
   const showFileTree = useEditorStore((s) => s.showFileTree)

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Name=Flowzone Portal
+Comment=Sandbox status dashboard
+Exec=x-www-browser http://localhost:9090
+Terminal=false
+Icon=utilities-system-monitor
+Type=Application
+Categories=Development;Utility;
+StartupNotify=true

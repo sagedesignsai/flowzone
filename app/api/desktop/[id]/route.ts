@@ -1,21 +1,22 @@
 /**
  * POST /api/desktop/[id] — Reconnect to an existing desktop sandbox
- *
- * Connects to a running desktop sandbox by ID, extends its timeout,
- * restarts the VNC stream if needed, and returns the stream URL.
  */
 
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
+import {
+  assertDesktopSandboxAccess,
+  DesktopAccessError,
+} from "@/lib/desktop/auth"
+import { reconnectDesktopSandbox } from "@/lib/desktop/create-sandbox"
 
 export const maxDuration = 30
 
 export async function POST(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    // Auth check
     const session = await auth.api.getSession({
       headers: await headers(),
     })
@@ -30,26 +31,15 @@ export async function POST(
       return Response.json({ error: "Sandbox ID is required" }, { status: 400 })
     }
 
-    // Dynamic import to avoid loading @e2b/desktop when not needed
-    const { Sandbox } = await import("@e2b/desktop")
+    await assertDesktopSandboxAccess(session.user.id, id)
 
-    const timeoutMs = Number(process.env.E2B_DESKTOP_TIMEOUT_MS ?? 300000)
+    const { sandboxId, vncUrl } = await reconnectDesktopSandbox(id)
 
-    const desktop = await Sandbox.connect(id)
-
-    await desktop.setTimeout(timeoutMs)
-
-    // Restart VNC stream: stop if running, then start fresh
-    try {
-      await desktop.stream.stop()
-    } catch {
-      // ignore — stream may not have been running
-    }
-    await desktop.stream.start()
-    const vncUrl = desktop.stream.getUrl()
-
-    return Response.json({ sandboxId: id, vncUrl })
+    return Response.json({ sandboxId, vncUrl })
   } catch (error) {
+    if (error instanceof DesktopAccessError) {
+      return Response.json({ error: error.message }, { status: error.status })
+    }
     const message =
       error instanceof Error ? error.message : "Internal server error"
     console.error("POST /api/desktop/[id] error:", message)

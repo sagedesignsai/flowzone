@@ -1,17 +1,21 @@
 /**
- * POST /api/desktop   — Create a new desktop sandbox and start VNC stream
- * DELETE /api/desktop — Kill an existing desktop sandbox
- *
- * The desktop sandbox uses @e2b/desktop which provides a full Linux GUI
- * environment with VNC streaming via noVNC.
+ * POST /api/desktop   — Create or resume a desktop sandbox for a chat
+ * DELETE /api/desktop — Kill a desktop sandbox (authorized)
  */
 
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
+import { prisma } from "@/lib/prisma"
+import {
+  assertChatAccess,
+  assertDesktopSandboxAccess,
+  DesktopAccessError,
+} from "@/lib/desktop/auth"
+import { getOrCreateDesktopSandbox } from "@/lib/desktop/create-sandbox"
+import { killDesktopSandbox } from "@/lib/desktop/kill"
+import { markDesktopRunStopped } from "@/lib/desktop/persistence"
 
-export const maxDuration = 60
-
-// ── POST — Create sandbox + start VNC stream ───────────────
+export const maxDuration = 310
 
 export async function POST(req: Request) {
   try {
@@ -24,55 +28,64 @@ export async function POST(req: Request) {
     if (!process.env.E2B_API_KEY) {
       return Response.json(
         { error: "E2B_API_KEY is not configured" },
-        { status: 500 }
+        { status: 500 },
       )
     }
 
-    const { chatId, projectId } = await req.json()
+    const { chatId, projectId } = (await req.json()) as {
+      chatId?: string
+      projectId?: string
+    }
 
-    // Dynamic import — avoids loading @e2b/desktop when not configured
-    const { Sandbox } = await import("@e2b/desktop")
+    if (!chatId) {
+      return Response.json({ error: "chatId is required" }, { status: 400 })
+    }
 
-    const timeoutMs = Number(process.env.E2B_DESKTOP_TIMEOUT_MS ?? 300000)
+    const access = await assertChatAccess(session.user.id, chatId)
+    if (access.desktopOptOut) {
+      return Response.json(
+        { error: "Desktop is disabled for this chat" },
+        { status: 400 },
+      )
+    }
 
-    const template = process.env.E2B_DESKTOP_TEMPLATE ?? "flowzone-desktop"
-    const desktop = await Sandbox.create(template, {
-      resolution: [1280, 800],
-      dpi: 96,
-      timeoutMs,
-      envs: {
-        FLOWZONE_API_URL:
-          process.env.NEXT_PUBLIC_URL ?? "http://localhost:3000",
-        FLOWZONE_CHAT_ID: chatId ?? "",
-        FLOWZONE_PROJECT_ID: projectId ?? "",
-        GITHUB_TOKEN: process.env.GITHUB_TOKEN ?? "",
-        GIT_AUTHOR_NAME: process.env.GIT_AUTHOR_NAME ?? session.user.name ?? "",
-        GIT_AUTHOR_EMAIL:
-          process.env.GIT_AUTHOR_EMAIL ?? session.user.email ?? "",
-        ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ?? "",
-        OPENAI_API_KEY: process.env.OPENAI_API_KEY ?? "",
-      },
-      metadata: {
+    const { sandboxId, vncUrl } = await getOrCreateDesktopSandbox({
+      chatId,
+      projectId,
+      userId: session.user.id,
+      userName: session.user.name,
+      userEmail: session.user.email,
+    })
+
+    await prisma.chat.upsert({
+      where: { id: chatId },
+      update: { desktopOptOut: false },
+      create: {
+        id: chatId,
+        title: "New Chat",
         userId: session.user.id,
-        projectId: projectId ?? "",
-        chatId: chatId ?? "",
+        projectId: projectId ?? null,
       },
     })
 
-    await desktop.stream.start()
-
-    const vncUrl = desktop.stream.getUrl()
-
-    return Response.json({ sandboxId: desktop.sandboxId, vncUrl })
+    return Response.json({ sandboxId, vncUrl })
   } catch (error) {
+    if (error instanceof DesktopAccessError) {
+      return Response.json({ error: error.message }, { status: error.status })
+    }
+    const template =
+      process.env.E2B_DESKTOP_TEMPLATE ?? "flowzone-desktop-dev"
     const message =
       error instanceof Error ? error.message : "Internal server error"
-    console.error("POST /api/desktop error:", message)
-    return Response.json({ error: message }, { status: 500 })
+    console.error("POST /api/desktop error:", error)
+    return Response.json(
+      {
+        error: `Desktop sandbox creation failed (template: "${template}"): ${message}`,
+      },
+      { status: 500 },
+    )
   }
 }
-
-// ── DELETE — Kill an existing sandbox ─────────────────────
 
 export async function DELETE(req: Request) {
   try {
@@ -82,21 +95,32 @@ export async function DELETE(req: Request) {
       return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { sandboxId } = await req.json()
+    const { sandboxId, chatId } = (await req.json()) as {
+      sandboxId?: string
+      chatId?: string
+    }
 
     if (!sandboxId) {
       return Response.json({ error: "sandboxId is required" }, { status: 400 })
     }
 
-    // Dynamic import — avoids loading @e2b/desktop when not configured
-    const { Sandbox } = await import("@e2b/desktop")
+    const access = await assertDesktopSandboxAccess(
+      session.user.id,
+      sandboxId,
+    )
 
-    const desktop = await Sandbox.connect(sandboxId)
+    if (chatId && chatId !== access.chatId) {
+      return Response.json({ error: "Forbidden" }, { status: 403 })
+    }
 
-    await desktop.kill()
+    await killDesktopSandbox(sandboxId)
+    await markDesktopRunStopped(access.chatId)
 
     return Response.json({ success: true })
   } catch (error) {
+    if (error instanceof DesktopAccessError) {
+      return Response.json({ error: error.message }, { status: error.status })
+    }
     const message =
       error instanceof Error ? error.message : "Internal server error"
     console.error("DELETE /api/desktop error:", message)

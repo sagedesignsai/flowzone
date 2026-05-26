@@ -1,13 +1,4 @@
-import { AppLayout } from "@/components/layout/app-layout"
-import { GlobalHeader } from "@/components/layout/global-header"
-import { ChatPanel } from "@/components/chat/chat-panel"
-import { EditorPanel } from "@/components/editor/editor-panel"
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable"
-import { SidebarInset } from "@/components/ui/sidebar"
+import { ChatPageClient } from "./chat-page-client"
 import { notFound, redirect } from "next/navigation"
 import { loadChat } from "@/lib/chat/store"
 import { auth } from "@/lib/auth"
@@ -16,23 +7,30 @@ import { prisma } from "@/lib/prisma"
 
 interface ChatPageProps {
   params: Promise<{ id: string }>
+  searchParams?: Promise<{ projectId?: string }>
 }
 
 export async function generateMetadata({ params }: ChatPageProps) {
   const { id } = await params
+
+  const chat = await prisma.chat.findUnique({
+    where: { id },
+    select: { title: true },
+  })
+
   return {
-    title: `Chat ${id} — Flowzone`,
+    title: chat?.title ? `${chat.title} — Flowzone` : `Chat — Flowzone`,
   }
 }
 
-export default async function ChatPage({ params }: ChatPageProps) {
+export default async function ChatPage({ params, searchParams }: ChatPageProps) {
   const { id } = await params
+  const { projectId: projectIdFromQuery } = (await searchParams) ?? {}
 
   if (!id) {
     notFound()
   }
 
-  // Ensure user can access this chat
   const session = await auth.api.getSession({
     headers: await headers(),
   })
@@ -41,46 +39,30 @@ export default async function ChatPage({ params }: ChatPageProps) {
     redirect("/login")
   }
 
-  // Check if chat exists and belongs to user
   const chat = await prisma.chat.findUnique({
     where: { id },
-    select: { userId: true },
+    select: {
+      userId: true,
+      title: true,
+      projectId: true,
+      desktopOptOut: true,
+    },
   })
 
-  // If chat exists but doesn't belong to user, return 404
   if (chat && chat.userId !== session.user.id) {
     notFound()
   }
 
-  // Load initial messages for the chat
   const initialMessages = await loadChat(id)
+  const projectId = projectIdFromQuery ?? chat?.projectId ?? undefined
 
   return (
-    <AppLayout defaultSidebarOpen={false}>
-      <SidebarInset className="overflow-hidden">
-        <GlobalHeader breadcrumb="New chat" showActions chatId={id} />
-
-        <ResizablePanelGroup
-          className="flex-1 overflow-hidden"
-          orientation="horizontal"
-        >
-          {/* ── Chat ─────────────────────────────────────────────── */}
-          <ResizablePanel defaultSize="35%" maxSize="55%" minSize="24%">
-            <ChatPanel
-              chatId={id}
-              initialMessages={initialMessages}
-              className="size-full"
-            />
-          </ResizablePanel>
-
-          <ResizableHandle withHandle />
-
-          {/* ── Editor / Preview / Terminal ───────────────────────── */}
-          <ResizablePanel defaultSize="65%" minSize="30%">
-            <EditorPanel chatId={id} className="size-full" />
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      </SidebarInset>
-    </AppLayout>
+    <ChatPageClient
+      chatId={id}
+      initialMessages={initialMessages}
+      projectId={projectId}
+      title={chat?.title ?? "New chat"}
+      desktopOptOut={chat?.desktopOptOut ?? false}
+    />
   )
 }

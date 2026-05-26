@@ -1,7 +1,7 @@
 /**
  * Desktop Client Helpers
  *
- * Client-side utilities for desktop sandbox management and communication.
+ * Client-side utilities for desktop sandbox management.
  */
 
 export interface DesktopCreateResponse {
@@ -15,11 +15,11 @@ export interface DesktopStatusResponse {
 }
 
 /**
- * Create a new desktop sandbox
+ * Create or resume a desktop sandbox for a chat.
  */
 export async function createDesktop(
   chatId: string,
-  projectId?: string
+  projectId?: string,
 ): Promise<DesktopCreateResponse> {
   const response = await fetch("/api/desktop", {
     method: "POST",
@@ -36,13 +36,32 @@ export async function createDesktop(
 }
 
 /**
- * Delete a desktop sandbox
+ * Opt out of desktop for a chat (chat-only mode).
  */
-export async function deleteDesktop(sandboxId: string): Promise<void> {
+export async function optOutDesktop(chatId: string): Promise<void> {
+  const response = await fetch(`/api/chat/${chatId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ desktopOptOut: true }),
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || "Failed to update chat")
+  }
+}
+
+/**
+ * Delete a desktop sandbox.
+ */
+export async function deleteDesktop(
+  sandboxId: string,
+  chatId?: string,
+): Promise<void> {
   const response = await fetch("/api/desktop", {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sandboxId }),
+    body: JSON.stringify({ sandboxId, chatId }),
   })
 
   if (!response.ok) {
@@ -52,10 +71,10 @@ export async function deleteDesktop(sandboxId: string): Promise<void> {
 }
 
 /**
- * Get desktop sandbox status
+ * Get desktop sandbox status.
  */
 export async function getDesktopStatus(
-  sandboxId: string
+  sandboxId: string,
 ): Promise<DesktopStatusResponse> {
   const response = await fetch(`/api/desktop/${sandboxId}/status`)
 
@@ -66,17 +85,5 @@ export async function getDesktopStatus(
   return response.json()
 }
 
-/**
- * Send message to desktop agent
- */
-export async function sendDesktopMessage(
-  chatId: string,
-  messages: any[],
-  sandboxId: string
-): Promise<Response> {
-  return fetch(`/api/chat/${chatId}/desktop`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages, sandboxId }),
-  })
-}
+export { fetchChatDetail, fetchChatList } from "@/lib/chat/client/api"
+export type { ChatDetailResponse, ChatListItem } from "@/lib/chat/client/api"
