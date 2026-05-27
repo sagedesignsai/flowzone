@@ -4,9 +4,12 @@ import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { useChatDesktop, useIdeStore } from "@/hooks/use-ide-store"
 import { cn } from "@/lib/utils"
-import { Monitor, Power } from "@phosphor-icons/react"
+import { Monitor, TerminalWindow, Power } from "@phosphor-icons/react"
 import { deleteDesktop } from "@/lib/desktop-client"
 import { toast } from "sonner"
+import { DesktopTerminalView } from "@/components/editor/desktop-terminal-view"
+
+import "@xterm/xterm/css/xterm.css"
 
 interface DesktopViewProps {
   chatId: string
@@ -25,6 +28,7 @@ export function DesktopView({ chatId, className }: DesktopViewProps) {
 
   const [isStopping, setIsStopping] = useState(false)
   const [isReconnecting, setIsReconnecting] = useState(false)
+  const [displayMode, setDisplayMode] = useState<"vnc" | "terminal">("vnc")
   const hasAttemptedReconnect = useRef(false)
 
   useEffect(() => {
@@ -38,7 +42,7 @@ export function DesktopView({ chatId, className }: DesktopViewProps) {
       .then(async (res) => {
         if (!res.ok) {
           clearChatDesktop(chatId)
-          setViewMode("preview")
+          setViewMode("code")
           return
         }
         const data = await res.json()
@@ -51,7 +55,7 @@ export function DesktopView({ chatId, className }: DesktopViewProps) {
       })
       .catch(() => {
         clearChatDesktop(chatId)
-        setViewMode("preview")
+        setViewMode("code")
         toast.info("Desktop session expired")
       })
       .finally(() => {
@@ -79,7 +83,6 @@ export function DesktopView({ chatId, className }: DesktopViewProps) {
         const response = await fetch(`/api/desktop/${sandboxId}/status`)
         if (!response.ok) {
           clearChatDesktop(chatId)
-          setViewMode("preview")
           toast.info("Desktop session expired")
         }
       } catch (err) {
@@ -88,7 +91,7 @@ export function DesktopView({ chatId, className }: DesktopViewProps) {
     }, 30000)
 
     return () => clearInterval(interval)
-  }, [sandboxId, chatId, clearChatDesktop, setViewMode])
+  }, [sandboxId, chatId, clearChatDesktop])
 
   const handleStop = async () => {
     if (!sandboxId) return
@@ -96,14 +99,14 @@ export function DesktopView({ chatId, className }: DesktopViewProps) {
     try {
       await deleteDesktop(sandboxId, chatId)
       clearChatDesktop(chatId)
-      setViewMode("preview")
+      setViewMode("code")
       toast.success("Desktop stopped")
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to stop desktop"
       toast.error(message)
       clearChatDesktop(chatId)
-      setViewMode("preview")
+      setViewMode("code")
     } finally {
       setIsStopping(false)
     }
@@ -115,11 +118,39 @@ export function DesktopView({ chatId, className }: DesktopViewProps) {
         <div className="flex items-center gap-2">
           <Monitor className="size-3.5 text-muted-foreground" />
           <span className="text-xs font-medium">Desktop</span>
-          {sandboxId && (
+            {sandboxId && (
             <span className="flex items-center gap-1 rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-medium text-green-600 dark:text-green-400">
               <span className="size-1.5 animate-pulse rounded-full bg-green-500" />
               {isReconnecting ? "Reconnecting…" : "Running"}
             </span>
+          )}
+          {sandboxId && (
+            <div className="ml-2 flex items-center gap-0.5 rounded-md border border-border bg-muted/50 p-0.5">
+              <button
+                onClick={() => setDisplayMode("vnc")}
+                className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                  displayMode === "vnc"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                title="VNC Desktop"
+              >
+                <Monitor className="mr-1 inline-block size-3" />
+                VNC
+              </button>
+              <button
+                onClick={() => setDisplayMode("terminal")}
+                className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                  displayMode === "terminal"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                title="Terminal (PTY)"
+              >
+                <TerminalWindow className="mr-1 inline-block size-3" />
+                Terminal
+              </button>
+            </div>
           )}
         </div>
         {sandboxId && (
@@ -143,12 +174,18 @@ export function DesktopView({ chatId, className }: DesktopViewProps) {
             Reconnecting to desktop…
           </p>
         </div>
-      ) : vncUrl ? (
+      ) : vncUrl && displayMode === "vnc" ? (
         <iframe
           src={vncUrl}
           className="size-full border-0"
           allow="clipboard-read; clipboard-write"
           title="Desktop Sandbox"
+        />
+      ) : vncUrl && displayMode === "terminal" ? (
+        <DesktopTerminalView
+          chatId={chatId}
+          sandboxId={sandboxId ?? ""}
+          ptyPid={desktop?.ptyPid}
         />
       ) : (
         <div className="flex size-full flex-col items-center justify-center gap-3 text-center">

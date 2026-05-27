@@ -3,7 +3,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
-export type ViewMode = "preview" | "code" | "terminal" | "desktop"
+export type ViewMode = "code" | "terminal" | "desktop"
 
 export type DesktopStatus =
   | "idle"
@@ -24,6 +24,7 @@ export interface ChatDesktopRecord {
   sandboxId: string
   vncUrl: string
   status: DesktopStatus
+  ptyPid?: number
 }
 
 export interface IdeFile {
@@ -77,7 +78,7 @@ interface IdeState {
 export const useIdeStore = create<IdeState>()(
   persist(
     (set) => ({
-      viewMode: "preview",
+      viewMode: "code",
       setViewMode: (mode) => set({ viewMode: mode }),
 
       activeChatId: null,
@@ -115,6 +116,7 @@ export const useIdeStore = create<IdeState>()(
               sandboxId: record.sandboxId,
               vncUrl: record.vncUrl,
               status: record.status ?? "running",
+              ptyPid: record.ptyPid,
             },
           },
         })),

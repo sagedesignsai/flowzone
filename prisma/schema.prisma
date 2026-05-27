@@ -176,6 +176,8 @@ model DesktopRun {
   userId       String
   e2bSandboxId String   @unique
   status       String   @default("running") // creating | running | stopped
+  ptyPid       Int?     /// PID of the persistent PTY session
+  tmuxSession  String?  @default("flowzone-core") /// Shared tmux session name
   createdAt    DateTime @default(now())
   expiresAt    DateTime?
 

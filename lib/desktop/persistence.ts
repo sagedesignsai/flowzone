@@ -3,13 +3,24 @@ import { logger } from "@/lib/logger"
 
 const DEFAULT_DESKTOP_TIMEOUT_MS = 300_000
 
-export async function upsertDesktopRun(options: {
+export interface DesktopRunData {
   chatId: string
   userId: string
   e2bSandboxId: string
   status?: string
-}): Promise<void> {
-  const { chatId, userId, e2bSandboxId, status = "running" } = options
+  ptyPid?: number | null
+}
+
+export async function upsertDesktopRun(
+  options: DesktopRunData,
+): Promise<void> {
+  const {
+    chatId,
+    userId,
+    e2bSandboxId,
+    status = "running",
+    ptyPid,
+  } = options
   const expiresAt = new Date(
     Date.now() +
       Number(process.env.E2B_DESKTOP_TIMEOUT_MS ?? DEFAULT_DESKTOP_TIMEOUT_MS),
@@ -23,6 +34,7 @@ export async function upsertDesktopRun(options: {
         userId,
         status,
         expiresAt,
+        ...(ptyPid !== undefined ? { ptyPid } : {}),
       },
       create: {
         chatId,
@@ -30,6 +42,7 @@ export async function upsertDesktopRun(options: {
         e2bSandboxId,
         status,
         expiresAt,
+        ...(ptyPid !== undefined ? { ptyPid } : {}),
       },
     })
   } catch (error) {
@@ -44,6 +57,20 @@ export async function getDesktopRunForChat(chatId: string) {
       e2bSandboxId: true,
       status: true,
       expiresAt: true,
+      ptyPid: true,
+    },
+  })
+}
+
+export async function getDesktopRunBySandboxId(sandboxId: string) {
+  return prisma.desktopRun.findUnique({
+    where: { e2bSandboxId: sandboxId },
+    select: {
+      e2bSandboxId: true,
+      chatId: true,
+      status: true,
+      ptyPid: true,
+      tmuxSession: true,
     },
   })
 }

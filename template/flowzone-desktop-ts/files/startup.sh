@@ -218,6 +218,12 @@ if [[ -f "${PORTAL_DIR}/indicator/flowzone-indicator.py" ]] && command -v xfconf
   bash "${PORTAL_DIR}/indicator/setup-indicator.sh" 2>/dev/null || true
 fi
 
+# ── Start persistent tmux session ────────────────────────────
+if command -v tmux &>/dev/null; then
+  tmux new-session -d -s flowzone-core 2>/dev/null || true
+  log "Tmux session 'flowzone-core' started"
+fi
+
 # ── Send desktop notification ────────────────────────────────
 if command -v notify-send &>/dev/null; then
   notify-send \

@@ -114,6 +114,19 @@ export const runShellCommand = tool({
       timeoutMs: background ? 0 : undefined,
     })
 
+    // Mirror to shared tmux session so the PTY terminal viewer
+    // shows what the agent is doing in the shell
+    if (!background) {
+      desktop.commands
+        .run(
+          `tmux send-keys -t flowzone-core ${JSON.stringify(fullCommand)} Enter`,
+          { background: true },
+        )
+        .catch(() => {
+          // Non-critical — tmux may not be running
+        })
+    }
+
     return {
       stdout: result.stdout,
       stderr: result.stderr,

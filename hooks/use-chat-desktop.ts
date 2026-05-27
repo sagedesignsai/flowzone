@@ -12,14 +12,12 @@ interface UseChatDesktopOptions {
   chatId: string
   projectId?: string
   desktopOptOut?: boolean
-  skipAutoLaunch?: boolean
 }
 
 export function useChatDesktopManager({
   chatId,
   projectId,
   desktopOptOut = false,
-  skipAutoLaunch = false,
 }: UseChatDesktopOptions) {
   const desktop = useChatDesktop(chatId)
   const setChatDesktop = useIdeStore((s) => s.setChatDesktop)
@@ -38,14 +36,14 @@ export function useChatDesktopManager({
   const isReady = Boolean(sandboxId && vncUrl && status === "running")
 
   const launch = useCallback(async () => {
-    if (desktopOptOut || skipAutoLaunch) return
+    if (desktopOptOut) return
 
     const generation = ++launchGeneration.current
     setError(null)
     setChatDesktopStatus(chatId, "starting")
 
     try {
-      const { sandboxId: id, vncUrl: url } = await createDesktop(
+      const { sandboxId: id, vncUrl: url, ptyPid } = await createDesktop(
         chatId,
         projectId,
       )
@@ -55,19 +53,18 @@ export function useChatDesktopManager({
         sandboxId: id,
         vncUrl: url,
         status: "running",
+        ptyPid,
       })
       setViewMode("desktop")
     } catch (err) {
       if (generation !== launchGeneration.current) return
       setChatDesktopStatus(chatId, "error")
       setError(err instanceof Error ? err.message : "Desktop failed to start")
-      throw err
     }
   }, [
     chatId,
     projectId,
     desktopOptOut,
-    skipAutoLaunch,
     setChatDesktop,
     setChatDesktopStatus,
     setViewMode,
@@ -82,12 +79,12 @@ export function useChatDesktopManager({
     launchGeneration.current++
     await optOutDesktop(chatId)
     clearChatDesktop(chatId)
-    setViewMode("preview")
+    setViewMode("code")
     setError(null)
   }, [chatId, clearChatDesktop, setViewMode])
 
   useEffect(() => {
-    if (desktopOptOut || skipAutoLaunch) return
+    if (desktopOptOut) return
     if (autoLaunchAttempted.current === chatId) return
 
     const existing = useIdeStore.getState().chatDesktops[chatId]
@@ -98,10 +95,8 @@ export function useChatDesktopManager({
     }
 
     autoLaunchAttempted.current = chatId
-    launch().catch(() => {
-      // error stored in state
-    })
-  }, [chatId, desktopOptOut, skipAutoLaunch, launch, setViewMode])
+    launch()
+  }, [chatId, desktopOptOut, launch, setViewMode])
 
   useEffect(() => {
     return () => {

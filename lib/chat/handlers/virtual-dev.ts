@@ -50,6 +50,62 @@ export async function handleVirtualDeveloperChat(options: {
     projectId,
   )
 
+  const desktopSandboxId = await resolveDesktopSandboxId({
+    chatId,
+    userId,
+    messages: incomingMessages,
+  })
+
+  const extraTools: ToolSet = {}
+
+  // ── Single VM: when desktop is active, use it for everything ──
+  if (desktopSandboxId) {
+    Object.assign(extraTools, allDesktopTools)
+
+    if (webSearch) {
+      if (!isWebSearchConfigured()) {
+        return Response.json(
+          {
+            error:
+              "Web search is not configured. Set TAVILY_API_KEY or SERPER_API_KEY.",
+          },
+          { status: 503 },
+        )
+      }
+      extraTools.webSearch = createWebSearchTool()
+    }
+
+    const { Sandbox } = await import("@e2b/desktop")
+    const desktop = await Sandbox.connect(desktopSandboxId)
+    await desktop.setTimeout(
+      Number(process.env.E2B_DESKTOP_TIMEOUT_MS ?? 300000),
+    )
+
+    const agent = createVirtualDeveloper(model, extraTools)
+
+    const validatedMessages = await validateUIMessages({
+      messages: combinedMessages,
+      tools: agent.tools as Parameters<typeof validateUIMessages>[0]["tools"],
+    })
+
+    const respond = () =>
+      createAgentUIStreamResponse({
+        agent,
+        uiMessages: validatedMessages,
+        originalMessages: validatedMessages as never,
+        onFinish: async ({ messages }) => {
+          await saveChat({ chatId, messages })
+        },
+      })
+
+    // Desktop sandbox extends e2b.Sandbox — use it in both contexts
+    return DesktopSandboxContext.run(
+      { desktop, sandboxId: desktopSandboxId, chatId },
+      () => SandboxContext.run({ sandbox: desktop, chatId }, respond),
+    )
+  }
+
+  // ── No desktop: fall back to lightweight code sandbox ──
   const sandboxResult = await tryCreateSandbox(chatId)
 
   if (!sandboxResult.ok) {
@@ -70,22 +126,11 @@ export async function handleVirtualDeveloperChat(options: {
   }
 
   const sandboxCtx = sandboxResult.value
+  sandboxCtx.chatId = chatId
 
-  const desktopSandboxId = await resolveDesktopSandboxId({
-    chatId,
-    userId,
-    messages: incomingMessages,
-  })
-
-  const extraTools: ToolSet = {}
-
-  if (desktopSandboxId) {
-    Object.assign(extraTools, allDesktopTools)
-  } else {
-    const { runCommand, readFile } = await import("@/lib/tools/sandbox")
-    extraTools.runShellCommand = runCommand
-    extraTools.readFile = readFile
-  }
+  const { runCommand, readFile } = await import("@/lib/tools/sandbox")
+  extraTools.runShellCommand = runCommand
+  extraTools.readFile = readFile
 
   if (webSearch) {
     if (!isWebSearchConfigured()) {
@@ -99,8 +144,6 @@ export async function handleVirtualDeveloperChat(options: {
     }
     extraTools.webSearch = createWebSearchTool()
   }
-
-  sandboxCtx.chatId = chatId
 
   const agent = createVirtualDeveloper(model, extraTools)
 
@@ -118,19 +161,6 @@ export async function handleVirtualDeveloperChat(options: {
         await saveChat({ chatId, messages })
       },
     })
-
-  if (desktopSandboxId) {
-    const { Sandbox } = await import("@e2b/desktop")
-    const desktop = await Sandbox.connect(desktopSandboxId)
-    await desktop.setTimeout(
-      Number(process.env.E2B_DESKTOP_TIMEOUT_MS ?? 300000),
-    )
-
-    return DesktopSandboxContext.run(
-      { desktop, sandboxId: desktopSandboxId, chatId },
-      () => SandboxContext.run(sandboxCtx, respond),
-    )
-  }
 
   return SandboxContext.run(sandboxCtx, respond)
 }

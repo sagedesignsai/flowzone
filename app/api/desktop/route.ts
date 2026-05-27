@@ -49,7 +49,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const { sandboxId, vncUrl } = await getOrCreateDesktopSandbox({
+    const { sandboxId, vncUrl, ptyPid } = await getOrCreateDesktopSandbox({
       chatId,
       projectId,
       userId: session.user.id,
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
       },
     })
 
-    return Response.json({ sandboxId, vncUrl })
+    return Response.json({ sandboxId, vncUrl, ptyPid })
   } catch (error) {
     if (error instanceof DesktopAccessError) {
       return Response.json({ error: error.message }, { status: error.status })

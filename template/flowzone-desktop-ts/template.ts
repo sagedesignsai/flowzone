@@ -1,33 +1,42 @@
-import { Template } from "e2b"
+import { Template, waitForPort } from "e2b"
 
 export const flowzoneTemplate = Template()
-  .fromTemplate("desktop")
+  .fromUbuntuImage("22.04")
   .setUser("root")
-  // Install OpenCode CLI, Node.js 22, pnpm, and GitHub CLI
+  // Desktop environment + dev tools
   .runCmd([
-    "OPENCODE_INSTALL_DIR=/usr/local/bin curl -fsSL https://opencode.ai/install | bash",
-    "curl -fsSL https://deb.nodesource.com/setup_22.x | bash",
-    "apt-get install -y nodejs",
-    "npm install -g pnpm",
-    "apt-get install -y gh",
+    "apt-get update",
+    "DEBIAN_FRONTEND=noninteractive apt-get install -y \
+      xvfb x11-utils xauth xfce4 xfce4-goodies x11vnc xdotool \
+      net-tools procps curl wget git python3 python3-pip python3-venv \
+      nodejs npm jq ripgrep fzf make gcc g++ unzip xz-utils tmux \
+      gh fonts-noto fonts-noto-color-emoji fonts-firacode sudo",
+    "DEBIAN_FRONTEND=noninteractive npm install -g pnpm",
+    "DEBIAN_FRONTEND=noninteractive apt-get clean",
+    "apt-get clean && rm -rf /var/lib/apt/lists/*",
   ])
-  // Fix root bashrc and install Python 3, Go, Rust, fonts, and common CLI tools
+  // Go
   .runCmd([
-    // Reset bashrc to avoid PATH breakage from OpenCode installer
-    `printf '%s\\n' 'export PATH=\"/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"' 'test -f ~/.bash_aliases && . ~/.bash_aliases' > /root/.bashrc`,
-    "apt-get install -y python3 python3-pip python3-venv",
     "curl -fsSL https://go.dev/dl/go1.22.3.linux-amd64.tar.gz -o /tmp/go.tar.gz",
     "rm -rf /usr/local/go && tar -C /usr/local -xzf /tmp/go.tar.gz",
-    `echo 'export PATH=\\$PATH:/usr/local/go/bin' > /etc/profile.d/go.sh`,
+    `echo 'export PATH=$PATH:/usr/local/go/bin' > /etc/profile.d/go.sh`,
     "chmod +x /etc/profile.d/go.sh",
+  ])
+  // Rust (as user so rustup installs to ~/.rustup)
+  .runCmd([
     "su user -c 'curl --proto =https --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y'",
-    `echo 'export PATH=\\$PATH:\\$HOME/.cargo/bin' > /etc/profile.d/rust.sh`,
+    `echo 'export PATH=$PATH:$HOME/.cargo/bin' > /etc/profile.d/rust.sh`,
     "chmod +x /etc/profile.d/rust.sh",
-    "apt-get install -y jq ripgrep fzf make gcc g++ unzip xz-utils",
-    "apt-get install -y fonts-noto fonts-noto-cjk fonts-noto-color-emoji fonts-firacode",
-    "git config --global core.editor nano",
-    "git config --global pull.rebase false",
-    "git config --global init.defaultBranch main",
+  ])
+  // OpenCode CLI
+  .runCmd([
+    "OPENCODE_INSTALL_DIR=/usr/local/bin curl -fsSL https://opencode.ai/install | bash",
+  ])
+  // noVNC
+  .runCmd([
+    "git clone --branch e2b-desktop https://github.com/e2b-dev/noVNC.git /opt/noVNC",
+    "ln -s /opt/noVNC/vnc.html /opt/noVNC/index.html",
+    "git clone --branch v0.12.0 https://github.com/novnc/websockify /opt/noVNC/utils/websockify",
   ])
   // Ensure required directories exist
   .makeDir("/home/user/.config/Code/User")
@@ -121,5 +130,9 @@ export const flowzoneTemplate = Template()
     "chmod +x /usr/local/bin/flowzone-notify",
     "chmod +x /home/user/.flowzone-portal/indicator/setup-indicator.sh",
   ])
+  // Startup command — handles Xvfb, XFCE4, x11vnc, noVNC, then calls startup.sh
+  .copy("files/start-command.sh", "/home/user/start-command.sh")
+  .runCmd("chmod +x /home/user/start-command.sh")
   .setUser("user")
   .setWorkdir("/home/user")
+  .setStartCmd("/home/user/start-command.sh", waitForPort(6080))

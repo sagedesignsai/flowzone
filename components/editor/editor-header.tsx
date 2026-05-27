@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { ButtonGroup } from "@/components/ui/button-group"
 import { Separator } from "@/components/ui/separator"
@@ -7,9 +8,9 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
-import { DesktopLauncher } from "@/components/editor/desktop-launcher"
-import { useIdeStore } from "@/hooks/use-ide-store"
+import { useChatDesktop, useIdeStore } from "@/hooks/use-ide-store"
 import { useEditorStore } from "@/stores/editor-store"
+import { createDesktop } from "@/lib/desktop-client"
 import {
   CaretLeft,
   CaretRight,
@@ -19,8 +20,11 @@ import {
   ArrowClockwise,
   DotsThree,
   CaretDown,
-  Sidebar,
+  TerminalWindow,
+  Monitor,
+  SpinnerGap,
 } from "@phosphor-icons/react"
+import { toast } from "sonner"
 
 interface EditorHeaderProps {
   chatId: string
@@ -38,36 +42,68 @@ export function EditorHeader({
   const { viewMode, setViewMode } = useIdeStore()
   const activeTabId = useEditorStore((s) => s.activeTabId)
   const openTabs = useEditorStore((s) => s.openTabs)
-  const showFileTree = useEditorStore((s) => s.showFileTree)
-  const toggleFileTree = useEditorStore((s) => s.toggleFileTree)
+  const desktop = useChatDesktop(chatId)
+  const setChatDesktop = useIdeStore((s) => s.setChatDesktop)
+  const setChatDesktopStatus = useIdeStore((s) => s.setChatDesktopStatus)
+  const [desktopLoading, setDesktopLoading] = useState(false)
 
   const activeTab = openTabs.find((t) => t.id === activeTabId)
 
+  const handleDesktopClick = useCallback(async () => {
+    if (desktop?.sandboxId && desktop.vncUrl) {
+      setViewMode("desktop")
+      return
+    }
+
+    setDesktopLoading(true)
+    setChatDesktopStatus(chatId, "starting")
+
+    try {
+      const { sandboxId, vncUrl } = await createDesktop(chatId)
+      setChatDesktop(chatId, { sandboxId, vncUrl, status: "running" })
+      setViewMode("desktop")
+    } catch (error) {
+      setChatDesktopStatus(chatId, "error")
+      toast.error(
+        error instanceof Error ? error.message : "Failed to start desktop",
+      )
+    } finally {
+      setDesktopLoading(false)
+    }
+  }, [chatId, desktop, setChatDesktop, setChatDesktopStatus, setViewMode])
+
   return (
     <div className="flex h-10 shrink-0 items-center gap-3 border-b border-border bg-background px-3">
-      {/* Left: Collapse + View Icons */}
+      {/* Left: View Icons */}
       <ToggleGroup spacing={0} orientation="horizontal">
-        <ToggleGroupItem size="sm" title="Collapse">
-          <CaretLeft className="size-3.5" />
-        </ToggleGroupItem>
-        <DesktopLauncher chatId={chatId} iconOnly />
         <ToggleGroupItem
           size="sm"
           pressed={viewMode === "code"}
-          onPressedChange={() =>
-            setViewMode(viewMode === "code" ? "preview" : "code")
-          }
+          onPressedChange={() => setViewMode("code")}
           title="Code"
         >
           <Code className="size-3.5" />
         </ToggleGroupItem>
         <ToggleGroupItem
           size="sm"
-          pressed={showFileTree}
-          onPressedChange={toggleFileTree}
-          title={showFileTree ? "Hide file tree" : "Show file tree"}
+          pressed={viewMode === "terminal"}
+          onPressedChange={() => setViewMode("terminal")}
+          title="Terminal"
         >
-          <Sidebar className="size-3.5" />
+          <TerminalWindow className="size-3.5" />
+        </ToggleGroupItem>
+        <ToggleGroupItem
+          size="sm"
+          pressed={viewMode === "desktop"}
+          onPressedChange={handleDesktopClick}
+          title="Desktop"
+          disabled={desktopLoading}
+        >
+          {desktopLoading ? (
+            <SpinnerGap className="size-3.5 animate-spin" />
+          ) : (
+            <Monitor className="size-3.5" />
+          )}
         </ToggleGroupItem>
       </ToggleGroup>
 

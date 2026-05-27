@@ -1,7 +1,6 @@
 "use client"
 
 import { EditorView } from "@/components/editor/editor-view"
-import { PreviewView } from "@/components/editor/preview-view"
 import { TerminalView } from "@/components/editor/terminal-view"
 import { DesktopView } from "@/components/editor/desktop-view"
 import { EditorHeader } from "@/components/editor/editor-header"
@@ -13,12 +12,10 @@ import type { ComponentProps } from "react"
 
 interface EditorPanelProps extends ComponentProps<"div"> {
   chatId?: string
-  previewUrl?: string
 }
 
 export function EditorPanel({
   chatId,
-  previewUrl,
   className,
   ...props
 }: EditorPanelProps) {
@@ -36,19 +33,6 @@ export function EditorPanel({
       <EditorTabs />
 
       <AnimatePresence initial={false} mode="wait">
-        {viewMode === "preview" && (
-          <motion.div
-            key="preview"
-            animate={{ opacity: 1 }}
-            className="size-full"
-            exit={{ opacity: 0 }}
-            initial={{ opacity: 0 }}
-            transition={{ duration: 0.12 }}
-          >
-            <PreviewView url={previewUrl} />
-          </motion.div>
-        )}
-
         {viewMode === "code" && (
           <motion.div
             key="code"
@@ -71,7 +55,7 @@ export function EditorPanel({
             initial={{ opacity: 0 }}
             transition={{ duration: 0.12 }}
           >
-            <TerminalView />
+            <TerminalView chatId={chatId ?? ""} />
           </motion.div>
         )}
 

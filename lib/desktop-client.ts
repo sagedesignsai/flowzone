@@ -7,6 +7,7 @@
 export interface DesktopCreateResponse {
   sandboxId: string
   vncUrl: string
+  ptyPid?: number
 }
 
 export interface DesktopStatusResponse {

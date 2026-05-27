@@ -33,9 +33,9 @@ export async function POST(
 
     await assertDesktopSandboxAccess(session.user.id, id)
 
-    const { sandboxId, vncUrl } = await reconnectDesktopSandbox(id)
+    const { sandboxId, vncUrl, ptyPid } = await reconnectDesktopSandbox(id)
 
-    return Response.json({ sandboxId, vncUrl })
+    return Response.json({ sandboxId, vncUrl, ptyPid })
   } catch (error) {
     if (error instanceof DesktopAccessError) {
       return Response.json({ error: error.message }, { status: error.status })
