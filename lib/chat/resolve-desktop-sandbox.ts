@@ -1,7 +1,11 @@
 import type { UIMessage } from "ai"
 import { prisma } from "@/lib/prisma"
 import { DESKTOP_SANDBOX_MIME } from "@/lib/desktop/constants"
-import { getDesktopRunForChat } from "@/lib/desktop/persistence"
+import {
+  getDesktopRunForChat,
+  isDesktopRunExpired,
+  markDesktopRunStopped,
+} from "@/lib/desktop/persistence"
 import { assertDesktopSandboxAccess } from "@/lib/desktop/auth"
 
 type MessageWithAttachments = UIMessage & {
@@ -66,6 +70,11 @@ export async function resolveDesktopSandboxId(options: {
 
   const run = await getDesktopRunForChat(chatId)
   if (!run || run.status === "stopped") return null
+
+  if (isDesktopRunExpired(run)) {
+    await markDesktopRunStopped(chatId)
+    return null
+  }
 
   try {
     await assertDesktopSandboxAccess(userId, run.e2bSandboxId)

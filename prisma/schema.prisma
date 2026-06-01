@@ -16,11 +16,16 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  sessions     Session[]
-  accounts     Account[]
-  projects     Project[]
-  chats        Chat[]
-  posts        Post[]
+  /// Total credits available (purchased + bonuses - usage)
+  credits Int @default(0)
+
+  sessions            Session[]
+  accounts            Account[]
+  projects            Project[]
+  chats               Chat[]
+  posts               Post[]
+  creditTransactions  CreditTransaction[]
+  desktopRuns         DesktopRun[]
 }
 
 /// BetterAuth: Session model
@@ -174,6 +179,7 @@ model DesktopRun {
   chatId       String   @unique
   chat         Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
   userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   e2bSandboxId String   @unique
   status       String   @default("running") // creating | running | stopped
   ptyPid       Int?     /// PID of the persistent PTY session
@@ -230,4 +236,46 @@ model Post {
   updatedAt DateTime @updatedAt
 
   @@index([authorId])
+}
+
+/// Flowzone: A predefined credit purchase plan
+model PricingPlan {
+  id          String   @id @default(cuid())
+  name        String   /// e.g. "Starter", "Pro", "Premium"
+  credits     Int      /// Number of credits included
+  priceZar    Int      /// Price in ZAR cents (for PayFast - South Africa)
+  priceUsd    Int      /// Price in USD cents (for Polar.sh - International)
+  description String?
+  badge       String?  /// e.g. "Popular", "Best value"
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// Flowzone: A credit transaction (purchase, usage, refund, bonus)
+model CreditTransaction {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// "purchase" | "usage" | "refund" | "bonus" | "expired"
+  type         String
+  /// Positive for credits received, negative for credits spent
+  amount       Int
+  /// Running balance after this transaction
+  balanceAfter Int
+  /// Human-readable description
+  description  String?
+
+  /// Payment provider details
+  provider     String?  /// "payfast" | "polar"
+  providerTxId String?  /// PayFast pf_payment_id or Polar order/checkout ID
+  status       String?  /// "completed" | "pending" | "failed"
+
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([provider, providerTxId])
+  @@index([createdAt])
 }

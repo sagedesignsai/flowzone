@@ -14,9 +14,10 @@ import {
 import { createVirtualDeveloper } from "@/lib/agents/virtual-dev-agent"
 import { getPrimaryModel } from "@/lib/ai/models"
 import { prepareChat, saveChat } from "@/lib/chat/store"
+import { assertChatOwnership, isForbiddenError } from "@/lib/chat/access"
 import { resolveDesktopSandboxId } from "@/lib/chat/resolve-desktop-sandbox"
 import { tryCreateSandbox } from "@/lib/chat/sandbox"
-import { SandboxContext, type SandboxContextValue } from "@/lib/tools/sandbox-store"
+import { SandboxContext } from "@/lib/tools/sandbox-store"
 import { DesktopSandboxContext } from "@/lib/tools/desktop/sandbox-context"
 import { allDesktopTools } from "@/lib/tools/desktop"
 import { createWebSearchTool } from "@/lib/tools/web-search"
@@ -29,8 +30,10 @@ export async function handleVirtualDeveloperChat(options: {
   incomingMessages: UIMessage[]
   projectId?: string
   webSearch?: boolean
+  abortSignal?: AbortSignal
 }): Promise<Response> {
-  const { chatId, userId, incomingMessages, projectId, webSearch } = options
+  const { chatId, userId, incomingMessages, projectId, webSearch, abortSignal } =
+    options
 
   const model = getPrimaryModel()
   if (!model) {
@@ -41,6 +44,15 @@ export async function handleVirtualDeveloperChat(options: {
       },
       { status: 500 },
     )
+  }
+
+  try {
+    await assertChatOwnership(chatId, userId)
+  } catch (error) {
+    if (isForbiddenError(error)) {
+      return Response.json({ error: "Forbidden" }, { status: 403 })
+    }
+    throw error
   }
 
   const { combinedMessages } = await prepareChat(
@@ -91,6 +103,7 @@ export async function handleVirtualDeveloperChat(options: {
     const respond = () =>
       createAgentUIStreamResponse({
         agent,
+        abortSignal,
         uiMessages: validatedMessages,
         originalMessages: validatedMessages as never,
         onFinish: async ({ messages }) => {
@@ -155,6 +168,7 @@ export async function handleVirtualDeveloperChat(options: {
   const respond = () =>
     createAgentUIStreamResponse({
       agent,
+      abortSignal,
       uiMessages: validatedMessages,
       originalMessages: validatedMessages as never,
       onFinish: async ({ messages }) => {

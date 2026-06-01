@@ -4,6 +4,9 @@ import {
   upsertDesktopRun,
   getDesktopRunForChat,
   getDesktopRunBySandboxId,
+  isDesktopRunExpired,
+  markDesktopRunStopped,
+  refreshDesktopRunExpiration,
 } from "@/lib/desktop/persistence"
 import { killDesktopSandbox } from "@/lib/desktop/kill"
 
@@ -72,7 +75,7 @@ async function createE2bDesktop(options: {
   })
 
   // Create PTY asynchronously
-  createPtyAsync(desktop, chatId, userId).catch((err) =>
+  createPtyAsync(desktop, chatId).catch((err) =>
     logger.warn("Background PTY creation failed", {
       chatId,
       error: String(err),
@@ -102,7 +105,6 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 async function createPtyAsync(
   desktop: import("@e2b/desktop").Sandbox,
   chatId: string,
-  userId: string,
 ): Promise<void> {
   // Step 1: Start opencode in the existing tmux session (created by startup.sh)
   const tmuxResult = await desktop.commands.run(
@@ -188,19 +190,25 @@ export async function getOrCreateDesktopSandbox(options: {
 }): Promise<DesktopSandboxSession> {
   const existing = await getDesktopRunForChat(options.chatId)
   if (existing && existing.status !== "stopped") {
-    try {
-      const { Sandbox } = await import("@e2b/desktop")
-      const desktop = await Sandbox.connect(existing.e2bSandboxId)
-      await desktop.setTimeout(
-        Number(process.env.E2B_DESKTOP_TIMEOUT_MS ?? 300_000),
-      )
-      return {
-        sandboxId: existing.e2bSandboxId,
-        vncUrl: getVncUrl(desktop),
-        ptyPid: existing.ptyPid ?? undefined,
+    if (isDesktopRunExpired(existing)) {
+      await markDesktopRunStopped(options.chatId)
+    } else {
+      try {
+        const { Sandbox } = await import("@e2b/desktop")
+        const desktop = await Sandbox.connect(existing.e2bSandboxId)
+        await desktop.setTimeout(
+          Number(process.env.E2B_DESKTOP_TIMEOUT_MS ?? 300_000),
+        )
+        await refreshDesktopRunExpiration(options.chatId)
+        return {
+          sandboxId: existing.e2bSandboxId,
+          vncUrl: getVncUrl(desktop),
+          ptyPid: existing.ptyPid ?? undefined,
+        }
+      } catch {
+        await killDesktopSandbox(existing.e2bSandboxId)
+        await markDesktopRunStopped(options.chatId)
       }
-    } catch {
-      await killDesktopSandbox(existing.e2bSandboxId)
     }
   }
 
@@ -216,6 +224,9 @@ export async function reconnectDesktopSandbox(
   await desktop.setTimeout(timeoutMs)
 
   const run = await getDesktopRunBySandboxId(sandboxId)
+  if (run?.chatId) {
+    await refreshDesktopRunExpiration(run.chatId)
+  }
   return {
     sandboxId,
     vncUrl: getVncUrl(desktop),

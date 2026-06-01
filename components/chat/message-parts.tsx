@@ -26,8 +26,17 @@ import {
   AttachmentInfo,
 } from "@/components/ai-elements/attachments"
 import { cn } from "@/lib/utils"
-import type { UIMessage } from "ai"
+import type { DynamicToolUIPart, ToolUIPart, UIMessage } from "ai"
+import Image from "next/image"
 import { memo, useMemo } from "react"
+
+const prettifyName = (value: string) =>
+  value
+    .replace(/[-_]/g, " ")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^./, (char) => char.toUpperCase())
 
 // ─── Text Part ──────────────────────────────────────────────────────────────
 
@@ -38,6 +47,8 @@ const TextPart = memo(function TextPart({
   text: string
   state?: "streaming" | "done"
 }) {
+  if (!text.trim() && state !== "streaming") return null
+
   return (
     <MessageResponse isAnimating={state === "streaming"}>
       {text}
@@ -54,8 +65,10 @@ const ReasoningPart = memo(function ReasoningPart({
   text: string
   state?: "streaming" | "done"
 }) {
+  if (!text.trim() && state !== "streaming") return null
+
   return (
-    <Reasoning className="my-4" isStreaming={state === "streaming"}>
+    <Reasoning className="my-3" isStreaming={state === "streaming"}>
       <ReasoningTrigger />
       <ReasoningContent>{text}</ReasoningContent>
     </Reasoning>
@@ -99,37 +112,34 @@ const ToolPart = memo(function ToolPart({
 
   // Derive tool display name from type
   const derivedName = useMemo(() => {
-    if (resolvedType === "dynamic-tool") return dynamicToolName ?? "tool"
+    if (resolvedType === "dynamic-tool") {
+      return prettifyName(dynamicToolName ?? "tool")
+    }
     // ToolUIPart type is `tool-${toolName}`
-    return type.split("-").slice(1).join("-")
+    return prettifyName(type.split("-").slice(1).join("-"))
   }, [resolvedType, type, dynamicToolName])
 
   return (
-    <Tool className="my-4">
+    <Tool className="my-3">
       {resolvedType === "dynamic-tool" ? (
         <ToolHeader
-          state={resolvedState as any}
+          state={resolvedState as DynamicToolUIPart["state"]}
           title={title ?? derivedName}
           toolName={dynamicToolName ?? "tool"}
           type="dynamic-tool"
         />
       ) : (
         <ToolHeader
-          state={resolvedState as any}
+          state={resolvedState as ToolUIPart["state"]}
           title={title ?? derivedName}
-          type={resolvedType as any}
+          type={type as ToolUIPart["type"]}
         />
       )}
       <ToolContent>
-        {input !== null && input !== undefined && (
-          <ToolInput input={input as any} />
-        )}
+        {input !== null && input !== undefined && <ToolInput input={input} />}
         {((output !== null && output !== undefined) ||
           (errorText !== null && errorText !== undefined)) && (
-          <ToolOutput
-            errorText={errorText ?? undefined}
-            output={output as any}
-          />
+          <ToolOutput errorText={errorText ?? undefined} output={output} />
         )}
       </ToolContent>
     </Tool>
@@ -164,7 +174,7 @@ const SourcesGroup = memo(function SourcesGroup({
   if (parts.length === 0) return null
 
   return (
-    <Sources className="my-4">
+    <Sources className="my-3">
       <SourcesTrigger count={parts.length} />
       <SourcesContent>
         {parts.map((s) => (
@@ -209,10 +219,13 @@ const ScreenshotPart = memo(function ScreenshotPart({
 }) {
   return (
     <div className="my-2 overflow-hidden rounded-lg border border-border bg-muted">
-      <img
-        src={`data:image/png;base64,${screenshot}`}
+      <Image
         alt="Desktop screenshot"
         className="h-auto w-full"
+        height={height ?? 600}
+        unoptimized
+        width={width ?? 800}
+        src={`data:image/png;base64,${screenshot}`}
         style={{
           maxWidth: width ? `${Math.min(width, 800)}px` : "100%",
           maxHeight: height ? `${Math.min(height, 600)}px` : "auto",
@@ -277,7 +290,7 @@ export const MessageParts = memo(function MessageParts({
 
       case "dynamic-tool": {
         // Handle desktop tool results (screenshots, etc.)
-        const toolPart = part as any
+        const toolPart = part as DynamicToolUIPart
         if (
           toolPart.toolName === "takeScreenshot" &&
           toolPart.output?.screenshot
@@ -323,16 +336,7 @@ export const MessageParts = memo(function MessageParts({
       default: {
         // ToolUIPart type is `tool-${name}`, DynamicToolUIPart is `dynamic-tool`
         if (part.type.startsWith("tool-") || part.type === "dynamic-tool") {
-          const toolPart = part as {
-            type: string
-            state: string
-            toolName?: string
-            toolCallId: string
-            input: unknown
-            output?: unknown
-            errorText?: string
-            title?: string
-          }
+          const toolPart = part as ToolUIPart | DynamicToolUIPart
           return (
             <ToolPart
               key={toolPart.toolCallId ?? index}

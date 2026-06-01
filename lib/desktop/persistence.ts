@@ -3,6 +3,17 @@ import { logger } from "@/lib/logger"
 
 const DEFAULT_DESKTOP_TIMEOUT_MS = 300_000
 
+function getDesktopExpiresAt(): Date {
+  return new Date(
+    Date.now() +
+      Number(process.env.E2B_DESKTOP_TIMEOUT_MS ?? DEFAULT_DESKTOP_TIMEOUT_MS),
+  )
+}
+
+export function isDesktopRunExpired(run: { expiresAt: Date | null }): boolean {
+  return Boolean(run.expiresAt && run.expiresAt.getTime() <= Date.now())
+}
+
 export interface DesktopRunData {
   chatId: string
   userId: string
@@ -21,10 +32,7 @@ export async function upsertDesktopRun(
     status = "running",
     ptyPid,
   } = options
-  const expiresAt = new Date(
-    Date.now() +
-      Number(process.env.E2B_DESKTOP_TIMEOUT_MS ?? DEFAULT_DESKTOP_TIMEOUT_MS),
-  )
+  const expiresAt = getDesktopExpiresAt()
 
   try {
     await prisma.desktopRun.upsert({
@@ -69,6 +77,7 @@ export async function getDesktopRunBySandboxId(sandboxId: string) {
       e2bSandboxId: true,
       chatId: true,
       status: true,
+      expiresAt: true,
       ptyPid: true,
       tmuxSession: true,
     },
@@ -83,6 +92,22 @@ export async function markDesktopRunStopped(chatId: string): Promise<void> {
     })
   } catch (error) {
     logger.warn("markDesktopRunStopped failed", { chatId, error: String(error) })
+  }
+}
+
+export async function refreshDesktopRunExpiration(
+  chatId: string,
+): Promise<void> {
+  try {
+    await prisma.desktopRun.updateMany({
+      where: { chatId },
+      data: { expiresAt: getDesktopExpiresAt(), status: "running" },
+    })
+  } catch (error) {
+    logger.warn("refreshDesktopRunExpiration failed", {
+      chatId,
+      error: String(error),
+    })
   }
 }
 

@@ -19,6 +19,7 @@ import {
   Globe,
   ChartBar,
   User,
+  Coin,
 } from "@phosphor-icons/react"
 import { cn } from "@/lib/utils"
 
@@ -32,6 +33,7 @@ export const SETTINGS_SECTIONS = [
   { id: "template", label: "Template", icon: Layout },
   { id: "domains", label: "Domains", icon: Globe },
   { id: "analytics", label: "Analytics", icon: ChartBar },
+  { id: "billing", label: "Billing", icon: Coin },
 ]
 
 // ─── Props ──────────────────────────────────────────────────────────────────

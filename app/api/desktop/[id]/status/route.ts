@@ -8,6 +8,7 @@ import {
   assertDesktopSandboxAccess,
   DesktopAccessError,
 } from "@/lib/desktop/auth"
+import { getDesktopRunBySandboxId } from "@/lib/desktop/persistence"
 
 export async function GET(
   _req: Request,
@@ -35,8 +36,18 @@ export async function GET(
 
     try {
       await Sandbox.connect(id)
+      const run = await getDesktopRunBySandboxId(id)
+      const expiresAt = run?.expiresAt ?? null
+      const timeRemaining = expiresAt
+        ? Math.max(0, expiresAt.getTime() - Date.now())
+        : 0
+
       return Response.json({
         status: "running" as const,
+        expiresAt,
+        timeRemaining,
+        ptyStatus: run?.ptyPid ? "ready" : "creating",
+        ptyPid: run?.ptyPid ?? null,
       })
     } catch {
       return Response.json({ error: "Sandbox not found" }, { status: 404 })

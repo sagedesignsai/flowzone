@@ -61,7 +61,7 @@ export function ChatPageClient({
             orientation="horizontal"
           >
             <ResizablePanel defaultSize="35%" maxSize="55%" minSize="24%">
-              {/* <ChatPanel
+              <ChatPanel
                 chatId={chatId}
                 initialMessages={initialMessages}
                 projectId={projectId}
@@ -71,9 +71,10 @@ export function ChatPageClient({
                 desktopReady={
                   desktopOptOut || desktop.isReady || desktop.status === "error"
                 }
+                desktopStatus={desktop.status}
                 desktopOptOut={desktopOptOut}
                 className="size-full"
-              /> */}
+              />
             </ResizablePanel>
 
             <ResizableHandle withHandle />

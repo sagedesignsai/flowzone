@@ -21,11 +21,22 @@ import { isValidElement } from "react"
 
 import { CodeBlock } from "./code-block"
 
+const prettifyName = (value: string) =>
+  value
+    .replace(/[-_]/g, " ")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^./, (char) => char.toUpperCase())
+
 export type ToolProps = ComponentProps<typeof Collapsible>
 
 export const Tool = ({ className, ...props }: ToolProps) => (
   <Collapsible
-    className={cn("group not-prose mb-4 w-full rounded-md border", className)}
+    className={cn(
+      "group not-prose mb-4 w-full rounded-xl border border-border/70 bg-card/40 shadow-sm",
+      className,
+    )}
     {...props}
   />
 )
@@ -80,13 +91,15 @@ export const ToolHeader = ({
   ...props
 }: ToolHeaderProps) => {
   const derivedName =
-    type === "dynamic-tool" ? toolName : type.split("-").slice(1).join("-")
+    type === "dynamic-tool"
+      ? prettifyName(toolName)
+      : prettifyName(type.split("-").slice(1).join("-"))
 
   return (
     <CollapsibleTrigger
       className={cn(
-        "flex w-full items-center justify-between gap-4 p-3",
-        className
+        "flex w-full items-center justify-between gap-4 px-3 py-2.5",
+        className,
       )}
       {...props}
     >
@@ -105,7 +118,7 @@ export type ToolContentProps = ComponentProps<typeof CollapsibleContent>
 export const ToolContent = ({ className, ...props }: ToolContentProps) => (
   <CollapsibleContent
     className={cn(
-      "space-y-4 p-4 text-popover-foreground outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:animate-in data-[state=open]:slide-in-from-top-2",
+      "space-y-3 px-3 pb-3 pt-0 text-popover-foreground outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:animate-in data-[state=open]:slide-in-from-top-2",
       className
     )}
     {...props}
@@ -138,7 +151,7 @@ export const ToolOutput = ({
   errorText,
   ...props
 }: ToolOutputProps) => {
-  if (!(output || errorText)) {
+  if (output == null && errorText == null) {
     return null
   }
 
@@ -149,7 +162,7 @@ export const ToolOutput = ({
       <CodeBlock code={JSON.stringify(output, null, 2)} language="json" />
     )
   } else if (typeof output === "string") {
-    Output = <CodeBlock code={output} language="json" />
+    Output = <CodeBlock code={output} language="text" />
   }
 
   return (

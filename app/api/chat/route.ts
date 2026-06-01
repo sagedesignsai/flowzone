@@ -53,6 +53,7 @@ export async function POST(req: Request) {
       incomingMessages,
       projectId,
       webSearch: Boolean(webSearch),
+      abortSignal: req.signal,
     })
   } catch (error) {
     const message =

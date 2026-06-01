@@ -51,11 +51,15 @@ export async function executeOpenCodePrompt(options: {
   sessionId: string
   promptText: string
   writer: UIMessageStreamWriter
+  abortSignal?: AbortSignal
   onFinish?: (message: { id: string; parts: Part[] }) => void | Promise<void>
 }): Promise<void> {
-  const { client, sessionId, promptText, writer, onFinish } = options
+  const { client, sessionId, promptText, writer, abortSignal, onFinish } =
+    options
   const messageId = generateId()
   const accumulatedParts: Map<string, Part> = new Map()
+
+  abortSignal?.throwIfAborted()
 
   // 1. Subscribe to events (with timeout)
   logger.debug("Subscribing to OpenCode events", { sessionId })
@@ -99,11 +103,8 @@ export async function executeOpenCodePrompt(options: {
     writer.write({ type: "finish", finishReason: "stop" })
   }
 
-  function closeTextPart(partId: string): void {
-    if (activeTextParts.has(partId)) {
-      writer.write({ type: "text-end", id: partId })
-      activeTextParts.delete(partId)
-    }
+  function abortIfNeeded(): void {
+    abortSignal?.throwIfAborted()
   }
 
   // 4. Iterate over event stream with idle timeout
@@ -115,6 +116,7 @@ export async function executeOpenCodePrompt(options: {
 
   try {
     for await (const event of eventResult.stream) {
+      abortIfNeeded()
       lastEventTime = Date.now()
       const sessionMatch = getEventSessionId(event)
       if (sessionMatch !== undefined && sessionMatch !== sessionId) continue

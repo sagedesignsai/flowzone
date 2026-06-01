@@ -13,7 +13,6 @@ import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
 import {
   getTerminalSession,
-  unregisterTerminalSession,
 } from "@/lib/desktop/terminal-store"
 import { DesktopAccessError } from "@/lib/desktop/auth"
 
@@ -66,7 +65,6 @@ export async function GET(req: Request) {
 
           req.signal.addEventListener("abort", () => {
             handle.disconnect().catch(() => {})
-            unregisterTerminalSession(chatId)
           })
         } catch (error) {
           controller.enqueue(
@@ -77,9 +75,7 @@ export async function GET(req: Request) {
           controller.close()
         }
       },
-      cancel: () => {
-        unregisterTerminalSession(chatId)
-      },
+      cancel: () => {},
     })
 
     return new Response(stream, {

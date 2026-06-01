@@ -47,7 +47,7 @@ export function createSubmitToOpenCodeTool() {
 
       const opencode = await createOpenCodeManager(ctx.sandbox)
 
-      const { sessionId, isNew } = await resolveOpenCodeSession(
+      const { sessionId } = await resolveOpenCodeSession(
         opencode.client,
         ctx.chatId,
       )
@@ -59,6 +59,7 @@ export function createSubmitToOpenCodeTool() {
             sessionId,
             promptText: prompt,
             writer,
+            abortSignal,
           })
         },
       })

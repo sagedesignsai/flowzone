@@ -25,7 +25,6 @@ import {
 import { keyboardType, keyboardPress, keyboardShortcut } from "./keyboard"
 import { takeScreenshot, getScreenSize, getCursorPosition } from "./screen"
 import { launchApp, openFile, getWindowTitle, runShellCommand } from "./app"
-import { runOpenCodeTask } from "./opencode"
 import { cloneRepo, getGitStatus, getGitDiff, getGitLog } from "./git"
 import { sendNotification } from "./notifications"
 
@@ -46,7 +45,6 @@ export const allDesktopTools = {
   openFile,
   getWindowTitle,
   runShellCommand,
-  runOpenCodeTask,
   cloneRepo,
   getGitStatus,
   getGitDiff,

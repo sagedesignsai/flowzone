@@ -1,4 +1,6 @@
 import { betterAuth } from "better-auth"
+import { dash } from "@better-auth/infra";
+
 import { prismaAdapter } from "better-auth/adapters/prisma"
 import { nextCookies } from "better-auth/next-js"
 import { prisma } from "@/lib/prisma"
@@ -14,18 +16,18 @@ export const auth = betterAuth({
   socialProviders: {
     ...(process.env.GITHUB_CLIENT_ID &&
       process.env.GITHUB_CLIENT_SECRET && {
-        github: {
-          clientId: process.env.GITHUB_CLIENT_ID,
-          clientSecret: process.env.GITHUB_CLIENT_SECRET,
-        },
-      }),
+      github: {
+        clientId: process.env.GITHUB_CLIENT_ID,
+        clientSecret: process.env.GITHUB_CLIENT_SECRET,
+      },
+    }),
     ...(process.env.GOOGLE_CLIENT_ID &&
       process.env.GOOGLE_CLIENT_SECRET && {
-        google: {
-          clientId: process.env.GOOGLE_CLIENT_ID,
-          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        },
-      }),
+      google: {
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      },
+    }),
   },
   account: {
     accountLinking: {
@@ -42,7 +44,13 @@ export const auth = betterAuth({
       maxAge: 5 * 60, // 5 minutes
     },
   },
-  plugins: [nextCookies()],
+  plugins: [
+    // Next.js cookies
+    nextCookies(),
+    // Better auth Analytics and dashboard
+    dash()
+
+  ],
 })
 
 export { DEFAULT_AUTHENTICATED_REDIRECT } from "@/lib/auth-config"

@@ -12,6 +12,20 @@ import {
   requireDesktop,
 } from "@/lib/tools/desktop/sandbox-context"
 
+function quoteShellArg(value: string): string {
+  return `'${value.replaceAll("'", `'"'"'`)}'`
+}
+
+function buildShellCommand(command: string, workdir?: string): string {
+  if (!workdir) return command
+
+  if (workdir.includes("\0") || /[\r\n]/.test(workdir)) {
+    throw new Error("Invalid workdir")
+  }
+
+  return `cd ${quoteShellArg(workdir)} && ${command}`
+}
+
 // ── Launch App ─────────────────────────────────────────────
 
 export const launchApp = tool({
@@ -108,24 +122,11 @@ export const runShellCommand = tool({
     if (!ctx) requireDesktop("runShellCommand")
     const { desktop } = ctx
 
-    const fullCommand = workdir ? `cd ${workdir} && ${command}` : command
+    const fullCommand = buildShellCommand(command, workdir)
     const result = await desktop.commands.run(fullCommand, {
       background,
       timeoutMs: background ? 0 : undefined,
     })
-
-    // Mirror to shared tmux session so the PTY terminal viewer
-    // shows what the agent is doing in the shell
-    if (!background) {
-      desktop.commands
-        .run(
-          `tmux send-keys -t flowzone-core ${JSON.stringify(fullCommand)} Enter`,
-          { background: true },
-        )
-        .catch(() => {
-          // Non-critical — tmux may not be running
-        })
-    }
 
     return {
       stdout: result.stdout,
