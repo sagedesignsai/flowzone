@@ -16,6 +16,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 import { SettingsDialog } from "@/components/settings/settings-dialog"
 import { useIdeStore } from "@/hooks/use-ide-store"
 import { useSettingsStore } from "@/stores/settings-store"
+import { useCreditsStore } from "@/stores/credits-store"
 import { useSession, signOut } from "@/lib/auth-client"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
@@ -37,7 +38,7 @@ import {
   Moon,
 } from "@phosphor-icons/react"
 import type { ComponentProps } from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { BranchDialog } from "@/components/layout/branch-dialog"
 
 // ─── Props ───────────────────────────────────────────────────────────────────
@@ -58,6 +59,16 @@ export function GlobalHeader({
   ...props
 }: GlobalHeaderProps) {
   const { data: session } = useSession()
+  const user = session?.user
+
+  // ── Credits store ────────────────────────────────────────────
+  const credits = useCreditsStore((s) => s.balance)
+  const fetchBalance = useCreditsStore((s) => s.fetchBalance)
+
+  useEffect(() => {
+    if (user) fetchBalance()
+  }, [user, fetchBalance])
+
   const chatDesktop = useIdeStore((s) =>
     chatId ? s.chatDesktops[chatId] : null,
   )
@@ -80,8 +91,6 @@ export function GlobalHeader({
   const handleViewBranch = () => {
     setBranchDialogOpen(true)
   }
-
-  const user = session?.user
   const initials = user?.name
     ? user.name
         .split(" ")
@@ -286,13 +295,13 @@ export function GlobalHeader({
               <DropdownMenuSeparator />
 
               {/* Credits */}
-              <div className="flex items-center justify-between px-2 py-1.5">
-                <div className="flex items-center gap-2">
-                  <Trophy className="size-3.5 text-muted-foreground" />
-                  <span className="text-xs">Credits</span>
-                </div>
-                <span className="text-xs text-muted-foreground">0.73</span>
-              </div>
+              <DropdownMenuItem render={<Link href="/settings/billing" />}>
+                <Trophy className="mr-2 size-3.5 text-amber-500" />
+                <span>Credits</span>
+                <span className="ml-auto text-xs text-muted-foreground">
+                  {credits !== null ? credits.toLocaleString() : "..."}
+                </span>
+              </DropdownMenuItem>
 
               <DropdownMenuSeparator />
 

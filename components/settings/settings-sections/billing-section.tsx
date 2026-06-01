@@ -27,38 +27,12 @@ import {
 import { formatDistanceToNow } from "date-fns"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
-
-// ─── Types ──────────────────────────────────────────────────────────────────
-
-interface Plan {
-  id: string
-  name: string
-  credits: number
-  priceZar: number
-  priceUsd: number
-  description: string | null
-  badge: string | null
-  active: boolean
-  sortOrder: number
-}
-
-interface Transaction {
-  id: string
-  userId: string
-  type: string
-  amount: number
-  balanceAfter: number
-  description: string | null
-  provider: string | null
-  providerTxId: string | null
-  status: string | null
-  createdAt: string
-}
-
-interface Providers {
-  payfast: boolean
-  polar: boolean
-}
+import {
+  useCreditsStore,
+  type Plan,
+  type Transaction,
+  type Providers,
+} from "@/stores/credits-store"
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -104,60 +78,29 @@ function BalanceSkeleton() {
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export function BillingSection() {
-  const [plans, setPlans] = useState<Plan[]>([])
-  const [providers, setProviders] = useState<Providers>({
-    payfast: false,
-    polar: false,
-  })
-  const [balance, setBalance] = useState<number | null>(null)
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [totalTx, setTotalTx] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [purchasing, setPurchasing] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  // ── Store ────────────────────────────────────────────────────
+  const plans = useCreditsStore((s) => s.plans)
+  const providers = useCreditsStore((s) => s.providers)
+  const balance = useCreditsStore((s) => s.balance)
+  const transactions = useCreditsStore((s) => s.transactions)
+  const totalTx = useCreditsStore((s) => s.totalTx)
+  const loading = useCreditsStore((s) => s.loading)
+  const error = useCreditsStore((s) => s.error)
+  const purchasing = useCreditsStore((s) => s.purchasing)
+  const fetchAll = useCreditsStore((s) => s.fetchAll)
+  const setPurchasing = useCreditsStore((s) => s.setPurchasing)
+  const refreshAfterPurchase = useCreditsStore((s) => s.refreshAfterPurchase)
+
   const payfastFormRef = useRef<HTMLFormElement>(null)
   const [payfastFormData, setPayfastFormData] = useState<{
     action: string
     fields: Record<string, string>
   } | null>(null)
 
-  // ── Fetch data ───────────────────────────────────────────────
-
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-
-      const [plansRes, balanceRes] = await Promise.all([
-        fetch("/api/credits/plans"),
-        fetch("/api/credits/balance"),
-      ])
-
-      if (!plansRes.ok) {
-        throw new Error("Failed to load pricing plans")
-      }
-      if (!balanceRes.ok) {
-        throw new Error("Failed to load balance")
-      }
-
-      const plansData = await plansRes.json()
-      const balanceData = await balanceRes.json()
-
-      setPlans(plansData.plans)
-      setProviders(plansData.providers)
-      setBalance(balanceData.balance)
-      setTransactions(balanceData.transactions)
-      setTotalTx(balanceData.total)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong")
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
+  // ── Fetch data on mount ──────────────────────────────────────
   useEffect(() => {
-    fetchData()
-  }, [fetchData])
+    fetchAll()
+  }, [fetchAll])
 
   // ── Submit PayFast form ──────────────────────────────────────
 

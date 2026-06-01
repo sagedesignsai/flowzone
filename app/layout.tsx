@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Geist, JetBrains_Mono } from "next/font/google"
+import localFont from "next/font/local"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -19,14 +19,19 @@ export const metadata: Metadata = {
   manifest: "/favicon/site.webmanifest",
 }
 
-const fontSans = Geist({
-  subsets: ["latin"],
+const fontSans = localFont({
+  src: "../assets/fonts/Google_Sans_Flex/GoogleSansFlex-VariableFont_GRAD,ROND,opsz,slnt,wdth,wght.ttf",
   variable: "--font-sans",
 })
 
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
+const fontMono = localFont({
+  src: "../assets/fonts/Fira_Code/FiraCode-VariableFont_wght.ttf",
   variable: "--font-mono",
+})
+
+const fontHeading = localFont({
+  src: "../assets/fonts/Oxanium/Oxanium-VariableFont_wght.ttf",
+  variable: "--font-heading",
 })
 
 export default function RootLayout({
@@ -41,8 +46,8 @@ export default function RootLayout({
       className={cn(
         "antialiased",
         fontSans.variable,
-        "font-mono",
-        jetbrainsMono.variable
+        fontMono.variable,
+        fontHeading.variable
       )}
     >
       <body>
