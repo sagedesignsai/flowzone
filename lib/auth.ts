@@ -45,11 +45,11 @@ export const auth = betterAuth({
     },
   },
   plugins: [
-    // Next.js cookies
-    nextCookies(),
     // Better auth Analytics and dashboard
-    dash()
+    dash(),
 
+    // Next.js cookies
+    nextCookies()
   ],
 })
 
