@@ -20,6 +20,7 @@ import {
   ChartBar,
   User,
   Coin,
+  Cpu,
 } from "@phosphor-icons/react"
 import { cn } from "@/lib/utils"
 
@@ -33,6 +34,7 @@ export const SETTINGS_SECTIONS = [
   { id: "template", label: "Template", icon: Layout },
   { id: "domains", label: "Domains", icon: Globe },
   { id: "analytics", label: "Analytics", icon: ChartBar },
+  { id: "local-ai", label: "Local AI", icon: Cpu },
   { id: "billing", label: "Billing", icon: Coin },
 ]
 

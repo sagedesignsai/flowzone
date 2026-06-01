@@ -66,6 +66,9 @@ export interface SettingsState {
   // ─── Analytics ─────────────────────────────────────────────────────────
   analyticsProvider: string | null
 
+  // ─── Local AI ──────────────────────────────────────────────────────────
+  localAiModelId: string | null
+
   // ─── Preferences ───────────────────────────────────────────────────────
   theme: "system" | "light" | "dark"
 
@@ -89,6 +92,7 @@ export interface SettingsState {
   addDomain: (domain: string) => void
   removeDomain: (domain: string) => void
   setAnalyticsProvider: (provider: string | null) => void
+  setLocalAiModelId: (id: string | null) => void
   setTheme: (theme: "system" | "light" | "dark") => void
   setSaving: (saving: boolean) => void
   setMessage: (message: SaveMessage | null) => void
@@ -111,6 +115,7 @@ const initialState = {
   template: null,
   domains: [],
   analyticsProvider: null,
+  localAiModelId: null,
   theme: "system" as const,
   saving: false,
   message: null,
@@ -175,6 +180,9 @@ export const useSettingsStore = create<SettingsState>()(
       // ── Analytics ──────────────────────────────────────────────────
       setAnalyticsProvider: (provider) => set({ analyticsProvider: provider }),
 
+      // ── Local AI ───────────────────────────────────────────────────
+      setLocalAiModelId: (id) => set({ localAiModelId: id }),
+
       // ── Preferences ────────────────────────────────────────────────
       setTheme: (theme) => set({ theme }),
 
@@ -195,6 +203,8 @@ export const useSettingsStore = create<SettingsState>()(
         installations: s.installations,
         repositories: s.repositories,
         activeSection: s.activeSection,
+        // Persist local AI model selection
+        localAiModelId: s.localAiModelId,
       }),
     }
   )

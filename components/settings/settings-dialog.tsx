@@ -24,6 +24,7 @@ import { EnvVarsSection } from "@/components/settings/settings-sections/env-vars
 import { TemplateSection } from "@/components/settings/settings-sections/template-section"
 import { DomainsSection } from "@/components/settings/settings-sections/domains-section"
 import { AnalyticsSection } from "@/components/settings/settings-sections/analytics-section"
+import { LocalAISection } from "@/components/settings/settings-sections/local-ai-section"
 import { useSettingsStore } from "@/stores/settings-store"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { WarningCircle, CheckCircle } from "@phosphor-icons/react"
@@ -46,6 +47,7 @@ const SECTION_COMPONENTS: Record<
   template: TemplateSection,
   domains: DomainsSection,
   analytics: AnalyticsSection,
+  "local-ai": LocalAISection,
 }
 
 export function SettingsDialog({
