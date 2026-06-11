@@ -40,7 +40,7 @@ export async function createDesktop(
  * Opt out of desktop for a chat (chat-only mode).
  */
 export async function optOutDesktop(chatId: string): Promise<void> {
-  const response = await fetch(`/api/chat/${chatId}`, {
+  const response = await fetch(`/api/workspace/desktop/${chatId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ desktopOptOut: true }),

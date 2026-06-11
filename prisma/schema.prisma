@@ -107,6 +107,9 @@ model Chat {
   /// When true, the user chose chat-only mode (no desktop sandbox attachment).
   desktopOptOut Boolean @default(false)
 
+  /// Environment the chat was started in: "code" | "desktop" | "opencode"
+  environment String @default("code")
+
   messages    Message[]
   sandboxRun  SandboxRun?
   desktopRun  DesktopRun?

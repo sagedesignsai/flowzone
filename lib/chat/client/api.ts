@@ -30,7 +30,7 @@ export async function fetchChatList(): Promise<ChatListItem[]> {
 }
 
 export async function fetchChatDetail(chatId: string): Promise<ChatDetailResponse> {
-  const response = await fetch(`/api/chat/${chatId}`)
+  const response = await fetch(`/api/workspace/desktop/${chatId}`)
 
   if (!response.ok) {
     const error = await response.json()

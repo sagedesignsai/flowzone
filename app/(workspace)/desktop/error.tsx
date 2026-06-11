@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 
-export default function ChatIndexError({
+export default function DesktopIndexError({
   error,
   reset,
 }: {
@@ -14,7 +14,7 @@ export default function ChatIndexError({
       <div className="space-y-1 text-center">
         <h2 className="text-sm font-semibold">Something went wrong</h2>
         <p className="text-xs text-muted-foreground">
-          {error.message ?? "Failed to load chats."}
+          {error.message ?? "Failed to load desktop."}
         </p>
       </div>
       <Button size="sm" onClick={reset}>

@@ -30,9 +30,10 @@ export async function handleVirtualDeveloperChat(options: {
   incomingMessages: UIMessage[]
   projectId?: string
   webSearch?: boolean
+  environment?: string
   abortSignal?: AbortSignal
 }): Promise<Response> {
-  const { chatId, userId, incomingMessages, projectId, webSearch, abortSignal } =
+  const { chatId, userId, incomingMessages, projectId, webSearch, environment, abortSignal } =
     options
 
   const model = getPrimaryModel()
@@ -60,6 +61,7 @@ export async function handleVirtualDeveloperChat(options: {
     userId,
     incomingMessages,
     projectId,
+    environment,
   )
 
   const desktopSandboxId = await resolveDesktopSandboxId({

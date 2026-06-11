@@ -5,6 +5,8 @@ import { persist } from "zustand/middleware"
 
 export type ViewMode = "code" | "terminal" | "desktop"
 
+export type ChatEnvironment = "code" | "desktop" | "opencode"
+
 export type DesktopStatus =
   | "idle"
   | "starting"
@@ -18,6 +20,7 @@ export interface ChatSession {
   createdAt: number
   updatedAt: number
   projectId?: string | null
+  environment?: ChatEnvironment
 }
 
 export interface ChatDesktopRecord {

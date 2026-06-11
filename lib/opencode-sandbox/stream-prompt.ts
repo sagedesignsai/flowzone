@@ -1,67 +1,118 @@
 /**
  * Real-time streaming prompt for OpenCode.
  *
- * Uses promptAsync + event subscription instead of blocking prompt(),
- * yielding UI message chunks progressively as the model generates them.
+ * Subscribes to OpenCode events and calls promptAsync (non-blocking),
+ * then maps the event stream → standard AI SDK UIMessageChunks via
+ * OpenCodeUIStreamConverter.
  */
 
-import { createUIMessageStream, createUIMessageStreamResponse, type UIMessage, type UIMessageChunk, type UIMessageStreamWriter } from "ai"
-import type { OpencodeClient } from "@opencode-ai/sdk"
-import type {
-  TextPartInput,
-  Part,
-  TextPart,
-  ReasoningPart,
-  ToolPart,
-  FilePart,
-  ToolStateCompleted,
-  ToolStateError,
-} from "@opencode-ai/sdk"
+import {
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  type UIMessage,
+  type UIMessageChunk,
+  type UIMessageStreamWriter,
+} from "ai"
+import type { OpencodeClient } from "@opencode-ai/sdk/v2"
+import type { Part } from "@opencode-ai/sdk/v2"
 import { logger } from "@/lib/logger"
 import { withTimeout } from "@/lib/retry"
+import {
+  OpenCodeUIStreamConverter,
+  unwrapOpenCodeEvent,
+  getOpenCodeEventSessionId,
+  isOpenCodeSessionComplete,
+} from "@/lib/opencode-sandbox/event-converter"
+import {
+  getPermissionRequestInfo,
+  approveOpenCodePermission,
+  rejectOpenCodeQuestion,
+} from "@/lib/opencode-sandbox/permissions"
+import { convertUIMessageToOpenCodeParts } from "@/lib/opencode-sandbox/input-parts"
 
 function generateId(): string {
   return crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
 
 const EVENT_IDLE_TIMEOUT_MS = 120_000 // 2 min without events → assume done
-const PROMPT_TIMEOUT_MS = 300_000 // 5 min total → safe upper bound
+const PROMPT_TIMEOUT_MS = 300_000 // 5 min overall timeout
 
 export interface StreamOpenCodeOptions {
   client: OpencodeClient
   sessionId: string
-  promptText: string
+  /** Latest user UIMessage — converted to OpenCode parts for the prompt */
+  userMessage?: UIMessage
+  /** Fallback plain text if userMessage is absent */
+  promptText?: string
   originalMessages: UIMessage[]
+  abortSignal?: AbortSignal
+  directory?: string
+  model?: { providerID: string; modelID: string }
+  agent?: string
   onFinish?: (message: { id: string; parts: Part[] }) => void | Promise<void>
 }
 
 /**
- * Execute an OpenCode prompt and write UI message chunks to the writer.
+ * Execute an OpenCode prompt and write standard AI SDK chunks to the writer.
  *
  * Architecture:
- *   1. Subscribe to OpenCode events (SSE)
- *   2. Call promptAsync (non-blocking, returns immediately)
- *   3. Iterate over event stream, filtering for our session
- *   4. Convert EventMessagePartUpdated deltas to UI message chunks
- *   5. Finish when the session becomes idle
- *   6. Invoke onFinish with the completed message parts for persistence
+ *   1. Subscribe to OpenCode event stream (SSE)
+ *   2. Call promptAsync (non-blocking, returns 204)
+ *   3. Iterate events, filter to our session
+ *   4. Dispatch each event through OpenCodeUIStreamConverter
+ *   5. Auto-approve permission.asked events
+ *   6. Reject question.asked events with an error chunk
+ *   7. Finish when session becomes idle or stream ends
  */
 export async function executeOpenCodePrompt(options: {
   client: OpencodeClient
   sessionId: string
-  promptText: string
+  userMessage?: UIMessage
+  promptText?: string
   writer: UIMessageStreamWriter
   abortSignal?: AbortSignal
+  directory?: string
+  model?: { providerID: string; modelID: string }
+  agent?: string
   onFinish?: (message: { id: string; parts: Part[] }) => void | Promise<void>
 }): Promise<void> {
-  const { client, sessionId, promptText, writer, abortSignal, onFinish } =
-    options
-  const messageId = generateId()
-  const accumulatedParts: Map<string, Part> = new Map()
+  const {
+    client,
+    sessionId,
+    userMessage,
+    promptText,
+    writer,
+    abortSignal,
+    directory,
+    model,
+    agent,
+    onFinish,
+  } = options
 
   abortSignal?.throwIfAborted()
 
-  // 1. Subscribe to events (with timeout)
+  const messageId = generateId()
+  const accumulatedParts = new Map<string, Part>()
+  const converter = new OpenCodeUIStreamConverter(writer)
+
+  // ── 1. Build prompt parts ─────────────────────────────────────
+  const promptParts =
+    userMessage != null
+      ? convertUIMessageToOpenCodeParts(userMessage)
+      : promptText
+        ? [{ type: "text" as const, text: promptText }]
+        : []
+
+  if (promptParts.length === 0) {
+    writer.write({
+      type: "error",
+      errorText: "No prompt content to send to OpenCode",
+    })
+    converter.finish("error")
+    return
+  }
+
+  // ── 2. Subscribe to events ────────────────────────────────────
   logger.debug("Subscribing to OpenCode events", { sessionId })
   const eventResult = await withTimeout(
     () => client.event.subscribe(),
@@ -69,15 +120,17 @@ export async function executeOpenCodePrompt(options: {
     "event.subscribe",
   )
 
-  // 2. Start the prompt (non-blocking — returns 204 No Content)
-  logger.debug("Starting promptAsync", { sessionId })
+  // ── 3. Send prompt (non-blocking) ─────────────────────────────
+  logger.debug("Sending promptAsync", { sessionId })
   await withTimeout(
     () =>
       client.session.promptAsync({
-        path: { id: sessionId },
-        body: {
-          parts: [{ type: "text", text: promptText } as TextPartInput],
-        },
+        sessionID: sessionId,
+        parts: promptParts,
+        messageID: messageId,
+        ...(directory ? { directory } : {}),
+        ...(model ? { model } : {}),
+        ...(agent ? { agent } : {}),
       }),
     15_000,
     "session.promptAsync",
@@ -85,108 +138,162 @@ export async function executeOpenCodePrompt(options: {
 
   writer.write({ type: "start", messageId })
 
-  // 3. Track state
-  const textPartContents = new Map<string, string>()
-  const activeTextParts = new Set<string>()
-  const toolCallInputs = new Map<string, { toolName: string; input: unknown }>()
-  const completedParts = new Set<string>()
-  let hasDrawnFinish = false
+  // ── 4. Event loop ─────────────────────────────────────────────
   let lastEventTime = Date.now()
+  let timedOut = false
 
-  function done(): void {
-    if (hasDrawnFinish) return
-    hasDrawnFinish = true
-    for (const partId of activeTextParts) {
-      writer.write({ type: "text-end", id: partId })
-    }
-    activeTextParts.clear()
-    writer.write({ type: "finish", finishReason: "stop" })
-  }
-
-  function abortIfNeeded(): void {
-    abortSignal?.throwIfAborted()
-  }
-
-  // 4. Iterate over event stream with idle timeout
-  //    Also set an overall timeout for the entire prompt execution.
   const overallTimer = setTimeout(() => {
-    logger.warn("Stream prompt overall timeout reached", { sessionId })
-    done()
+    if (timedOut) return
+    timedOut = true
+    logger.warn("Stream prompt overall timeout reached — aborting session", {
+      sessionId,
+    })
+    client.session
+      .abort({
+        sessionID: sessionId,
+        ...(directory ? { directory } : {}),
+      })
+      .catch((err: unknown) => {
+        logger.warn("Failed to abort timed-out OpenCode session", {
+          sessionId,
+          error: String(err),
+        })
+      })
   }, PROMPT_TIMEOUT_MS)
 
+  // Abort handler: call session.abort so OpenCode stops server-side
+  const handleAbort = () => {
+    logger.info("Abort signal fired — aborting OpenCode session", { sessionId })
+    client.session
+      .abort({
+        sessionID: sessionId,
+        ...(directory ? { directory } : {}),
+      })
+      .catch((err: unknown) => {
+        logger.warn("Failed to abort OpenCode session", {
+          sessionId,
+          error: String(err),
+        })
+      })
+  }
+  abortSignal?.addEventListener("abort", handleAbort)
+
   try {
-    for await (const event of eventResult.stream) {
-      abortIfNeeded()
+    for await (const rawEvent of eventResult.stream) {
+      if (abortSignal?.aborted || timedOut) break
+
       lastEventTime = Date.now()
-      const sessionMatch = getEventSessionId(event)
-      if (sessionMatch !== undefined && sessionMatch !== sessionId) continue
 
+      const event = unwrapOpenCodeEvent(rawEvent)
+      if (!event) continue
+
+      // Filter to our session
+      const eventSessionId = getOpenCodeEventSessionId(event)
+      if (eventSessionId !== undefined && eventSessionId !== sessionId) continue
+
+      // ── Permission: auto-approve ────────────────────────────
+      if (event.type === "permission.asked") {
+        const info = getPermissionRequestInfo(event.properties)
+        if (info) {
+          converter.writePermissionRequest({
+            approvalId: info.requestId,
+            toolCallId: info.toolCallId,
+          })
+          await approveOpenCodePermission({
+            client,
+            requestId: info.requestId,
+            sessionId,
+            directory,
+          })
+        }
+        continue
+      }
+
+      // ── Question: reject and emit error ────────────────────
+      if (event.type === "question.asked") {
+        const props = event.properties as { id?: string }
+        if (props.id) {
+          converter.writeQuestionError(props.id)
+          await rejectOpenCodeQuestion({ client, properties: event.properties, directory })
+        }
+        continue
+      }
+
+      // ── Part accumulation for onFinish ─────────────────────
       if (event.type === "message.part.updated") {
-        const { part, delta } = event.properties
+        const part = (event.properties as { part?: Part }).part
+        if (part?.id) accumulatedParts.set(part.id, part)
+      }
 
-        if (completedParts.has(part.id)) continue
+      // ── Dispatch to converter ──────────────────────────────
+      converter.handle(event)
 
-        if (part.type === "text" && !delta && part.text) {
-          completedParts.add(part.id)
-        }
-
-        accumulatedParts.set(part.id, part)
-
-        switch (part.type) {
-          case "text":
-            handleTextPartUpdate(writer, part as TextPart, delta, textPartContents, activeTextParts)
-            break
-          case "reasoning":
-            handleReasoningPartUpdate(writer, part as ReasoningPart, delta, textPartContents, activeTextParts)
-            break
-          case "tool":
-            handleToolPartUpdate(writer, part as ToolPart, toolCallInputs)
-            break
-          case "file":
-            handleFilePartUpdate(writer, part as FilePart)
-            break
-        }
-      } else if (event.type === "message.updated") {
-        if (event.properties.info.time?.completed) {
-          for (const partId of activeTextParts) {
-            writer.write({ type: "text-end", id: partId })
-          }
-          activeTextParts.clear()
-          done()
-        }
-      } else if (event.type === "session.idle" || event.type === "session.compacted") {
-        logger.debug("Session idle/compacted — stream complete", { sessionId, eventType: event.type })
-        done()
-        await onFinish?.({ id: messageId, parts: Array.from(accumulatedParts.values()) })
+      // ── Session complete ───────────────────────────────────
+      if (isOpenCodeSessionComplete(event, sessionId)) {
+        logger.debug("Session complete", { sessionId, eventType: event.type })
+        converter.finish("stop")
+        await onFinish?.({
+          id: messageId,
+          parts: Array.from(accumulatedParts.values()),
+        })
         return
       }
 
+      // ── Idle timeout check ─────────────────────────────────
       if (Date.now() - lastEventTime > EVENT_IDLE_TIMEOUT_MS) {
-        logger.warn("Event stream idle timeout", { sessionId, idleMs: Date.now() - lastEventTime })
+        logger.warn("Event stream idle timeout", {
+          sessionId,
+          idleMs: Date.now() - lastEventTime,
+        })
         break
       }
     }
 
-    logger.debug("Event stream iteration ended", { sessionId, hasDrawnFinish })
-    done()
-    await onFinish?.({ id: messageId, parts: Array.from(accumulatedParts.values()) })
+    logger.debug("Event stream iteration ended", { sessionId })
+    converter.finish(abortSignal?.aborted ? "other" : "stop")
+    await onFinish?.({
+      id: messageId,
+      parts: Array.from(accumulatedParts.values()),
+    })
   } finally {
     clearTimeout(overallTimer)
+    abortSignal?.removeEventListener("abort", handleAbort)
   }
 }
 
 /**
- * Stream an OpenCode prompt as a UIMessage stream (for API route usage).
- * Wraps `executeOpenCodePrompt` in a UIMessageStream with persistence support.
+ * Stream an OpenCode prompt as a UIMessageStream (for API route usage).
  */
 export function createOpenCodeUIStream(
   options: StreamOpenCodeOptions,
 ): ReadableStream<UIMessageChunk> {
-  const { client, sessionId, promptText, originalMessages, onFinish } = options
+  const {
+    client,
+    sessionId,
+    userMessage,
+    promptText,
+    originalMessages,
+    abortSignal,
+    directory,
+    model,
+    agent,
+    onFinish,
+  } = options
 
   return createUIMessageStream({
     execute: async ({ writer }) => {
-      await executeOpenCodePrompt({ client, sessionId, promptText, writer, onFinish })
+      await executeOpenCodePrompt({
+        client,
+        sessionId,
+        userMessage,
+        promptText,
+        writer,
+        abortSignal,
+        directory,
+        model,
+        agent,
+        onFinish,
+      })
     },
     originalMessages,
   })
@@ -194,148 +301,10 @@ export function createOpenCodeUIStream(
 
 /**
  * Stream an OpenCode prompt and return an HTTP Response.
- * Convenience wrapper around createOpenCodeUIStream.
  */
 export async function streamOpenCodePrompt(
   options: StreamOpenCodeOptions,
 ): Promise<Response> {
   const stream = createOpenCodeUIStream(options)
   return createUIMessageStreamResponse({ stream })
-}
-
-// ── Helpers ──────────────────────────────────────────────────────
-
-/**
- * Extract session ID from an event (since different event types
- * store it in different places).
- */
-function getEventSessionId(event: Record<string, unknown>): string | undefined {
-  if (event.type === "message.part.updated") {
-    const props = event.properties as { part?: { sessionID?: string } }
-    return props.part?.sessionID
-  }
-  if (event.type === "message.updated") {
-    const props = event.properties as { info?: { sessionID?: string } }
-    return props.info?.sessionID
-  }
-  // session.idle, session.compacted, session.status, etc.
-  const props = event.properties as { sessionID?: string }
-  return props.sessionID
-}
-
-function handleTextPartUpdate(
-  writer: UIMessageStreamWriter,
-  part: TextPart,
-  delta: string | undefined,
-  textPartContents: Map<string, string>,
-  activeTextParts: Set<string>,
-): void {
-  const partId = part.id
-  const existing = textPartContents.get(partId) ?? ""
-
-  if (existing === "") {
-    writer.write({ type: "text-start", id: partId })
-    activeTextParts.add(partId)
-  }
-
-  if (delta) {
-    writer.write({ type: "text-delta", id: partId, delta })
-    textPartContents.set(partId, existing + delta)
-  } else if (part.text !== existing) {
-    // No delta but text changed — send the difference
-    const newDelta = part.text.slice(existing.length)
-    if (newDelta) {
-      writer.write({ type: "text-delta", id: partId, delta: newDelta })
-      textPartContents.set(partId, part.text)
-    }
-  }
-}
-
-function handleReasoningPartUpdate(
-  writer: UIMessageStreamWriter,
-  part: ReasoningPart,
-  delta: string | undefined,
-  textPartContents: Map<string, string>,
-  activeTextParts: Set<string>,
-): void {
-  const partId = part.id
-  const existing = textPartContents.get(partId) ?? ""
-
-  if (existing === "") {
-    writer.write({ type: "reasoning-start", id: partId })
-    activeTextParts.add(partId) // Track for close
-  }
-
-  if (delta) {
-    writer.write({ type: "reasoning-delta", id: partId, delta })
-    textPartContents.set(partId, existing + delta)
-  } else if (part.text !== existing) {
-    const newDelta = part.text.slice(existing.length)
-    if (newDelta) {
-      writer.write({ type: "reasoning-delta", id: partId, delta: newDelta })
-      textPartContents.set(partId, part.text)
-    }
-  }
-}
-
-function handleToolPartUpdate(
-  writer: UIMessageStreamWriter,
-  part: ToolPart,
-  toolCallInputs: Map<string, { toolName: string; input: unknown }>,
-): void {
-  const toolCallId = part.callID
-  const toolName = part.tool
-
-  if (!toolCallInputs.has(toolCallId)) {
-    writer.write({ type: "tool-input-start", toolCallId, toolName })
-    toolCallInputs.set(toolCallId, { toolName, input: part.state.input })
-  }
-
-  const state = part.state
-
-  if (state.status === "completed") {
-    writer.write({
-      type: "tool-input-available",
-      toolCallId,
-      toolName,
-      input: state.input,
-    })
-    const completed = state as ToolStateCompleted
-    writer.write({
-      type: "tool-output-available",
-      toolCallId,
-      output: completed.output,
-    })
-  } else if (state.status === "error") {
-    writer.write({
-      type: "tool-input-available",
-      toolCallId,
-      toolName,
-      input: state.input,
-    })
-    const errorState = state as ToolStateError
-    writer.write({
-      type: "tool-output-error",
-      toolCallId,
-      errorText: errorState.error,
-    })
-  } else if (state.status === "running" || state.status === "pending") {
-    writer.write({
-      type: "tool-input-available",
-      toolCallId,
-      toolName,
-      input: state.input,
-    })
-  }
-}
-
-function handleFilePartUpdate(
-  writer: UIMessageStreamWriter,
-  part: FilePart,
-): void {
-  writer.write({
-    type: "file",
-    url: part.url,
-    mediaType: part.mime,
-  })
 }

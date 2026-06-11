@@ -40,7 +40,7 @@ export function TemplatesPageContent() {
       updatedAt: Date.now(),
     })
     setActiveChatId(id)
-    router.push(`/chat/${id}?q=${encodeURIComponent(template.prompt)}`)
+    router.push(`/workspace/desktop/${id}?q=${encodeURIComponent(template.prompt)}`)
   }
 
   return (

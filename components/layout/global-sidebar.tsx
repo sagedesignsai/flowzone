@@ -55,7 +55,7 @@ import { useChatSessionsSync } from "@/hooks/use-chat-sessions-sync"
 const NAV_ITEMS = [
   { label: "Home", icon: HouseLine, href: "/" },
   { label: "Projects", icon: FolderSimple, href: "/projects" },
-  { label: "Chats", icon: ChatTeardropDots, href: "/chat" },
+  { label: "Chats", icon: ChatTeardropDots, href: "/workspace/desktop" },
   { label: "Templates", icon: Stack, href: "/templates" },
 ]
 
@@ -146,7 +146,7 @@ export function GlobalSidebar() {
 
   async function handleDeleteChat(id: string) {
     try {
-      await fetch(`/api/chat/${id}`, { method: "DELETE" })
+      await fetch(`/api/workspace/desktop/${id}`, { method: "DELETE" })
     } catch {
       // Optimistic delete — proceed even if server fails
     }
@@ -163,7 +163,7 @@ export function GlobalSidebar() {
       updatedAt: Date.now(),
     })
     setActiveChatId(id)
-    router.push(`/chat/${id}`)
+    router.push(`/workspace/desktop/${id}`)
   }
 
   const user = session?.user
@@ -290,7 +290,7 @@ export function GlobalSidebar() {
                         <SidebarMenuItem key={session.id}>
                           <SidebarMenuButton
                             isActive={activeChatId === session.id}
-                            render={<Link href={`/chat/${session.id}`} />}
+                            render={<Link href={`/workspace/desktop/${session.id}`} />}
                             onClick={() => setActiveChatId(session.id)}
                             tooltip={session.title}
                             className="group/menu-button"

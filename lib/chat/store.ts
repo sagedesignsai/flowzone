@@ -61,11 +61,12 @@ export async function ensureChat(
   userId: string,
   firstMessageText?: string,
   projectId?: string,
+  environment?: string,
 ): Promise<void> {
   try {
     const chat = await prisma.chat.findUnique({
       where: { id: chatId },
-      select: { id: true, projectId: true },
+      select: { id: true, projectId: true, environment: true },
     })
 
     if (!chat) {
@@ -77,6 +78,7 @@ export async function ensureChat(
             : "New Chat",
           userId,
           projectId: projectId ?? null,
+          environment: environment ?? "code",
         },
       })
 
@@ -126,6 +128,7 @@ export async function prepareChat(
   userId: string,
   incomingMessages: UIMessage[],
   projectId?: string,
+  environment?: string,
 ): Promise<ChatContext> {
   let previousMessages: UIMessage[] = []
   try {
@@ -143,7 +146,7 @@ export async function prepareChat(
     (latestTextPart as { text?: string } | undefined)?.text ?? ""
 
   try {
-    await ensureChat(chatId, userId, latestTextPartText, projectId)
+    await ensureChat(chatId, userId, latestTextPartText, projectId, environment)
   } catch (error) {
     logger.warn("Failed to ensure chat exists", {
       chatId,

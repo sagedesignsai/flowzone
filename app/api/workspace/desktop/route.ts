@@ -1,7 +1,7 @@
 /**
- * POST /api/chat
+ * POST /api/workspace/desktop
  *
- * Streaming chat completion endpoint.
+ * Streaming chat completion endpoint for the Desktop workspace.
  * Routes all requests to the Virtual Developer agent, which uses
  * OpenCode as its primary coding engine with optional desktop
  * sandbox capabilities for visual verification.
@@ -25,12 +25,13 @@ export const maxDuration = 300
 
 export async function POST(req: Request) {
   try {
-    const { messages: incomingMessages, id, projectId, webSearch } =
+    const { messages: incomingMessages, id, projectId, webSearch, environment } =
       (await req.json()) as {
         messages: UIMessage[]
         id?: string
         projectId?: string
         webSearch?: boolean
+        environment?: string
       }
 
     if (!id) {
@@ -53,6 +54,7 @@ export async function POST(req: Request) {
       incomingMessages,
       projectId,
       webSearch: Boolean(webSearch),
+      environment,
       abortSignal: req.signal,
     })
   } catch (error) {

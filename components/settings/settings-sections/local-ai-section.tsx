@@ -8,10 +8,8 @@ import {
   DEFAULT_LOCAL_MODEL_ID,
   type LocalModelConfig,
 } from "@/lib/ai/models"
-import {
-  doesBrowserSupportTransformersJS,
-  transformersJS,
-} from "@browser-ai/transformers-js"
+import { transformersJS } from "@browser-ai/transformers-js"
+import { getAvailableDevice } from "@/lib/ai/get-available-device"
 import { cn } from "@/lib/utils"
 import { CheckCircle, Spinner, WarningCircle } from "@phosphor-icons/react"
 
@@ -32,20 +30,20 @@ export function LocalAISection() {
   const setLocalAiModelId = useSettingsStore((s) => s.setLocalAiModelId)
   const activeModelId = localAiModelId ?? DEFAULT_LOCAL_MODEL_ID
 
-  const [browserSupported, setBrowserSupported] = useState(false)
+  const [device, setDevice] = useState<"webgpu" | "wasm" | "checking">("checking")
   const [models, setModels] = useState<ModelEntry[]>(() =>
     LOCAL_MODELS.map((c) => ({ config: c, status: "unknown" as const, progress: 0 })),
   )
   const checkingRef = useRef(false)
 
-  // Check browser support on mount
+  // Probe for available backend on mount
   useEffect(() => {
-    setBrowserSupported(doesBrowserSupportTransformersJS())
+    getAvailableDevice().then(setDevice)
   }, [])
 
   // Check availability for all models on mount
   useEffect(() => {
-    if (checkingRef.current || !browserSupported) return
+    if (checkingRef.current || device === "checking") return
     checkingRef.current = true
 
     const checkAll = async () => {
@@ -72,7 +70,7 @@ export function LocalAISection() {
     checkAll().finally(() => {
       checkingRef.current = false
     })
-  }, [browserSupported])
+  }, [device])
 
   // ── Download handler ──────────────────────────────────────────────────
 
@@ -89,7 +87,7 @@ export function LocalAISection() {
 
       try {
         const instance = transformersJS(modelId, {
-          device: "webgpu",
+          device: device as "webgpu" | "wasm",
         })
 
         const availability = await instance.availability()
@@ -129,7 +127,7 @@ export function LocalAISection() {
         console.error("Failed to download model:", err)
       }
     },
-    [],
+    [device],
   )
 
   // ── Clear handler ─────────────────────────────────────────────────────
@@ -179,23 +177,13 @@ export function LocalAISection() {
 
   // ── Render ────────────────────────────────────────────────────────────
 
-  if (!browserSupported) {
+  if (device === "checking") {
     return (
       <div className="space-y-4">
         <div>
           <h3 className="text-sm font-semibold">Local AI Models</h3>
           <p className="text-xs text-muted-foreground">
-            Run AI models directly in your browser using WebGPU.
-          </p>
-        </div>
-
-        <div className="rounded-lg border border-dashed border-border p-6 text-center">
-          <p className="text-sm font-medium text-muted-foreground">
-            WebGPU not available
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Local inference requires a browser with WebGPU support (Chrome 113+,
-            Edge 113+).
+            Checking browser capabilities...
           </p>
         </div>
       </div>
@@ -204,12 +192,26 @@ export function LocalAISection() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-sm font-semibold">Local AI Models</h3>
-        <p className="text-xs text-muted-foreground">
-          Select and manage models for browser-side inference. Models run
-          entirely in your browser — no data leaves your machine.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold">Local AI Models</h3>
+          <p className="text-xs text-muted-foreground">
+            Select and manage models for browser-side inference. Models run
+            entirely in your browser — no data leaves your machine.
+          </p>
+        </div>
+
+        {/* Device badge */}
+        <span
+          className={cn(
+            "inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-medium",
+            device === "webgpu"
+              ? "bg-emerald-500/10 text-emerald-400"
+              : "bg-amber-500/10 text-amber-400",
+          )}
+        >
+          {device === "webgpu" ? "WebGPU" : "CPU (WASM)"}
+        </span>
       </div>
 
       {/* Active model selector info */}
@@ -302,11 +304,8 @@ export function LocalAISection() {
                       size="sm"
                       variant="outline"
                       onClick={() => handleDownload(entry.config.id)}
-                      disabled={entry.status === "downloading"}
                     >
-                      {entry.status === "downloading"
-                        ? "Downloading..."
-                        : "Download"}
+                      Download
                     </Button>
                   )}
                   {entry.status === "available" && (
@@ -334,6 +333,24 @@ export function LocalAISection() {
           )
         })}
       </div>
+
+      {/* Performance note for WASM */}
+      {device === "wasm" && (
+        <div className="rounded-lg border border-dashed border-amber-500/30 bg-amber-500/5 p-3">
+          <p className="text-xs font-medium text-amber-400">
+            Running in CPU-only mode
+          </p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            WebGPU is not available in your environment. Models will run on CPU
+            via WebAssembly, which is significantly slower. For GPU acceleration,
+            use Chrome 113+ with a supported GPU, or launch with
+            {" "}<code className="rounded bg-muted px-1 py-0.5 text-[10px]">
+              --enable-unsafe-webgpu
+            </code>
+            {" "}if on Linux.
+          </p>
+        </div>
+      )}
     </div>
   )
 }

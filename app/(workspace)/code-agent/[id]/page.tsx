@@ -1,16 +1,16 @@
-import { ChatPageClient } from "./chat-page-client"
-import { notFound, redirect } from "next/navigation"
-import { loadChat } from "@/lib/chat/store"
+import { CodeAgentPageClient } from "@/components/workspace/code-agent/code-agent-client"
+import { notFound } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
 import { prisma } from "@/lib/prisma"
+import { loadChat } from "@/lib/chat/store"
 
-interface ChatPageProps {
+interface CodeAgentPageProps {
   params: Promise<{ id: string }>
   searchParams?: Promise<{ projectId?: string }>
 }
 
-export async function generateMetadata({ params }: ChatPageProps) {
+export async function generateMetadata({ params }: CodeAgentPageProps) {
   const { id } = await params
 
   const chat = await prisma.chat.findUnique({
@@ -19,11 +19,16 @@ export async function generateMetadata({ params }: ChatPageProps) {
   })
 
   return {
-    title: chat?.title ? `${chat.title} — Flowzone` : `Chat — Flowzone`,
+    title: chat?.title
+      ? `${chat.title} — Flowzone (Code Agent)`
+      : `Code Agent — Flowzone`,
   }
 }
 
-export default async function ChatPage({ params, searchParams }: ChatPageProps) {
+export default async function CodeAgentPage({
+  params,
+  searchParams,
+}: CodeAgentPageProps) {
   const { id } = await params
   const { projectId: projectIdFromQuery } = (await searchParams) ?? {}
 
@@ -35,21 +40,16 @@ export default async function ChatPage({ params, searchParams }: ChatPageProps) 
     headers: await headers(),
   })
 
-  if (!session) {
-    redirect("/login")
-  }
-
   const chat = await prisma.chat.findUnique({
     where: { id },
     select: {
       userId: true,
       title: true,
       projectId: true,
-      desktopOptOut: true,
     },
   })
 
-  if (chat && chat.userId !== session.user.id) {
+  if (chat && chat.userId !== session?.user.id) {
     notFound()
   }
 
@@ -57,12 +57,11 @@ export default async function ChatPage({ params, searchParams }: ChatPageProps) 
   const projectId = projectIdFromQuery ?? chat?.projectId ?? undefined
 
   return (
-    <ChatPageClient
+    <CodeAgentPageClient
       chatId={id}
       initialMessages={initialMessages}
       projectId={projectId}
       title={chat?.title ?? "New chat"}
-      desktopOptOut={chat?.desktopOptOut ?? false}
     />
   )
 }

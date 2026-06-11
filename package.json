@@ -17,8 +17,11 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.77",
+    "@ai-sdk/cerebras": "^2.0.54",
+    "@ai-sdk/groq": "^3.0.39",
     "@ai-sdk/openai": "^3.0.63",
     "@ai-sdk/react": "^3.0.186",
+    "@ai-sdk/vercel": "^2.0.50",
     "@base-ui/react": "^1.4.1",
     "@better-auth/cli": "^1.4.21",
     "@better-auth/infra": "^0.2.11",

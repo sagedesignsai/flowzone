@@ -22,8 +22,10 @@ import {
 } from "@/components/ai-elements/prompt-input"
 import { Logomark } from "@/components/brand/logomark"
 import { ProjectContextSelector } from "@/components/landing/project-context-selector"
+import { EnvironmentSelector } from "@/components/landing/environment-selector"
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion"
 import { useIdeStore } from "@/hooks/use-ide-store"
+import type { ChatEnvironment } from "@/hooks/use-ide-store"
 import { useSettingsStore } from "@/stores/settings-store"
 import { cn } from "@/lib/utils"
 import {
@@ -85,6 +87,7 @@ export function PromptHero({ className }: PromptHeroProps) {
   const router = useRouter()
   const { addChatSession, setActiveChatId } = useIdeStore()
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null)
+  const [environment, setEnvironment] = useState<ChatEnvironment>("desktop")
 
   // Initialize from existing settings store on mount
   useEffect(() => {
@@ -94,12 +97,16 @@ export function PromptHero({ className }: PromptHeroProps) {
     }
   }, [activeProjectId])
 
+  function chatRoute(id: string) {
+    return environment === "opencode" ? `/workspace/code-agent/${id}` : `/workspace/desktop/${id}`
+  }
+
   function navigateToChat(id: string, prompt: string) {
-    const params = new URLSearchParams({ q: prompt })
+    const params = new URLSearchParams({ q: prompt, env: environment })
     if (activeProjectId) {
       params.set("projectId", activeProjectId)
     }
-    router.push(`/chat/${id}?${params}`)
+    router.push(`${chatRoute(id)}?${params}`)
   }
 
   function handleSubmit(
@@ -114,6 +121,7 @@ export function PromptHero({ className }: PromptHeroProps) {
       title: message.text.slice(0, 60),
       createdAt: Date.now(),
       updatedAt: Date.now(),
+      environment,
     })
     setActiveChatId(id)
     navigateToChat(id, message.text)
@@ -127,6 +135,7 @@ export function PromptHero({ className }: PromptHeroProps) {
       title: prompt,
       createdAt: Date.now(),
       updatedAt: Date.now(),
+      environment,
     })
     setActiveChatId(id)
     navigateToChat(id, prompt)
@@ -188,8 +197,12 @@ export function PromptHero({ className }: PromptHeroProps) {
                 </PromptInputActionMenuContent>
               </PromptInputActionMenu>
 
-              {/* Submit */}
+              {/* Enviroment selector + Submit */}
               <div className="flex items-center gap-1">
+                <EnvironmentSelector
+                  value={environment}
+                  onChange={setEnvironment}
+                />
                 <ProjectContextSelector
                   selectedProjectId={activeProjectId}
                   onSelectProject={setActiveProjectId}

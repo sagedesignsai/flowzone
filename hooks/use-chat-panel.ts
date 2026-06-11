@@ -61,6 +61,7 @@ export function useChatPanel({
   const searchParams = useSearchParams()
   const projectId =
     projectIdProp ?? searchParams.get("projectId") ?? undefined
+  const environment = searchParams.get("env") ?? undefined
 
   const updateChatSession = useIdeStore((s) => s.updateChatSession)
 
@@ -73,6 +74,7 @@ export function useChatPanel({
   const { transport, useLocalInference } = useChatTransport(
     projectId,
     useWebSearch,
+    environment,
   )
 
   const { messages, sendMessage, error, stop, regenerate, status } =
@@ -90,7 +92,7 @@ export function useChatPanel({
         ).length
         if (!titleGeneratedRef.current && assistantCount <= 1) {
           titleGeneratedRef.current = true
-          fetch(`/api/chat/${chatId}/title`, { method: "POST" })
+          fetch(`/api/workspace/desktop/${chatId}/title`, { method: "POST" })
             .then(async (res) => {
               if (res.ok) {
                 const { title } = await res.json()

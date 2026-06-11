@@ -44,3 +44,6 @@ next-env.d.ts
 
 # Reference repositories
 reference-repos/
+
+#vs extensions
+.history

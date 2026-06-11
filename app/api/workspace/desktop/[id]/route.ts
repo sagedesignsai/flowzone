@@ -10,7 +10,7 @@ import {
 import { assertChatOwnership } from "@/lib/chat/access"
 
 /**
- * GET /api/chat/[id] — Chat metadata and desktop state.
+ * GET /api/workspace/desktop/[id] — Chat metadata and desktop state.
  */
 export async function GET(
   _request: Request,
@@ -63,7 +63,7 @@ export async function GET(
 }
 
 /**
- * PATCH /api/chat/[id] — Update chat settings (e.g. desktop opt-out).
+ * PATCH /api/workspace/desktop/[id] — Update chat settings (e.g. desktop opt-out).
  */
 export async function PATCH(
   request: Request,
@@ -113,7 +113,7 @@ export async function PATCH(
 }
 
 /**
- * DELETE /api/chat/[id]
+ * DELETE /api/workspace/desktop/[id]
  *
  * Delete a chat and kill associated E2B sandboxes (code + desktop).
  */

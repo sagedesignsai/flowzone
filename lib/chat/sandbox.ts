@@ -7,6 +7,7 @@ import { retryWithTimeout, withTimeout } from "@/lib/retry"
 import { dedupeSandboxCreate } from "@/lib/sandbox-cache"
 
 const SANDBOX_TIMEOUT_MS = 600_000
+const OPENCODE_TEMPLATE = process.env.E2B_OPENCODE_TEMPLATE ?? "opencode"
 
 const PROVIDER_ENV_PREFIXES = [
   "ANTHROPIC_",
@@ -78,7 +79,7 @@ export async function tryCreateSandbox(
     const key = chatId ?? `__global__`
     const sandbox = await dedupeSandboxCreate(key, () =>
       retryWithTimeout(
-        () => Sandbox.create({
+        () => Sandbox.create(OPENCODE_TEMPLATE, {
           envs: collectSandboxEnvs(),
           timeoutMs: SANDBOX_TIMEOUT_MS,
         }),
@@ -91,6 +92,7 @@ export async function tryCreateSandbox(
     logger.info("Sandbox created", {
       sandboxId: sandbox.sandboxId,
       chatId,
+      template: OPENCODE_TEMPLATE,
     })
 
     // ── Persist SandboxRun ───────────────────────────────

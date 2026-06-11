@@ -9,11 +9,11 @@ import { nanoid } from "nanoid"
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-interface ChatIndexContentProps {
+interface DesktopIndexContentProps {
   className?: string
 }
 
-export function ChatIndexContent({ className }: ChatIndexContentProps) {
+export function DesktopIndexContent({ className }: DesktopIndexContentProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const projectId = searchParams.get("projectId")
@@ -30,7 +30,7 @@ export function ChatIndexContent({ className }: ChatIndexContentProps) {
     })
     setActiveChatId(id)
     const query = projectId ? `?projectId=${encodeURIComponent(projectId)}` : ""
-    router.push(`/chat/${id}${query}`)
+    router.push(`/workspace/desktop/${id}${query}`)
   }
 
   return (

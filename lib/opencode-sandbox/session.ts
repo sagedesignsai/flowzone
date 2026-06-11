@@ -1,4 +1,4 @@
-import type { OpencodeClient } from "@opencode-ai/sdk"
+import type { OpencodeClient, PermissionRuleset } from "@opencode-ai/sdk/v2"
 import { prisma } from "@/lib/prisma"
 import { logger } from "@/lib/logger"
 import { retryWithTimeout } from "@/lib/retry"
@@ -10,9 +10,44 @@ export interface ResolvedSession {
   isNew: boolean
 }
 
+export interface ResolveOpenCodeSessionOptions {
+  directory?: string
+  title?: string
+  agent?: string
+  /** Model to use — shape matches v2 session.create model parameter */
+  model?: {
+    id: string
+    providerID: string
+    variant?: string
+  }
+  permission?: PermissionRuleset
+}
+
+export const DEFAULT_OPENCODE_PERMISSION_RULES: PermissionRuleset = [
+  { permission: "read", pattern: "*", action: "allow" },
+  { permission: "list", pattern: "*", action: "allow" },
+  { permission: "glob", pattern: "*", action: "allow" },
+  { permission: "grep", pattern: "*", action: "allow" },
+  { permission: "edit", pattern: "*", action: "allow" },
+  { permission: "bash", pattern: "*", action: "allow" },
+  { permission: "webfetch", pattern: "*", action: "allow" },
+  { permission: "task", pattern: "*", action: "allow" },
+]
+
+/**
+ * Default model for OpenCode sessions when none is specified.
+ * When undefined, the OpenCode server uses its own default model.
+ */
+export type OpenCodeModel = {
+  providerID: string
+  modelID: string
+}
+export const DEFAULT_OPENCODE_MODEL: OpenCodeModel | undefined = undefined
+
 export async function resolveOpenCodeSession(
   client: OpencodeClient,
   chatId: string,
+  options: ResolveOpenCodeSessionOptions = {},
 ): Promise<ResolvedSession> {
   let sessionId = opencodeSessionMap.get(chatId)
 
@@ -21,10 +56,12 @@ export async function resolveOpenCodeSession(
   }
 
   if (sessionId) {
+    const knownSessionId = sessionId
     const exists = await retryWithTimeout(
       async () => {
         const getResult = await client.session.get({
-          path: { id: sessionId },
+          sessionID: knownSessionId,
+          ...(options.directory ? { directory: options.directory } : {}),
         })
         return !!getResult.data
       },
@@ -46,7 +83,11 @@ export async function resolveOpenCodeSession(
     const sessionData = await retryWithTimeout(
       async () => {
         const createResult = await client.session.create({
-          body: { title: "Flowzone Chat" },
+          title: options.title ?? "Flowzone Chat",
+          ...(options.directory ? { directory: options.directory } : {}),
+          ...(options.agent ? { agent: options.agent } : {}),
+          ...(options.model ? { model: options.model } : {}),
+          permission: options.permission ?? DEFAULT_OPENCODE_PERMISSION_RULES,
         })
         if (!createResult.data) {
           throw new Error("Session create returned no data")

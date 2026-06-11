@@ -1,6 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton"
 
-export default function ChatIndexLoading() {
+export default function DesktopIndexLoading() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
       <Skeleton className="size-16 rounded-2xl" />

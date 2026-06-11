@@ -1,14 +1,15 @@
 import type { Sandbox } from "e2b"
-import type { OpencodeClient } from "@opencode-ai/sdk"
+import type { OpencodeClient } from "@opencode-ai/sdk/v2"
 import { logger } from "@/lib/logger"
 import { getCachedManager, setCachedManager, deleteCachedManager } from "@/lib/sandbox-cache"
 
 const OPENCODE_PORT = 4096
-const HEALTH_CHECK_RETRIES = 60
+const HEALTH_CHECK_RETRIES = 10
 const HEALTH_CHECK_INTERVAL_MS = 1000
 
 const KEEPALIVE_INTERVAL_MS = 120_000
 const SANDBOX_TIMEOUT_MS = 600_000
+const OPENCODE_PASSWORD = "opencode-fz-local"
 
 export interface OpenCodeManager {
   client: OpencodeClient
@@ -17,74 +18,66 @@ export interface OpenCodeManager {
   stop: () => Promise<void>
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-function derivePassword(sandboxId: string): string {
-  let hash = 5381
-  for (let i = 0; i < sandboxId.length; i++) {
-    hash = ((hash << 5) + hash) + sandboxId.charCodeAt(i)
-  }
-  return Math.abs(hash).toString(36).padStart(12, "0") + "fz"
-}
-
 function getAuthHeader(password: string): string {
   const user = "opencode"
   const encoded = btoa(`${user}:${password}`)
   return `Basic ${encoded}`
 }
 
-function generateOpenCodeConfig(): string {
-  return JSON.stringify(
-    {
-      $schema: "https://opencode.ai/config.json",
-      permission: { "*": "allow" },
-      autoupdate: "notify",
-      share: "disabled",
-    },
-    null,
-    2,
-  )
+function healthCheckCurl(port: number): string {
+  return `curl -s --max-time 5 -o /dev/null -w "%{http_code}" -u opencode:${OPENCODE_PASSWORD} http://localhost:${port}/global/health || true`
 }
 
-async function provisionOpenCodeConfig(sandbox: Sandbox): Promise<void> {
-  await sandbox.files.write("/home/user/opencode.json", generateOpenCodeConfig())
-}
+async function waitForOpenCodeServer(sandbox: Sandbox): Promise<void> {
+  const curlCmd = healthCheckCurl(OPENCODE_PORT)
 
-async function ensureOpenCodeRunning(
-  sandbox: Sandbox,
-  password: string,
-): Promise<void> {
-  const healthResult = await sandbox.commands.run(
-    `curl -s --max-time 5 -o /dev/null -w "%{http_code}" http://localhost:${OPENCODE_PORT}/global/health`,
-  )
+  logger.info("Waiting for OpenCode server", {
+    sandboxId: sandbox.sandboxId,
+    expectedPort: OPENCODE_PORT,
+  })
 
-  if (healthResult.stdout.trim() === "200") {
-    logger.debug("OpenCode server already running", { sandboxId: sandbox.sandboxId })
-    return
+  // Phase 1: server should be running via template setStartCmd
+  for (let i = 0; i < HEALTH_CHECK_RETRIES; i++) {
+    const result = await sandbox.commands.run(curlCmd)
+    const code = result.stdout.trim()
+    if (code === "200") {
+      if (i > 0) {
+        logger.info("OpenCode server ready", {
+          sandboxId: sandbox.sandboxId,
+          attempts: i + 1,
+        })
+      }
+      return
+    }
+    logger.debug("OpenCode health check (phase 1)", {
+      sandboxId: sandbox.sandboxId,
+      attempt: i + 1,
+      statusCode: code || "(empty)",
+    })
+    await new Promise((resolve) => setTimeout(resolve, HEALTH_CHECK_INTERVAL_MS))
   }
 
-  await provisionOpenCodeConfig(sandbox)
-
-  // Write password to a file instead of embedding in the command line (ps leak)
-  await sandbox.files.write("/tmp/opencode_password", password)
-
+  // Phase 2: fallback — start server at runtime
+  logger.warn("OpenCode server not detected — attempting to start at runtime", {
+    sandboxId: sandbox.sandboxId,
+    port: OPENCODE_PORT,
+  })
   await sandbox.commands.run(
-    `nohup sh -c '
-      PASSWORD=$(cat /tmp/opencode_password)
-      export OPENCODE_SERVER_PASSWORD="$PASSWORD"
-      npx --yes @opencode-ai/cli serve --port ${OPENCODE_PORT} --hostname 0.0.0.0
-    ' > /tmp/opencode.log 2>&1 &`,
+    `opencode serve --port ${OPENCODE_PORT} --hostname 0.0.0.0`,
+    { background: true, envs: { OPENCODE_SERVER_PASSWORD: OPENCODE_PASSWORD } },
   )
 
   for (let i = 0; i < HEALTH_CHECK_RETRIES; i++) {
-    await sleep(HEALTH_CHECK_INTERVAL_MS)
-    const result = await sandbox.commands.run(
-      `curl -s --max-time 5 -o /dev/null -w "%{http_code}" http://localhost:${OPENCODE_PORT}/global/health`,
-    )
-    if (result.stdout.trim() === "200") {
-      logger.info("OpenCode server started", {
+    await new Promise((resolve) => setTimeout(resolve, HEALTH_CHECK_INTERVAL_MS))
+    const result = await sandbox.commands.run(curlCmd)
+    const code = result.stdout.trim()
+    logger.info("OpenCode health check (fallback)", {
+      sandboxId: sandbox.sandboxId,
+      attempt: i + 1,
+      statusCode: code || "(empty)",
+    })
+    if (code === "200") {
+      logger.info("OpenCode server started (runtime fallback)", {
         sandboxId: sandbox.sandboxId,
         attempts: i + 1,
       })
@@ -109,17 +102,16 @@ export async function createOpenCodeManager(
     return cached
   }
 
-  const password = derivePassword(sandboxId)
-  const authHeader = getAuthHeader(password)
+  const authHeader = getAuthHeader(OPENCODE_PASSWORD)
 
-  await ensureOpenCodeRunning(sandbox, password)
+  await waitForOpenCodeServer(sandbox)
 
   await sandbox.setTimeout(SANDBOX_TIMEOUT_MS)
 
   const host = sandbox.getHost(OPENCODE_PORT)
   const baseUrl = `https://${host}`
 
-  const { createOpencodeClient } = await import("@opencode-ai/sdk")
+  const { createOpencodeClient } = await import("@opencode-ai/sdk/v2")
   const client = createOpencodeClient({
     baseUrl,
     headers: { Authorization: authHeader },

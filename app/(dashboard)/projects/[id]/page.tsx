@@ -103,7 +103,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             <h2 className="text-sm font-medium">Recent Chats</h2>
             <Button
               nativeButton={false}
-              render={<Link href={`/chat?projectId=${id}`} />}
+              render={<Link href={`/workspace/desktop?projectId=${id}`} />}
               size="sm"
               variant="outline"
             >
@@ -122,7 +122,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               {project.chats.map((chat) => (
                 <Link
                   key={chat.id}
-                  href={`/chat/${chat.id}`}
+                  href={`/workspace/desktop/${chat.id}`}
                   className="flex items-center justify-between rounded-md px-3 py-2 text-xs transition-colors hover:bg-accent"
                 >
                   <span className="truncate font-medium">{chat.title}</span>

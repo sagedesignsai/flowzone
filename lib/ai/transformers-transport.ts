@@ -13,17 +13,27 @@ import {
 } from "@browser-ai/transformers-js"
 import { useSettingsStore } from "@/stores/settings-store"
 import { getLocalModelId } from "@/lib/ai/models"
+import { getAvailableDevice } from "@/lib/ai/get-available-device"
 
 export class TransformersChatTransport
   implements ChatTransport<TransformersUIMessage>
 {
-  private model: TransformersJSLanguageModel
+  model!: TransformersJSLanguageModel
 
   constructor(modelId?: string) {
     const storedId = useSettingsStore.getState().localAiModelId
     const id = modelId ?? storedId ?? getLocalModelId()
+
+    // Store the promise so sendMessages can await it
+    this._initPromise = this._init(id)
+  }
+
+  private _initPromise: Promise<void>
+
+  private async _init(id: string): Promise<void> {
+    const device = await getAvailableDevice()
     this.model = transformersJS(id, {
-      device: "webgpu",
+      device,
       worker: new Worker(new URL("../../app/worker.ts", import.meta.url), {
         type: "module",
       }),
@@ -43,6 +53,9 @@ export class TransformersChatTransport
       messageId: string | undefined
     } & ChatRequestOptions
   ): Promise<ReadableStream<UIMessageChunk>> {
+    // Wait for model initialization (async device probe) to complete
+    await this._initPromise
+
     const { messages, abortSignal } = options
     const prompt = await convertToModelMessages(messages)
 

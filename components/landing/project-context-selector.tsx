@@ -165,7 +165,7 @@ export function ProjectContextSelector({
         className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
       >
         <FolderOpen className="size-3" />
-        Connect GitHub to add project context
+        Connect GitHub
       </Link>
     )
   }

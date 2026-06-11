@@ -8,7 +8,7 @@ import { generateText, tool } from "ai"
 import { z } from "zod"
 
 /**
- * POST /api/chat/[id]/title
+ * POST /api/workspace/desktop/[id]/title
  *
  * Generates a concise title for a chat based on its history.
  * Uses a tool call for reliable structured output — the model
@@ -135,7 +135,7 @@ export async function POST(
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to generate title"
-    console.error("POST /api/chat/[id]/title error:", message)
+    console.error("POST /api/workspace/desktop/[id]/title error:", message)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

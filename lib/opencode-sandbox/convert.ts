@@ -4,7 +4,8 @@ import type {
   TextPart as OpenCodeTextPart,
   ToolPart,
   ReasoningPart,
-} from "@opencode-ai/sdk"
+  FilePart,
+} from "@opencode-ai/sdk/v2"
 
 export function convertOpenCodePartsToUIMessageParts(
   parts: Part[],
@@ -20,28 +21,48 @@ export function convertOpenCodePartsToUIMessageParts(
       }
       case "reasoning": {
         const p = part as ReasoningPart
-        uiParts.push({ type: "reasoning", reasoning: p.text, details: [] })
+        uiParts.push({ type: "reasoning", text: p.text, state: "done" })
         break
       }
       case "tool": {
         const p = part as ToolPart
         const state = p.state
-        const toolState =
-          state.status === "completed"
-            ? "result"
-            : state.status === "error"
-              ? "error"
-              : "call"
-        uiParts.push({
-          type: "tool-invocation",
-          toolInvocation: {
+        if (state.status === "pending" || state.status === "running") {
+          uiParts.push({
+            type: "dynamic-tool",
             toolCallId: p.callID,
             toolName: p.tool,
-            state: toolState,
-            args: state.input,
-            ...(state.status === "completed" ? { result: state.output } : {}),
-            ...(state.status === "error" ? { error: state.error } : {}),
-          },
+            input: state.input,
+            state: "input-streaming",
+          })
+        } else if (state.status === "completed") {
+          uiParts.push({
+            type: "dynamic-tool",
+            toolCallId: p.callID,
+            toolName: p.tool,
+            input: state.input,
+            state: "output-available",
+            output: state.output,
+          })
+        } else if (state.status === "error") {
+          uiParts.push({
+            type: "dynamic-tool",
+            toolCallId: p.callID,
+            toolName: p.tool,
+            input: state.input,
+            state: "output-error",
+            errorText: state.error,
+          })
+        }
+        break
+      }
+      case "file": {
+        const p = part as FilePart
+        uiParts.push({
+          type: "file",
+          url: p.url,
+          mediaType: p.mime,
+          ...(p.filename ? { filename: p.filename } : {}),
         })
         break
       }
