@@ -30,7 +30,7 @@ export function DesktopIndexContent({ className }: DesktopIndexContentProps) {
     })
     setActiveChatId(id)
     const query = projectId ? `?projectId=${encodeURIComponent(projectId)}` : ""
-    router.push(`/workspace/desktop/${id}${query}`)
+    router.push(`/desktop/${id}${query}`)
   }
 
   return (

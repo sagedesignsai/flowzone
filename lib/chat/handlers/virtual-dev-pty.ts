@@ -71,7 +71,7 @@ export async function handleVirtualDevPtyChat(options: {
     userId,
     incomingMessages,
     projectId,
-    "opencode",
+    "code-agent",
   )
 
   // ── Create E2B sandbox ─────────────────────────────────

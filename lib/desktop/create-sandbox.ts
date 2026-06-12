@@ -108,7 +108,7 @@ async function createPtyAsync(
 ): Promise<void> {
   // Step 1: Start opencode in the existing tmux session (created by startup.sh)
   const tmuxResult = await desktop.commands.run(
-    "tmux send-keys -t flowzone-core 'opencode start' Enter",
+    "tmux send-keys -t flowzone-core 'opencode' Enter",
     { timeoutMs: 15_000 },
   )
   if (tmuxResult.exitCode !== 0) {
@@ -122,7 +122,7 @@ async function createPtyAsync(
   let opencodeRunning = false
   for (let i = 0; i < 10; i++) {
     const check = await desktop.commands.run(
-      "pgrep -f 'opencode start' || true",
+      "pgrep -x opencode || pgrep -f 'opencode serve' || true",
       { timeoutMs: 5_000 },
     )
     if (check.stdout.trim()) {

@@ -52,6 +52,7 @@ export function useChatSessionsSync() {
           createdAt: new Date(c.createdAt).getTime(),
           updatedAt: new Date(c.updatedAt).getTime(),
           projectId: c.projectId,
+          environment: c.environment as ChatSession["environment"],
         }))
 
         // Merge server sessions with local-only sessions (chats created

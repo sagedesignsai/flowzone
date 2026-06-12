@@ -27,6 +27,7 @@ export async function GET() {
       projectId: true,
       createdAt: true,
       updatedAt: true,
+      environment: true,
     },
   })
 
@@ -37,6 +38,7 @@ export async function GET() {
       projectId: c.projectId,
       createdAt: c.createdAt.toISOString(),
       updatedAt: c.updatedAt.toISOString(),
+      environment: c.environment,
     })),
   })
 }

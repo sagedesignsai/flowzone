@@ -5,7 +5,7 @@ import { persist } from "zustand/middleware"
 
 export type ViewMode = "code" | "terminal" | "desktop"
 
-export type ChatEnvironment = "code" | "desktop" | "opencode"
+export type ChatEnvironment = "code-agent" | "desktop"
 
 export type DesktopStatus =
   | "idle"

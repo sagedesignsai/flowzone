@@ -78,7 +78,7 @@ export async function ensureChat(
             : "New Chat",
           userId,
           projectId: projectId ?? null,
-          environment: environment ?? "code",
+          environment: environment ?? "desktop",
         },
       })
 

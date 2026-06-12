@@ -22,19 +22,14 @@ const ENVIRONMENTS: {
   description: string
 }[] = [
   {
-    value: "code",
-    label: "Code",
-    description: "Headless sandbox",
+    value: "code-agent",
+    label: "Code Agent",
+    description: "Interactive terminal + AI agent",
   },
   {
     value: "desktop",
     label: "Desktop",
     description: "Linux desktop + VNC",
-  },
-  {
-    value: "opencode",
-    label: "OpenCode",
-    description: "Direct agent in sandbox",
   },
 ]
 

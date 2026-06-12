@@ -1,50 +1,45 @@
 /**
  * POST /api/workspace/code-agent
  *
- * Direct OpenCode runtime endpoint — offloads the full agent + tool
- * execution into an E2B sandbox running an OpenCode headless server.
+ * Streaming chat completion endpoint for the Code Agent workspace.
+ * Routes requests to the Virtual Developer PTY agent, which uses an
+ * interactive PTY terminal as its primary execution environment.
  *
- * Unlike /api/workspace/desktop (which wires tools server-side via a
- * ToolLoopAgent), this endpoint is a thin proxy:
- *   1. Authenticates the user
- *   2. Creates/reuses an E2B sandbox with OpenCode running inside
- *   3. Routes the user's message directly to OpenCode's HTTP API
- *   4. Streams OpenCode's response (text, reasoning, tool calls, files)
- *      back as SSE — compatible with the AI SDK useChat hook
+ * The agent can:
+ * - Create/interact with PTY shell sessions
+ * - Run opencode in TUI mode via the terminal
+ * - Use sandbox tools for file operations
+ * - Stream terminal output to the user in real-time
  *
- * This means ALL agent logic and tool execution happens inside the
- * sandbox, NOT on the Next.js server.
- *
- * Request body:  { messages: UIMessage[], id: string, projectId?: string, model?: { providerID: string, modelID: string }, agent?: string }
+ * Request body:  { messages: UIMessage[], id: string, projectId?: string, webSearch?: boolean }
  * Response:      SSE stream of UI message chunks
+ *   500 { error: string } if no AI provider configured
+ *   503 { error: string } if no sandbox available
  */
 
 import { type UIMessage } from "ai"
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
-import {
-  handleOpencodeChat,
-  OPENCODE_CHAT_MAX_DURATION,
-} from "@/lib/chat/opencode-handler"
+import { handleVirtualDevPtyChat } from "@/lib/chat/handlers/virtual-dev-pty"
 
-export const maxDuration = OPENCODE_CHAT_MAX_DURATION
+// PTY sessions can run for minutes (opencode TUI, long builds, etc.)
+export const maxDuration = 300
 
 export async function POST(req: Request) {
   try {
-    const { messages: incomingMessages, id, projectId, model, agent } =
+    const { messages: incomingMessages, id, projectId, webSearch } =
       (await req.json()) as {
         messages: UIMessage[]
         id?: string
         projectId?: string
-        model?: { providerID: string; modelID: string }
-        agent?: string
+        webSearch?: boolean
       }
 
     if (!id) {
       return Response.json({ error: "Chat ID is required" }, { status: 400 })
     }
 
-    // ── Authenticate ──────────────────────────────────────────
+    // ── Authenticate ──────────────────────────────────────
     const session = await auth.api.getSession({
       headers: await headers(),
     })
@@ -53,14 +48,14 @@ export async function POST(req: Request) {
       return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // ── Route directly to OpenCode in sandbox ─────────────────
-    return handleOpencodeChat({
+    // ── Route to Virtual Developer PTY Handler ────────────
+    return handleVirtualDevPtyChat({
       chatId: id,
       userId: session.user.id,
       incomingMessages,
       projectId,
-      model,
-      agent,
+      webSearch: Boolean(webSearch),
+      abortSignal: req.signal,
     })
   } catch (error) {
     const message =

@@ -98,7 +98,7 @@ export function PromptHero({ className }: PromptHeroProps) {
   }, [activeProjectId])
 
   function chatRoute(id: string) {
-    return environment === "opencode" ? `/workspace/code-agent/${id}` : `/workspace/desktop/${id}`
+    return environment === "code-agent" ? `/code-agent/${id}` : `/desktop/${id}`
   }
 
   function navigateToChat(id: string, prompt: string) {

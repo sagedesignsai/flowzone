@@ -24,6 +24,7 @@ export interface UseChatPanelOptions {
   desktopReady?: boolean
   desktopStatus?: DesktopStatus
   desktopOptOut?: boolean
+  apiPath?: string
 }
 
 export interface UseChatPanelReturn {
@@ -57,6 +58,7 @@ export function useChatPanel({
   desktopReady = true,
   desktopStatus = "idle",
   desktopOptOut = false,
+  apiPath,
 }: UseChatPanelOptions): UseChatPanelReturn {
   const searchParams = useSearchParams()
   const projectId =
@@ -75,6 +77,7 @@ export function useChatPanel({
     projectId,
     useWebSearch,
     environment,
+    apiPath,
   )
 
   const { messages, sendMessage, error, stop, regenerate, status } =

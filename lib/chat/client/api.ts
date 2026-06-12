@@ -4,6 +4,7 @@ export interface ChatListItem {
   createdAt: string
   updatedAt: string
   projectId: string | null
+  environment: string
 }
 
 export interface ChatDetailResponse {

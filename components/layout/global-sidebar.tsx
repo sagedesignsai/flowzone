@@ -15,7 +15,7 @@ import {
   SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { useIdeStore } from "@/hooks/use-ide-store"
+import { useIdeStore, type ChatEnvironment } from "@/hooks/use-ide-store"
 import { cn } from "@/lib/utils"
 import {
   ArrowLeft,
@@ -55,7 +55,7 @@ import { useChatSessionsSync } from "@/hooks/use-chat-sessions-sync"
 const NAV_ITEMS = [
   { label: "Home", icon: HouseLine, href: "/" },
   { label: "Projects", icon: FolderSimple, href: "/projects" },
-  { label: "Chats", icon: ChatTeardropDots, href: "/workspace/desktop" },
+  { label: "Chats", icon: ChatTeardropDots, href: "/desktop" },
   { label: "Templates", icon: Stack, href: "/templates" },
 ]
 
@@ -68,6 +68,10 @@ const SETTINGS_ITEMS = [
   { label: "Domains", icon: Globe, href: "/settings/domains" },
   { label: "Analytics", icon: ChartBar, href: "/settings/analytics" },
 ]
+
+function chatRoute(id: string, environment?: ChatEnvironment): string {
+  return environment === "code-agent" ? `/code-agent/${id}` : `/desktop/${id}`
+}
 
 // ----- Helpers ───────────────────────────────────────────────────────────────
 
@@ -154,16 +158,17 @@ export function GlobalSidebar() {
     removeChatSession(id)
   }
 
-  function handleNewChat() {
+  function handleNewChat(environment?: ChatEnvironment) {
     const id = nanoid()
     addChatSession({
       id,
       title: "New chat",
       createdAt: Date.now(),
       updatedAt: Date.now(),
+      environment,
     })
     setActiveChatId(id)
-    router.push(`/workspace/desktop/${id}`)
+    router.push(chatRoute(id, environment))
   }
 
   const user = session?.user
@@ -213,7 +218,7 @@ export function GlobalSidebar() {
           <div className="px-2 pb-2">
             <Button
               className="w-full justify-start gap-2"
-              onClick={handleNewChat}
+              onClick={() => handleNewChat()}
               size="sm"
             >
               <Plus className="size-3.5" />
@@ -290,7 +295,7 @@ export function GlobalSidebar() {
                         <SidebarMenuItem key={session.id}>
                           <SidebarMenuButton
                             isActive={activeChatId === session.id}
-                            render={<Link href={`/workspace/desktop/${session.id}`} />}
+                            render={<Link href={chatRoute(session.id, session.environment)} />}
                             onClick={() => setActiveChatId(session.id)}
                             tooltip={session.title}
                             className="group/menu-button"

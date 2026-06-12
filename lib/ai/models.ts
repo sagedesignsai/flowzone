@@ -98,9 +98,9 @@ const PROVIDER_DEFINITIONS: Record<AIProviderName, ProviderDefinition> = {
     label: "Vercel v0 (UI Generation)",
     envKey: "VERCEL_API_KEY",
     models: {
-      primary: "v0-1.5-lg",
+      primary: "v0-1.5-md",
       fast: "v0-1.5-md",
-      coder: "v0-1.5-lg",
+      coder: "v0-1.5-md",
     },
   },
 }
@@ -120,7 +120,7 @@ export function getActiveProvider(): AIProviderName {
       return requested
     }
   }
-  return "cerebras"
+  return "vercel"
 }
 
 // ─── Lazy Provider Instances ────────────────────────────

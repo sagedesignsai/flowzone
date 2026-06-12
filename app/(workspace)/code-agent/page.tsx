@@ -3,7 +3,7 @@ import { CodeAgentIndexContent } from "@/components/workspace/code-agent/code-ag
 
 export const metadata = {
   title: "Code Agent — Flowzone",
-  description: "Start a code agent chat powered by OpenCode.",
+  description: "Start a code agent chat with interactive PTY terminal access inside a secure sandbox.",
 }
 
 export default function CodeAgentIndexPage() {

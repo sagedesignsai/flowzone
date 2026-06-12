@@ -16,6 +16,7 @@ interface ChatPanelProps {
   desktopReady?: boolean
   desktopStatus?: DesktopStatus
   desktopOptOut?: boolean
+  apiPath?: string
   className?: string
 }
 
@@ -27,6 +28,7 @@ export function ChatPanel({
   desktopReady = true,
   desktopStatus = "idle",
   desktopOptOut = false,
+  apiPath,
   className,
 }: ChatPanelProps) {
   const {
@@ -55,6 +57,7 @@ export function ChatPanel({
     desktopReady,
     desktopStatus,
     desktopOptOut,
+    apiPath,
   })
 
   return (

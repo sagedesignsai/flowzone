@@ -21,6 +21,10 @@ import { z } from "zod"
 import { SandboxContext } from "@/lib/tools/sandbox-store"
 import * as ptyManager from "@/lib/pty/pty-manager"
 import type { PtyTimeoutError } from "@/lib/pty/pty-manager"
+import {
+  registerPtyChatSession,
+} from "@/lib/pty/pty-store"
+import { logger } from "@/lib/logger"
 
 // ── Helpers ───────────────────────────────────────────────
 
@@ -32,10 +36,6 @@ function requireSandbox(label: string) {
     )
   }
   return ctx
-}
-
-function generateId(): string {
-  return crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
 
 // ── Create PTY Shell ──────────────────────────────────────
@@ -71,7 +71,10 @@ export const createPtyShell = tool({
   }),
   execute: async ({ cols, rows, cwd }) => {
     const ctx = requireSandbox("createPtyShell")
+    const chatId = ctx.chatId
 
+    // Create the PTY. The SSE terminal endpoint will connect
+    // directly to this PTY via sandbox.pty.connect() for streaming.
     const sessionId = await ptyManager.createPtySession(ctx.sandbox, {
       cols,
       rows,
@@ -82,6 +85,12 @@ export const createPtyShell = tool({
     const session = ptyManager.getPtySession(sessionId)
     if (!session) {
       throw new Error("Failed to create PTY session")
+    }
+
+    // Register in the chat store for SSE terminal streaming
+    if (chatId) {
+      registerPtyChatSession(chatId, ctx.sandbox.sandboxId, session.pid)
+      logger.debug("Registered PTY session for chat", { chatId, sandboxId: ctx.sandbox.sandboxId, pid: session.pid })
     }
 
     return {
@@ -194,6 +203,19 @@ export const waitForPtyOutput = tool({
     "- The output is streamed to the user — they see terminal output live",
     "- Returns everything in the buffer when the pattern matches",
     "",
+    "RETURN VALUE:",
+    "  {",
+    '    "output": "Full terminal output accumulated so far",',
+    '    "delta": "The latest chunk of new output",',
+    '    "pattern": "The pattern you searched for",',
+    '    "matched": true/false  — whether the pattern was found,',
+    '    "error": "Error message if timed out (only on timeout)"',
+    "  }",
+    "",
+    "Check matched=true to confirm the pattern appeared.",
+    "If matched=false and there's an error, the terminal timed out waiting —",
+    "read the output to decide next steps.",
+    "",
     "If the pattern is not found within the timeout, returns an error",
     "with whatever output was captured.",
   ].join("\n"),
@@ -216,19 +238,29 @@ export const waitForPtyOutput = tool({
         sessionId,
         { pattern, timeout, interval: 100 },
       )) {
+        // AI SDK's executeTool wraps yields as preliminary results.
+        // The for await...of only captures yields, NOT return values.
+        // So we yield accumulated output each tick so the final
+        // result (last yield) contains the complete terminal output.
         yield {
-          type: "text-delta" as const,
           delta,
-          id: generateId(),
+          output: fullOutput,
+          pattern,
+          matched: false as const,
         }
       }
 
-      // Pattern matched — return final output
-      const output = ptyManager.readPtyOutput(sessionId)
-      return { output, pattern, matched: true as const }
+      // Pattern matched — the for await...of exits when
+      // waitForPtyPattern returns. Yield one more time with
+      // matched: true so the agent knows the tool succeeded.
+      yield {
+        output: ptyManager.readPtyOutput(sessionId),
+        pattern,
+        matched: true as const,
+      }
     } catch (error) {
       const ptyErr = error as PtyTimeoutError
-      return {
+      yield {
         output: ptyErr.output ?? ptyManager.readPtyOutput(sessionId),
         pattern,
         matched: false as const,

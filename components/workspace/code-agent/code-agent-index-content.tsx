@@ -30,7 +30,7 @@ export function CodeAgentIndexContent({ className }: CodeAgentIndexContentProps)
     })
     setActiveChatId(id)
     const query = projectId ? `?projectId=${encodeURIComponent(projectId)}` : ""
-    router.push(`/workspace/code-agent/${id}${query}`)
+    router.push(`/code-agent/${id}${query}`)
   }
 
   return (
@@ -42,7 +42,9 @@ export function CodeAgentIndexContent({ className }: CodeAgentIndexContentProps)
       <div className="space-y-1.5 text-center">
         <h2 className="text-lg font-semibold tracking-tight">Code Agent</h2>
         <p className="max-w-xs text-sm text-muted-foreground">
-          Start a chat with the OpenCode-powered agent that runs tools inside a secure sandbox.
+          An AI developer with interactive terminal access. It can run opencode
+          TUI, execute commands, and stream output in real-time inside a secure
+          E2B sandbox.
         </p>
       </div>
 

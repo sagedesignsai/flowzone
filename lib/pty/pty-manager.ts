@@ -13,6 +13,7 @@
  * have the sandbox from SandboxContext.
  */
 
+import { stripVTControlCharacters } from "node:util"
 import type { Sandbox } from "e2b"
 import { logger } from "@/lib/logger"
 
@@ -46,6 +47,8 @@ export interface PtyCreateOptions {
   /** Default: sandbox user */
   user?: string
   envs?: Record<string, string>
+  /** External callback fired on each output chunk (alongside buffer append) */
+  onData?: (text: string) => void
 }
 
 export interface PtyPatternMatchOptions {
@@ -119,6 +122,7 @@ export async function createPtySession(
     onData: (data: Uint8Array) => {
       const text = new TextDecoder().decode(data)
       buffer.push(text)
+      options.onData?.(text)
     },
     timeoutMs: options.timeoutMs ?? 0,
     cwd: options.cwd,
@@ -260,7 +264,11 @@ export async function* waitForPtyPattern(
       yield { delta, fullOutput: current }
     }
 
-    if (current.includes(pattern)) {
+    // Strip ANSI escape codes before pattern matching so agent
+    // can match prompts like "$" or "❯" despite color codes.
+    // Raw output (with ANSI) is kept in the buffer for SSE streaming.
+    const strippedCurrent = stripVTControlCharacters(current)
+    if (strippedCurrent.includes(pattern)) {
       return current
     }
 
