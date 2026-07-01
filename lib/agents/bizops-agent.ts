@@ -14,6 +14,7 @@
  */
 
 import { ToolLoopAgent, type LanguageModel, type ToolSet } from "ai"
+import { createKnowledgeTools } from "@/lib/rag/tools"
 
 // ── Agent Factory ──────────────────────────────────────────
 
@@ -28,6 +29,7 @@ export function createBizOpsAgent(
   model: LanguageModel,
   tools: ToolSet = {},
 ) {
+  const knowledgeTools = createKnowledgeTools()
   return new ToolLoopAgent({
     model,
     id: "bizops-agent",
@@ -73,6 +75,10 @@ export function createBizOpsAgent(
       "- Service offering refinement and packaging",
       "",
       "## Tools Available",
+      "",
+      "### knowledgeBase (always available)",
+      "- searchKnowledge: find relevant context from the business knowledge base (past reports, client records, SOPs, financial data)",
+      "- addKnowledge: store new facts, decisions, and records for future reference",
       "",
       "### webSearch (use for research)",
       "Research business tools, templates, legal requirements, pricing benchmarks, industry standards, and best practices for business operations.",
@@ -165,6 +171,7 @@ export function createBizOpsAgent(
       "- Report what was created, file paths, and suggested next steps",
     ].join("\n"),
     tools: {
+      ...knowledgeTools,
       ...tools,
     },
   })

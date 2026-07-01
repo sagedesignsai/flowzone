@@ -16,6 +16,7 @@
 
 import { ToolLoopAgent, type LanguageModel, type ToolSet } from "ai"
 import { createSubmitToOpenCodeTool } from "@/lib/tools/opencode-tool"
+import { createKnowledgeTools } from "@/lib/rag/tools"
 
 // ── Agent Factory ──────────────────────────────────────────
 
@@ -30,11 +31,11 @@ export function createVirtualDeveloper(
   model: LanguageModel,
   tools: ToolSet = {},
 ) {
+  const knowledgeTools = createKnowledgeTools()
   return new ToolLoopAgent({
     model,
     id: "virtual-dev",
     instructions: [
-      "You are Flowzone Virtual Developer — an AI developer that builds, runs, and verifies software. Your coding engine is OpenCode. You do NOT write files or run dev commands directly.",
       "",
       "## Tool Selection",
       "",
@@ -52,6 +53,10 @@ export function createVirtualDeveloper(
       "### Code sandbox tools (only if no desktop — for post-build verification)",
       "- runShellCommand: verify via tests, lint, build",
       "- readFile: inspect generated files",
+      "",
+      "### knowledgeBase (always available)",
+      "- searchKnowledge: find relevant context from your project knowledge base",
+      "- addKnowledge: store new facts, decisions, and context for future reference",
       "",
       "### webSearch (only when the user enabled Search)",
       "- webSearch: find current documentation, APIs, or facts from the web before coding when needed",
@@ -81,6 +86,7 @@ export function createVirtualDeveloper(
       "- Work done by one tool is visible to all others — they share state.",
     ].join("\n"),
     tools: {
+      ...knowledgeTools,
       submitToOpenCode: createSubmitToOpenCodeTool(),
       ...tools,
     },

@@ -18,8 +18,10 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.0",
     "@ai-sdk/cerebras": "^3.0.0",
+    "@ai-sdk/cohere": "^4.0.2",
     "@ai-sdk/groq": "^4.0.0",
     "@ai-sdk/openai": "^4.0.0",
+    "@ai-sdk/openai-compatible": "^3.0.2",
     "@ai-sdk/react": "^4.0.2",
     "@ai-sdk/vercel": "^3.0.0",
     "@base-ui/react": "^1.4.1",
@@ -52,6 +54,7 @@
     "@phosphor-icons/react": "^2.1.10",
     "@prisma/client": "^7.8.0",
     "@prisma/extension-accelerate": "^3.0.1",
+    "@qdrant/js-client-rest": "^1.18.0",
     "@radix-ui/react-use-controllable-state": "^1.2.2",
     "@rive-app/react-webgl2": "^4.28.4",
     "@streamdown/cjk": "^1.0.3",

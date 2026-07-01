@@ -4,14 +4,15 @@ import { createGroq } from "@ai-sdk/groq"
 import { createAnthropic } from "@ai-sdk/anthropic"
 import { createOpenAI } from "@ai-sdk/openai"
 import { createVercel } from "@ai-sdk/vercel"
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
 import type { LanguageModel } from "ai"
 
 /**
  * Centralized AI Provider Configuration
  *
  * Provides access to configured language models with provider switching.
- * Set AI_PROVIDER to one of: gateway, groq, cerebras, anthropic, openai, vercel
- * Defaults to "cerebras" (gpt-oss-120b).
+ * Set AI_PROVIDER to one of: gateway, groq, cerebras, anthropic, openai, vercel, opencode
+ * Defaults to "vercel".
  *
  * Usage:
  *   const model = getPrimaryModel()
@@ -19,7 +20,7 @@ import type { LanguageModel } from "ai"
  *   const coderModel = getCoderModel()
  *
  * Each provider requires its corresponding API key env var:
- *   AI_GATEWAY_API_KEY, GROQ_API_KEY, CEREBRAS_API_KEY, etc.
+ *   AI_GATEWAY_API_KEY, GROQ_API_KEY, CEREBRAS_API_KEY, OPENCODE_ZEN_API_KEY, etc.
  */
 
 // ─── Types ────────────────────────────────────────────────
@@ -31,6 +32,7 @@ export type AIProviderName =
   | "anthropic"
   | "openai"
   | "vercel"
+  | "opencode"
 
 /** Model IDs mapped to each role for a given provider. */
 export interface ProviderModels {
@@ -103,6 +105,20 @@ const PROVIDER_DEFINITIONS: Record<AIProviderName, ProviderDefinition> = {
       coder: "v0-1.5-md",
     },
   },
+  opencode: {
+    label: "OpenCode Zen (Free Models)",
+    envKey: "OPENCODE_ZEN_API_KEY",
+    models: {
+      // Free-tier models available without quota cost
+      primary: "big-pickle",
+      fast: "north-mini-code-free",
+      coder: "big-pickle",
+      // deepseek-v4-flash-free
+      // mimo-v2.5-free
+      // nemotron-3-ultra-free
+
+    },
+  },
 }
 
 // ─── Active Provider Selection ──────────────────────────
@@ -130,6 +146,7 @@ let _cerebras: ReturnType<typeof createCerebras> | null = null
 let _anthropic: ReturnType<typeof createAnthropic> | null = null
 let _openai: ReturnType<typeof createOpenAI> | null = null
 let _vercel: ReturnType<typeof createVercel> | null = null
+let _opencode: ReturnType<typeof createOpenAICompatible> | null = null
 
 /** Resolve a language model for the given role from the active provider. */
 function resolveModel(role: "primary" | "fast" | "coder"): LanguageModel | null {
@@ -158,6 +175,14 @@ function resolveModel(role: "primary" | "fast" | "coder"): LanguageModel | null 
     case "vercel":
       if (!_vercel) _vercel = createVercel()
       return _vercel(modelId)
+    case "opencode":
+      if (!_opencode)
+        _opencode = createOpenAICompatible({
+          name: "opencode",
+          baseURL: "https://opencode.ai/zen/v1",
+          apiKey: process.env.OPENCODE_ZEN_API_KEY,
+        })
+      return _opencode(modelId)
   }
 }
 
