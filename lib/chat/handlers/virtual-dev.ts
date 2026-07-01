@@ -97,8 +97,13 @@ export async function handleVirtualDeveloperChat(options: {
 
     const agent = createVirtualDeveloper(model, extraTools)
 
+    // Strip empty assistant placeholders (AI SDK inserts these during streaming)
+    const filteredMessages = combinedMessages.filter(
+      (m) => m.parts && m.parts.length > 0,
+    )
+
     const validatedMessages = await validateUIMessages({
-      messages: combinedMessages,
+      messages: filteredMessages,
       tools: agent.tools as Parameters<typeof validateUIMessages>[0]["tools"],
     })
 
@@ -108,7 +113,7 @@ export async function handleVirtualDeveloperChat(options: {
         abortSignal,
         uiMessages: validatedMessages,
         originalMessages: validatedMessages as never,
-        onFinish: async ({ messages }) => {
+        onEnd: async ({ messages }) => {
           await saveChat({ chatId, messages })
         },
       })
@@ -162,8 +167,13 @@ export async function handleVirtualDeveloperChat(options: {
 
   const agent = createVirtualDeveloper(model, extraTools)
 
+  // Strip empty assistant placeholders (AI SDK inserts these during streaming)
+  const filteredMessages = combinedMessages.filter(
+    (m) => m.parts && m.parts.length > 0,
+  )
+
   const validatedMessages = await validateUIMessages({
-    messages: combinedMessages,
+    messages: filteredMessages,
     tools: agent.tools as Parameters<typeof validateUIMessages>[0]["tools"],
   })
 
@@ -173,7 +183,7 @@ export async function handleVirtualDeveloperChat(options: {
       abortSignal,
       uiMessages: validatedMessages,
       originalMessages: validatedMessages as never,
-      onFinish: async ({ messages }) => {
+      onEnd: async ({ messages }) => {
         await saveChat({ chatId, messages })
       },
     })

@@ -5,6 +5,7 @@ import {
   convertToModelMessages,
   type ChatRequestOptions,
   createUIMessageStream,
+  toUIMessageStream,
 } from "ai"
 import {
   TransformersJSLanguageModel,
@@ -109,7 +110,7 @@ export class TransformersChatTransport
             abortSignal,
           })
 
-          writer.merge(result.toUIMessageStream({ sendStart: false }))
+          writer.merge(toUIMessageStream({ stream: result.stream, sendStart: false }))
         } catch (err) {
           writer.write({
             type: "data-modelDownloadProgress",

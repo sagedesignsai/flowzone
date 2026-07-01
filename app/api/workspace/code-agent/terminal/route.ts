@@ -1,9 +1,9 @@
 /**
  * Code Agent Terminal API Route
  *
- * Provides real-time terminal access for the PTY-powered code agent.
- * Connects directly to the sandbox PTY via sandbox.pty.connect()
- * for live terminal output streaming.
+ * Provides real-time terminal access for the code agent workspace.
+ * Connects to the sandbox PTY via sandbox.pty.connect() to stream
+ * the opencode TUI output to the browser terminal panel.
  *
  * GET  /api/workspace/code-agent/terminal?chatId=xxx  — SSE stream
  * POST /api/workspace/code-agent/terminal               — Send input
@@ -18,6 +18,7 @@ import { headers } from "next/headers"
 import {
   getPtyChatSession,
 } from "@/lib/pty/pty-store"
+import { readPtyOutput } from "@/lib/pty/pty-manager"
 import { assertChatAccess } from "@/lib/desktop/auth"
 
 export const runtime = "nodejs"
@@ -34,17 +35,16 @@ type PendingPtyState = {
 
 /**
  * Polls for PTY session creation and connects to it.
+ * Polls indefinitely (no timeout) — the PTY is created when
+ * the user sends a message and the agent runs createPtyShell.
  * Returns `true` if connected, `false` if aborted.
  */
 async function pollAndConnectPty(state: PendingPtyState): Promise<boolean> {
   const { chatId, encoder, controller, signal } = state
   const pollInterval = 800
-  const maxPollTime = 120_000 // 2 minutes before giving up
-  const startTime = Date.now()
+  let pollCount = 0
 
-  while (Date.now() - startTime < maxPollTime) {
-    if (signal.aborted) return false
-
+  while (!signal.aborted) {
     const ptySession = getPtyChatSession(chatId)
     if (ptySession) {
       // PTY available — connect
@@ -57,6 +57,16 @@ async function pollAndConnectPty(state: PendingPtyState): Promise<boolean> {
             `data: ${JSON.stringify({ type: "connected", sandboxId: ptySession.sandboxId, ptyPid: ptySession.ptyPid })}\n\n`,
           ),
         )
+
+        // Replay accumulated buffer (output generated before we connected)
+        const buffer = readPtyOutput(ptySession.sandboxId)
+        if (buffer) {
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ type: "output", data: buffer })}\n\n`,
+            ),
+          )
+        }
 
         const handle = await sandbox.pty.connect(ptySession.ptyPid, {
           onData: (data: Uint8Array) => {
@@ -88,17 +98,21 @@ async function pollAndConnectPty(state: PendingPtyState): Promise<boolean> {
       }
     }
 
+    // Send periodic heartbeat to keep connection alive
+    if (pollCount % 75 === 0 && pollCount > 0) {
+      // Every ~60s
+      controller.enqueue(
+        encoder.encode(
+          `data: ${JSON.stringify({ type: "heartbeat", message: "Waiting for sandbox to start... Send a message to begin." })}\n\n`,
+        ),
+      )
+    }
+    pollCount++
+
     // Wait before polling again
     await new Promise((resolve) => setTimeout(resolve, pollInterval))
   }
 
-  // Timed out waiting for PTY
-  controller.enqueue(
-    encoder.encode(
-      `data: ${JSON.stringify({ type: "error", data: "Timed out waiting for PTY session (2 min)" })}\n\n`,
-    ),
-  )
-  controller.close()
   return false
 }
 
@@ -153,6 +167,16 @@ export async function GET(req: Request) {
               `data: ${JSON.stringify({ type: "connected", sandboxId: ptySession.sandboxId, ptyPid: ptySession.ptyPid })}\n\n`,
             ),
           )
+
+          // Replay accumulated buffer (output generated before we connected)
+          const buffer = readPtyOutput(ptySession.sandboxId)
+          if (buffer) {
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({ type: "output", data: buffer })}\n\n`,
+              ),
+            )
+          }
 
           const handle = await sandbox.pty.connect(ptySession.ptyPid, {
             onData: (data: Uint8Array) => {

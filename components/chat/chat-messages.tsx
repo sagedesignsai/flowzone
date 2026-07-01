@@ -1,6 +1,7 @@
 "use client"
 
 import { ArrowClockwiseIcon as ArrowClockwise, SparkleIcon as Sparkle } from "@phosphor-icons/react"
+import { CopyIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Conversation,
@@ -47,14 +48,17 @@ function StreamingIndicator() {
   return (
     <Message from="assistant">
       <MessageContent>
-        <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-          <span className="flex gap-0.5">
-            <span className="size-1.5 animate-bounce rounded-full bg-current" />
-            <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:0.1s]" />
-            <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:0.2s]" />
+        <div className="flex items-center gap-3">
+          <div className="h-0.5 w-16 animate-pulse rounded-full bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20" />
+          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="flex gap-0.5">
+              <span className="size-1.5 animate-bounce rounded-full bg-current" />
+              <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:0.1s]" />
+              <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:0.2s]" />
+            </span>
+            Working…
           </span>
-          Working…
-        </span>
+        </div>
       </MessageContent>
     </Message>
   )
@@ -68,18 +72,28 @@ export function ErrorBanner({
   onRetry: () => void
 }) {
   return (
-    <div className="mx-3 mb-2 flex items-center gap-3 rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive shadow-sm">
-      <span className="flex-1 truncate">{error.message}</span>
-      <Button
-        onClick={onRetry}
-        size="icon-xs"
-        title="Retry"
-        type="button"
-        variant="ghost"
-      >
-        <ArrowClockwise className="size-3.5" />
-      </Button>
-    </div>
+    <details className="mx-3 mb-2 rounded-lg border border-destructive/20 bg-destructive/5">
+      <summary className="flex cursor-pointer items-center gap-3 px-3 py-2 text-xs text-destructive">
+        <span className="flex-1 truncate">{error.message}</span>
+        <Button
+          onClick={(e) => {
+            e.stopPropagation()
+            onRetry()
+          }}
+          size="icon-xs"
+          title="Retry"
+          type="button"
+          variant="ghost"
+        >
+          <ArrowClockwise className="size-3.5" />
+        </Button>
+      </summary>
+      <div className="border-t border-destructive/10 px-3 py-2">
+        <pre className="max-h-32 overflow-auto text-[10px] text-destructive/80">
+          {error.stack ?? error.message}
+        </pre>
+      </div>
+    </details>
   )
 }
 
@@ -115,7 +129,7 @@ export function ChatMessages({
         scrollClassName="scroll-smooth"
       >
         {isEmpty && !isLoading ? (
-          <div className="flex h-full min-h-[22rem] flex-col justify-center sm:min-h-[28rem]">
+          <div className="flex h-full min-h-[14rem] flex-col justify-center sm:min-h-[18rem]">
             <EmptyState />
           </div>
         ) : (
@@ -138,7 +152,7 @@ export function ChatMessages({
                     tooltip="Copy response"
                     variant="ghost"
                   >
-                    <span className="text-[10px]">⧉</span>
+                    <CopyIcon className="size-3.5" />
                   </MessageAction>
                 )}
               </MessageActions>
@@ -165,14 +179,17 @@ export function ChatMessages({
         {isEmpty && isLoading && (
           <Message from="assistant">
             <MessageContent>
-              <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                <span className="flex gap-0.5">
-                  <span className="size-1.5 animate-bounce rounded-full bg-current" />
-                  <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:0.1s]" />
-                  <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:0.2s]" />
+              <div className="flex items-center gap-3">
+                <div className="h-0.5 w-16 animate-pulse rounded-full bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20" />
+                <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="flex gap-0.5">
+                    <span className="size-1.5 animate-bounce rounded-full bg-current" />
+                    <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:0.1s]" />
+                    <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:0.2s]" />
+                  </span>
+                  Working…
                 </span>
-                Working…
-              </span>
+              </div>
             </MessageContent>
           </Message>
         )}

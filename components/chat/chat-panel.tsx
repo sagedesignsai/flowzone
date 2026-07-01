@@ -7,6 +7,7 @@ import type { DesktopStatus } from "@/hooks/use-ide-store"
 import { useChatPanel } from "@/hooks/use-chat-panel"
 import { cn } from "@/lib/utils"
 import type { UIMessage } from "ai"
+import { useEffect, useRef } from "react"
 
 interface ChatPanelProps {
   chatId: string
@@ -18,6 +19,8 @@ interface ChatPanelProps {
   desktopOptOut?: boolean
   apiPath?: string
   className?: string
+  /** When false, the auto-submit of the initial URL prompt is suppressed. */
+  initReady?: boolean
 }
 
 export function ChatPanel({
@@ -30,6 +33,7 @@ export function ChatPanel({
   desktopOptOut = false,
   apiPath,
   className,
+  initReady = true,
 }: ChatPanelProps) {
   const {
     messages,
@@ -58,7 +62,25 @@ export function ChatPanel({
     desktopStatus,
     desktopOptOut,
     apiPath,
+    initReady,
   })
+
+  const inputRef = useRef<HTMLTextAreaElement | null>(null)
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault()
+        // Focus the textarea inside PromptInput
+        const textarea = document.querySelector<HTMLTextAreaElement>(
+          'textarea[name="message"]'
+        )
+        textarea?.focus()
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [])
 
   return (
     <div

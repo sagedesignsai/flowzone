@@ -50,11 +50,15 @@ setInterval(() => {
  * Register a PTY session for a chat.
  * The SSE terminal endpoint will connect directly to the sandbox
  * PTY using these credentials.
+ *
+ * Optionally accepts baseUrl and authHeader for the opencode HTTP server,
+ * so agent tools can create an SDK client without re-discovery.
  */
 export function registerPtyChatSession(
   chatId: string,
   sandboxId: string,
   ptyPid: number,
+  options?: { baseUrl?: string; authHeader?: string },
 ): PtyChatSession {
   // Clean up existing session for this chat if any
   const existing = sessions.get(chatId)
@@ -66,6 +70,8 @@ export function registerPtyChatSession(
     sandboxId,
     ptyPid,
     createdAt: Date.now(),
+    ...(options?.baseUrl ? { baseUrl: options.baseUrl } : {}),
+    ...(options?.authHeader ? { authHeader: options.authHeader } : {}),
   }
 
   sessions.set(chatId, session)

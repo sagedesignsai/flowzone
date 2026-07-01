@@ -87,7 +87,7 @@ export async function POST(
     //    The model exercises its tool-calling ability to produce a clean title.
     const { toolCalls } = await generateText({
       model,
-      system: [
+      instructions: [
         "You are a helpful assistant that generates extremely concise, descriptive titles for chat conversations.",
         "When the user describes a conversation, call the `generateTitle` tool with a title that is 3 to 5 words long.",
         "The title should sound like a feature or project name. No quotes, no punctuation at the end.",

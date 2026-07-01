@@ -25,6 +25,8 @@ export interface UseChatPanelOptions {
   desktopStatus?: DesktopStatus
   desktopOptOut?: boolean
   apiPath?: string
+  /** When false, the auto-submit of the initial URL prompt is suppressed. */
+  initReady?: boolean
 }
 
 export interface UseChatPanelReturn {
@@ -59,6 +61,7 @@ export function useChatPanel({
   desktopStatus = "idle",
   desktopOptOut = false,
   apiPath,
+  initReady = true,
 }: UseChatPanelOptions): UseChatPanelReturn {
   const searchParams = useSearchParams()
   const projectId =
@@ -194,9 +197,10 @@ export function useChatPanel({
 
   const initialPrompt = searchParams.get("q")
   const canSendInitial =
-    desktopOptOut ||
-    desktopStatus === "running" ||
-    desktopStatus === "error"
+    initReady &&
+    (desktopOptOut ||
+      desktopStatus === "running" ||
+      desktopStatus === "error")
 
   useEffect(() => {
     if (

@@ -1,14 +1,8 @@
 /**
- * Virtual Developer PTY Handler
+ * Content Agent Chat Handler
  *
- * Chat handler that routes requests to the Virtual Developer PTY agent.
- * Creates an E2B sandbox + PTY session, then runs the agent with
- * PTY terminal tools + sandbox tools + optional desktop tools.
- *
- * The PTY agent can interactively use the sandbox terminal to:
- * - Run opencode in TUI mode
- * - Execute shell commands with real-time output
- * - Interact with CLI applications
+ * Routes chat requests to the Content Generation agent with
+ * sandbox tools for file operations + web search for research.
  */
 
 import {
@@ -17,7 +11,7 @@ import {
   type UIMessage,
   type ToolSet,
 } from "ai"
-import { createVirtualDevPtyAgent } from "@/lib/agents/virtual-dev-pty-agent"
+import { createContentAgent } from "@/lib/agents/content-agent"
 import { getPrimaryModel } from "@/lib/ai/models"
 import { prepareChat, saveChat } from "@/lib/chat/store"
 import { assertChatOwnership, isForbiddenError } from "@/lib/chat/access"
@@ -26,15 +20,9 @@ import { SandboxContext } from "@/lib/tools/sandbox-store"
 import { createWebSearchTool } from "@/lib/tools/web-search"
 import { isWebSearchConfigured } from "@/lib/search/web"
 import { runCommand, writeFile, readFile, listFiles } from "@/lib/tools/sandbox"
-import {
-  opencodeReady,
-  opencodeAppendPrompt,
-  opencodeSubmitPrompt,
-  opencodeWait,
-} from "@/lib/tools/opencode-pty-tools"
 import { logger } from "@/lib/logger"
 
-export async function handleVirtualDevPtyChat(options: {
+export async function handleContentChat(options: {
   chatId: string
   userId: string
   incomingMessages: UIMessage[]
@@ -43,14 +31,8 @@ export async function handleVirtualDevPtyChat(options: {
   environment?: string
   abortSignal?: AbortSignal
 }): Promise<Response> {
-  const {
-    chatId,
-    userId,
-    incomingMessages,
-    projectId,
-    webSearch,
-    abortSignal,
-  } = options
+  const { chatId, userId, incomingMessages, projectId, webSearch, abortSignal } =
+    options
 
   const model = getPrimaryModel()
   if (!model) {
@@ -77,21 +59,21 @@ export async function handleVirtualDevPtyChat(options: {
     userId,
     incomingMessages,
     projectId,
-    "code-agent",
+    "content",
   )
 
-  // ── Create E2B sandbox ─────────────────────────────────
+  // ── Create E2B sandbox for file operations ──────────────
   const sandboxResult = await tryCreateSandbox(chatId)
 
   if (!sandboxResult.ok) {
-    logger.warn("No sandbox available for Virtual Developer PTY", {
+    logger.warn("No sandbox available for Content Agent", {
       chatId,
       error: sandboxResult.error?.message,
     })
     return Response.json(
       {
         error:
-          "A development sandbox is required. " +
+          "A sandbox is required for content file operations. " +
           (sandboxResult.error?.code === "NO_API_KEY"
             ? "Set E2B_API_KEY in your environment."
             : (sandboxResult.error?.message ?? "Please try again later.")),
@@ -103,18 +85,12 @@ export async function handleVirtualDevPtyChat(options: {
   const sandboxCtx = sandboxResult.value
   sandboxCtx.chatId = chatId
 
-  // ── Build tools ───────────────────────────────────────
+  // ── Build tools ─────────────────────────────────────────
   const extraTools: ToolSet = {
-    // Sandbox tools for file operations and shell commands
     runShellCommand: runCommand,
     writeFile,
     readFile,
     listFiles,
-    // OpenCode HTTP tools (reliable, event-driven TUI interaction)
-    opencodeReady,
-    opencodeAppendPrompt,
-    opencodeSubmitPrompt,
-    opencodeWait,
   }
 
   if (webSearch) {
@@ -130,16 +106,11 @@ export async function handleVirtualDevPtyChat(options: {
     extraTools.webSearch = createWebSearchTool()
   }
 
-  // ── Create PTY agent ──────────────────────────────────
-  const agent = createVirtualDevPtyAgent(model, extraTools)
-
-  // Strip empty assistant placeholders (AI SDK inserts these during streaming)
-  const filteredMessages = combinedMessages.filter(
-    (m) => m.parts && m.parts.length > 0,
-  )
+  // ── Create Content agent ────────────────────────────────
+  const agent = createContentAgent(model, extraTools)
 
   const validatedMessages = await validateUIMessages({
-    messages: filteredMessages,
+    messages: combinedMessages,
     tools: agent.tools as Parameters<typeof validateUIMessages>[0]["tools"],
   })
 

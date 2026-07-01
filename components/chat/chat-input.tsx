@@ -157,6 +157,7 @@ export function ChatInput({
 
               <PromptInputButton
                 aria-pressed={useWebSearch}
+                className="transition-all duration-200"
                 onClick={onWebSearchToggle}
                 variant={useWebSearch ? "default" : "ghost"}
               >
@@ -167,7 +168,7 @@ export function ChatInput({
 
             <div className="flex items-center justify-between gap-3">
               <p className="text-[11px] text-muted-foreground">
-                Shift+Enter for a new line. Attach files, screenshots, or speak to draft faster.
+                Shift+Enter for new line
               </p>
 
               <ChatPromptSubmit
@@ -196,8 +197,8 @@ function desktopStatusNotice(
     desktopSandboxId
   ) {
     return (
-      <div className="mb-3 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
-        Desktop is starting. Text and web search still work while the workspace connects.
+      <div className="mb-2 rounded-md border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-[11px] text-amber-400">
+        Desktop is starting. Text and web search still work.
       </div>
     )
   }

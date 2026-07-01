@@ -53,16 +53,10 @@ export function ChatHeader({
     <div className="flex items-start justify-between gap-4 border-b border-border/60 px-4 py-3">
       <div className="min-w-0 space-y-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
-            Chat
-          </span>
             {projectId && <StatusPill label="Project context" />}
             {useLocalInference && <StatusPill label="Local AI" tone="muted" />}
             <StatusPill label={desktopLabel.label} tone={desktopLabel.tone} />
         </div>
-        <p className="max-w-xl text-xs text-muted-foreground">
-          Describe the change, inspect tool output, and keep moving with a minimal, focused thread.
-        </p>
       </div>
 
       <StatusPill

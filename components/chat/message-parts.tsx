@@ -239,12 +239,11 @@ const ScreenshotPart = memo(function ScreenshotPart({
 
 const StepStartDivider = memo(function StepStartDivider() {
   return (
-    <div className="flex items-center gap-2 py-2">
-      <div className="h-px flex-1 bg-border" />
-      <span className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
+    <div className="flex items-center justify-end gap-2 py-1">
+      <div className="h-px flex-1 border-t border-dashed border-border/40" />
+      <span className="text-[10px] font-medium tracking-wider text-muted-foreground/60 uppercase">
         Step
       </span>
-      <div className="h-px flex-1 bg-border" />
     </div>
   )
 })

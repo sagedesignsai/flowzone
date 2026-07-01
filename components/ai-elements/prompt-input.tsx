@@ -45,6 +45,7 @@ import {
   CornerDownLeftIcon,
   ImageIcon,
   Monitor,
+  PaperclipIcon,
   PlusIcon,
   SquareIcon,
   XIcon,
@@ -543,6 +544,10 @@ export const PromptInput = ({
     (SourceDocumentUIPart & { id: string })[]
   >([])
 
+  // ----- Drag-and-drop visual feedback state
+  const [isDragging, setIsDragging] = useState(false)
+  const dragCounterRef = useRef(0)
+
   // Keep a ref to files for cleanup on unmount (avoids stale closure)
   const filesRef = useRef(files)
 
@@ -770,7 +775,26 @@ export const PromptInput = ({
         e.preventDefault()
       }
     }
+    const onDragEnter = (e: DragEvent) => {
+      if (e.dataTransfer?.types?.includes("Files")) {
+        e.preventDefault()
+        dragCounterRef.current += 1
+        setIsDragging(true)
+      }
+    }
+    const onDragLeave = (e: DragEvent) => {
+      if (e.dataTransfer?.types?.includes("Files")) {
+        e.preventDefault()
+        dragCounterRef.current -= 1
+        if (dragCounterRef.current <= 0) {
+          dragCounterRef.current = 0
+          setIsDragging(false)
+        }
+      }
+    }
     const onDrop = (e: DragEvent) => {
+      dragCounterRef.current = 0
+      setIsDragging(false)
       if (e.dataTransfer?.types?.includes("Files")) {
         e.preventDefault()
       }
@@ -779,9 +803,13 @@ export const PromptInput = ({
       }
     }
     document.addEventListener("dragover", onDragOver)
+    document.addEventListener("dragenter", onDragEnter)
+    document.addEventListener("dragleave", onDragLeave)
     document.addEventListener("drop", onDrop)
     return () => {
       document.removeEventListener("dragover", onDragOver)
+      document.removeEventListener("dragenter", onDragEnter)
+      document.removeEventListener("dragleave", onDragLeave)
       document.removeEventListener("drop", onDrop)
     }
   }, [add, globalDrop])
@@ -907,6 +935,19 @@ export const PromptInput = ({
   // Render with or without local provider
   const inner = (
     <>
+      {isDragging && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm transition-all duration-200">
+          <div className="rounded-2xl border-2 border-dashed border-primary/40 bg-card p-12 text-center shadow-2xl">
+            <PaperclipIcon className="mx-auto mb-4 size-8 text-primary/60" />
+            <p className="text-sm font-medium text-foreground">
+              Drop files here to attach
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Images, documents, and more
+            </p>
+          </div>
+        </div>
+      )}
       <input
         accept={accept}
         aria-label="Upload files"

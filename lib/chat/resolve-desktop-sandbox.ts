@@ -9,7 +9,7 @@ import {
 import { assertDesktopSandboxAccess } from "@/lib/desktop/auth"
 
 type MessageWithAttachments = UIMessage & {
-  experimental_attachments?: Array<{
+  attachments?: Array<{
     mimeType: string
     data?: { sandboxId?: string; chatId?: string }
   }>
@@ -20,7 +20,7 @@ function getDesktopSandboxIdFromMessages(
 ): { sandboxId: string; chatId?: string } | null {
   for (const msg of messages) {
     const extended = msg as MessageWithAttachments
-    const attachments = extended.experimental_attachments
+    const attachments = extended.attachments
     if (!attachments) continue
     for (const a of attachments) {
       if (a.mimeType === DESKTOP_SANDBOX_MIME && a.data?.sandboxId) {

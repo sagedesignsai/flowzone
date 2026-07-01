@@ -11,7 +11,7 @@ export interface BuildMessagePayloadOptions {
 export type SendMessagePayload = {
   text: string
   files?: FileUIPart[]
-  experimental_attachments?: ReturnType<typeof createDesktopSandboxAttachment>[]
+  attachments?: ReturnType<typeof createDesktopSandboxAttachment>[]
 }
 
 /**
@@ -30,7 +30,7 @@ export function buildMessagePayload(
   }
 
   if (desktopSandboxId && chatId) {
-    payload.experimental_attachments = [
+    payload.attachments = [
       createDesktopSandboxAttachment(desktopSandboxId, chatId),
     ]
   }

@@ -14,6 +14,12 @@
  *
  * Each tool reads the sandbox from SandboxContext and manages
  * PTY sessions via the PtyManager singleton.
+ *
+ * Auto-resolution: When sessionId is omitted, tools resolve the PTY
+ * session from the chatId in SandboxContext via the pty-store.
+ * This allows the agent to interact with a pre-existing PTY
+ * (e.g. one created by the init flow with opencode already running)
+ * without needing to call createPtyShell first.
  */
 
 import { tool } from "ai"
@@ -22,7 +28,9 @@ import { SandboxContext } from "@/lib/tools/sandbox-store"
 import * as ptyManager from "@/lib/pty/pty-manager"
 import type { PtyTimeoutError } from "@/lib/pty/pty-manager"
 import {
+  getPtyChatSession,
   registerPtyChatSession,
+  unregisterPtyChatSession,
 } from "@/lib/pty/pty-store"
 import { logger } from "@/lib/logger"
 
@@ -38,6 +46,49 @@ function requireSandbox(label: string) {
   return ctx
 }
 
+/**
+ * Resolve a PTY session ID, falling back to the chat-scoped session
+ * when no explicit sessionId is provided.
+ */
+function resolveSessionId(
+  sessionId: string | undefined,
+): { sessionId: string; pid: number } {
+  // Explicit sessionId provided — use it directly
+  if (sessionId) {
+    const session = ptyManager.getPtySession(sessionId)
+    if (!session) {
+      throw new Error(
+        `No PTY session found for "${sessionId}". Create one with createPtyShell first.`,
+      )
+    }
+    return { sessionId, pid: session.pid }
+  }
+
+  // No sessionId — resolve from chatId via pty-store
+  const ctx = SandboxContext.get()
+  if (!ctx?.chatId) {
+    throw new Error(
+      'No sessionId provided and no chat context available. Provide a sessionId or ensure createPtyShell was called first.',
+    )
+  }
+
+  const ptySession = getPtyChatSession(ctx.chatId)
+  if (!ptySession) {
+    throw new Error(
+      `No PTY session found for chat "${ctx.chatId}". Create one with createPtyShell first.`,
+    )
+  }
+
+  const session = ptyManager.getPtySession(ptySession.sandboxId)
+  if (!session) {
+    throw new Error(
+      `PTY session for sandbox "${ptySession.sandboxId}" is no longer active. Create a new one with createPtyShell.`,
+    )
+  }
+
+  return { sessionId: ptySession.sandboxId, pid: session.pid }
+}
+
 // ── Create PTY Shell ──────────────────────────────────────
 
 export const createPtyShell = tool({
@@ -51,7 +102,10 @@ export const createPtyShell = tool({
     "- Start a long-running process and interact with it",
     "- Use terminal-based editors, pagers, or menus",
     "",
-    "Returns a sessionId — pass this to other PTY tools (sendPtyInput, waitForPtyOutput, etc.)",
+    "If a PTY session already exists for this chat, it will be reused instead of creating a new one.",
+    "",
+    "Returns a sessionId — pass this to other PTY tools (sendPtyInput, waitForPtyOutput, etc.).",
+    "If the session was reused, reused=true is returned.",
   ].join("\n"),
   inputSchema: z.object({
     cols: z
@@ -72,9 +126,28 @@ export const createPtyShell = tool({
   execute: async ({ cols, rows, cwd }) => {
     const ctx = requireSandbox("createPtyShell")
     const chatId = ctx.chatId
+    const sandboxId = ctx.sandbox.sandboxId
 
-    // Create the PTY. The SSE terminal endpoint will connect
-    // directly to this PTY via sandbox.pty.connect() for streaming.
+    // Check if a PTY session already exists for this sandbox
+    const existingSession = ptyManager.getPtySession(sandboxId)
+    if (existingSession && !existingSession.destroyed) {
+      // Ensure it's registered in the chat store for SSE streaming
+      if (chatId) {
+        registerPtyChatSession(chatId, sandboxId, existingSession.pid)
+      }
+      logger.debug("Reusing existing PTY session", {
+        sandboxId,
+        pid: existingSession.pid,
+        chatId,
+      })
+      return {
+        sessionId: sandboxId,
+        pid: existingSession.pid,
+        reused: true as const,
+      }
+    }
+
+    // Create a new PTY session
     const sessionId = await ptyManager.createPtySession(ctx.sandbox, {
       cols,
       rows,
@@ -90,12 +163,17 @@ export const createPtyShell = tool({
     // Register in the chat store for SSE terminal streaming
     if (chatId) {
       registerPtyChatSession(chatId, ctx.sandbox.sandboxId, session.pid)
-      logger.debug("Registered PTY session for chat", { chatId, sandboxId: ctx.sandbox.sandboxId, pid: session.pid })
+      logger.debug("Registered PTY session for chat", {
+        chatId,
+        sandboxId: ctx.sandbox.sandboxId,
+        pid: session.pid,
+      })
     }
 
     return {
       sessionId,
       pid: session.pid,
+      reused: false as const,
     }
   },
 })
@@ -116,31 +194,27 @@ export const sendPtyInput = tool({
     "Use cases:",
     '- Type a command: `"ls -la\\n"`',
     '- Answer a prompt: `"yes\\n"`',
-    '- Start opencode TUI: `"opencode start\\n"`',
     '- Send Ctrl+C: `"\\x03"`',
+    "",
+    "sessionId is optional — if omitted, the active PTY session for this chat is used automatically.",
   ].join("\n"),
   inputSchema: z.object({
     sessionId: z
       .string()
-      .describe("The session ID returned by createPtyShell"),
+      .optional()
+      .describe("The session ID returned by createPtyShell (optional — auto-resolved from chat if omitted)"),
     text: z
       .string()
       .describe("Text to send to the terminal. End commands with \\n (newline) to execute."),
   }),
   execute: async ({ sessionId, text }) => {
     const ctx = requireSandbox("sendPtyInput")
-
-    const session = ptyManager.getPtySession(sessionId)
-    if (!session) {
-      throw new Error(
-        `No PTY session found for "${sessionId}". Create one with createPtyShell first.`,
-      )
-    }
+    const { pid } = resolveSessionId(sessionId)
 
     const encoder = new TextEncoder()
-    await ctx.sandbox.pty.sendInput(session.pid, encoder.encode(text))
+    await ctx.sandbox.pty.sendInput(pid, encoder.encode(text))
 
-    return { ok: true as const, pid: session.pid, sent: text.length }
+    return { ok: true as const, pid, sent: text.length }
   },
 })
 
@@ -158,11 +232,14 @@ export const readPtyOutput = tool({
     "",
     "This is non-blocking — returns immediately with whatever is in the buffer.",
     "For streaming output, use waitForPtyOutput instead.",
+    "",
+    "sessionId is optional — if omitted, the active PTY session for this chat is used automatically.",
   ].join("\n"),
   inputSchema: z.object({
     sessionId: z
       .string()
-      .describe("The session ID returned by createPtyShell"),
+      .optional()
+      .describe("The session ID returned by createPtyShell (optional — auto-resolved from chat if omitted)"),
     clear: z
       .boolean()
       .optional()
@@ -170,9 +247,10 @@ export const readPtyOutput = tool({
       .describe("Clear the output buffer after reading (default: false)"),
   }),
   execute: async ({ sessionId, clear }) => {
-    const output = ptyManager.readPtyOutput(sessionId)
+    const resolved = resolveSessionId(sessionId)
+    const output = ptyManager.readPtyOutput(resolved.sessionId)
     if (clear) {
-      ptyManager.clearPtyOutput(sessionId)
+      ptyManager.clearPtyOutput(resolved.sessionId)
     }
 
     return {
@@ -218,11 +296,14 @@ export const waitForPtyOutput = tool({
     "",
     "If the pattern is not found within the timeout, returns an error",
     "with whatever output was captured.",
+    "",
+    "sessionId is optional — if omitted, the active PTY session for this chat is used automatically.",
   ].join("\n"),
   inputSchema: z.object({
     sessionId: z
       .string()
-      .describe("The session ID returned by createPtyShell"),
+      .optional()
+      .describe("The session ID returned by createPtyShell (optional — auto-resolved from chat if omitted)"),
     pattern: z
       .string()
       .describe("Substring to wait for in the terminal output (e.g. '$', 'ready', 'complete')"),
@@ -233,9 +314,11 @@ export const waitForPtyOutput = tool({
       .describe("Max time to wait in milliseconds (default: 120000 = 2 min)"),
   }),
   execute: async function* ({ sessionId, pattern, timeout }) {
+    const resolved = resolveSessionId(sessionId)
+
     try {
       for await (const { delta, fullOutput } of ptyManager.waitForPtyPattern(
-        sessionId,
+        resolved.sessionId,
         { pattern, timeout, interval: 100 },
       )) {
         // AI SDK's executeTool wraps yields as preliminary results.
@@ -254,14 +337,14 @@ export const waitForPtyOutput = tool({
       // waitForPtyPattern returns. Yield one more time with
       // matched: true so the agent knows the tool succeeded.
       yield {
-        output: ptyManager.readPtyOutput(sessionId),
+        output: ptyManager.readPtyOutput(resolved.sessionId),
         pattern,
         matched: true as const,
       }
     } catch (error) {
       const ptyErr = error as PtyTimeoutError
       yield {
-        output: ptyErr.output ?? ptyManager.readPtyOutput(sessionId),
+        output: ptyErr.output ?? ptyManager.readPtyOutput(resolved.sessionId),
         pattern,
         matched: false as const,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -277,11 +360,14 @@ export const resizePty = tool({
     "Resize the PTY terminal dimensions (columns × rows).",
     "Use this when the terminal output is wrapping oddly or the",
     "application requests a specific size.",
+    "",
+    "sessionId is optional — if omitted, the active PTY session for this chat is used automatically.",
   ].join("\n"),
   inputSchema: z.object({
     sessionId: z
       .string()
-      .describe("The session ID returned by createPtyShell"),
+      .optional()
+      .describe("The session ID returned by createPtyShell (optional — auto-resolved from chat if omitted)"),
     cols: z
       .number()
       .optional()
@@ -295,15 +381,9 @@ export const resizePty = tool({
   }),
   execute: async ({ sessionId, cols, rows }) => {
     const ctx = requireSandbox("resizePty")
+    const { pid } = resolveSessionId(sessionId)
 
-    const session = ptyManager.getPtySession(sessionId)
-    if (!session) {
-      throw new Error(
-        `No PTY session found for "${sessionId}". Create one with createPtyShell first.`,
-      )
-    }
-
-    await ctx.sandbox.pty.resize(session.pid, { cols, rows })
+    await ctx.sandbox.pty.resize(pid, { cols, rows })
 
     return { ok: true as const, cols, rows }
   },
@@ -316,14 +396,26 @@ export const killPty = tool({
     "Kill and clean up a PTY terminal session.",
     "Use this when you're done with the terminal or need to reset it.",
     "After killing, create a new session with createPtyShell if needed.",
+    "",
+    "sessionId is optional — if omitted, the active PTY session for this chat is used automatically.",
   ].join("\n"),
   inputSchema: z.object({
     sessionId: z
       .string()
-      .describe("The session ID returned by createPtyShell"),
+      .optional()
+      .describe("The session ID returned by createPtyShell (optional — auto-resolved from chat if omitted)"),
   }),
   execute: async ({ sessionId }) => {
-    await ptyManager.destroyPtySession(sessionId)
+    const resolved = resolveSessionId(sessionId)
+
+    await ptyManager.destroyPtySession(resolved.sessionId)
+
+    // Also unregister from chat store
+    const ctx = SandboxContext.get()
+    if (ctx?.chatId) {
+      unregisterPtyChatSession(ctx.chatId)
+    }
+
     return { ok: true as const }
   },
 })
