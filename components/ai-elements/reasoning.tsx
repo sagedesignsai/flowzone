@@ -136,7 +136,7 @@ export const Reasoning = memo(
     return (
       <ReasoningContext.Provider value={contextValue}>
         <Collapsible
-          className={cn("not-prose mb-3", className)}
+          className={cn("not-prose mb-0.5", className)}
           onOpenChange={handleOpenChange}
           open={isOpen}
           {...props}
@@ -159,9 +159,9 @@ const defaultGetThinkingMessage = (isStreaming: boolean, duration?: number) => {
     return <Shimmer duration={1}>Thinking...</Shimmer>
   }
   if (duration === undefined) {
-    return <p>Thought for a few seconds</p>
+    return <span>Thought</span>
   }
-  return <p>Thought for {duration} seconds</p>
+  return <span>Thought for {duration}s</span>
 }
 
 export const ReasoningTrigger = memo(
@@ -176,18 +176,18 @@ export const ReasoningTrigger = memo(
     return (
       <CollapsibleTrigger
         className={cn(
-          "flex w-full items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground",
+          "flex w-full items-center gap-1.5 text-xs text-muted-foreground/70 transition-colors hover:text-foreground/80",
           className
         )}
         {...props}
       >
         {children ?? (
           <>
-            <BrainIcon className="size-4" />
+            <BrainIcon className="size-3" />
             {getThinkingMessage(isStreaming, duration)}
             <ChevronDownIcon
               className={cn(
-                "size-4 transition-transform",
+                "size-3 transition-transform",
                 isOpen ? "rotate-180" : "rotate-0"
               )}
             />
@@ -210,8 +210,8 @@ export const ReasoningContent = memo(
   ({ className, children, ...props }: ReasoningContentProps) => (
     <CollapsibleContent
       className={cn(
-        "mt-3 text-sm",
-        "text-muted-foreground outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:animate-in data-[state=open]:slide-in-from-top-2",
+        "mt-1 text-xs leading-relaxed",
+        "text-muted-foreground/80 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:animate-in data-[state=open]:slide-in-from-top-2",
         className
       )}
       {...props}

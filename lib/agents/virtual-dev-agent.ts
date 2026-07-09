@@ -17,6 +17,7 @@
 import { ToolLoopAgent, type LanguageModel, type ToolSet } from "ai"
 import { createSubmitToOpenCodeTool } from "@/lib/tools/opencode-tool"
 import { createKnowledgeTools } from "@/lib/rag/tools"
+import { createReaderTools } from "@/lib/rag/reader-tools"
 
 // ── Agent Factory ──────────────────────────────────────────
 
@@ -32,6 +33,7 @@ export function createVirtualDeveloper(
   tools: ToolSet = {},
 ) {
   const knowledgeTools = createKnowledgeTools()
+  const readerTools = createReaderTools()
   return new ToolLoopAgent({
     model,
     id: "virtual-dev",
@@ -53,6 +55,10 @@ export function createVirtualDeveloper(
       "### Code sandbox tools (only if no desktop — for post-build verification)",
       "- runShellCommand: verify via tests, lint, build",
       "- readFile: inspect generated files",
+      "",
+      "### read/write tools (always available)",
+      "- readDocument: parse and read any document (PDF, DOCX, XLSX, MD, etc.) into clean text or markdown",
+      "- ingestDocument: parse a document AND index it into the knowledge base for future retrieval",
       "",
       "### knowledgeBase (always available)",
       "- searchKnowledge: find relevant context from your project knowledge base",
@@ -86,6 +92,7 @@ export function createVirtualDeveloper(
       "- Work done by one tool is visible to all others — they share state.",
     ].join("\n"),
     tools: {
+      ...readerTools,
       ...knowledgeTools,
       submitToOpenCode: createSubmitToOpenCodeTool(),
       ...tools,

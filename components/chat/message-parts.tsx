@@ -68,7 +68,7 @@ const ReasoningPart = memo(function ReasoningPart({
   if (!text.trim() && state !== "streaming") return null
 
   return (
-    <Reasoning className="my-3" isStreaming={state === "streaming"}>
+    <Reasoning className="my-0.5" isStreaming={state === "streaming"}>
       <ReasoningTrigger />
       <ReasoningContent>{text}</ReasoningContent>
     </Reasoning>
@@ -120,7 +120,7 @@ const ToolPart = memo(function ToolPart({
   }, [resolvedType, type, dynamicToolName])
 
   return (
-    <Tool className="my-3">
+    <Tool className="my-0.5">
       {resolvedType === "dynamic-tool" ? (
         <ToolHeader
           state={resolvedState as DynamicToolUIPart["state"]}
@@ -174,7 +174,7 @@ const SourcesGroup = memo(function SourcesGroup({
   if (parts.length === 0) return null
 
   return (
-    <Sources className="my-3">
+    <Sources className="my-0.5">
       <SourcesTrigger count={parts.length} />
       <SourcesContent>
         {parts.map((s) => (
@@ -218,7 +218,7 @@ const ScreenshotPart = memo(function ScreenshotPart({
   height?: number
 }) {
   return (
-    <div className="my-2 overflow-hidden rounded-lg border border-border bg-muted">
+    <div className="my-1 overflow-hidden rounded-lg border border-border/50 bg-muted/30">
       <Image
         alt="Desktop screenshot"
         className="h-auto w-full"
@@ -239,9 +239,9 @@ const ScreenshotPart = memo(function ScreenshotPart({
 
 const StepStartDivider = memo(function StepStartDivider() {
   return (
-    <div className="flex items-center justify-end gap-2 py-1">
-      <div className="h-px flex-1 border-t border-dashed border-border/40" />
-      <span className="text-[10px] font-medium tracking-wider text-muted-foreground/60 uppercase">
+    <div className="flex items-center justify-end gap-1.5 py-0.5">
+      <div className="h-px flex-1 border-t border-dashed border-border/20" />
+      <span className="text-[9px] font-medium tracking-wider text-muted-foreground/40 uppercase">
         Step
       </span>
     </div>
@@ -357,7 +357,7 @@ export const MessageParts = memo(function MessageParts({
   })
 
   return (
-    <div className={cn("flex flex-col gap-2", className)}>
+    <div className={cn("flex flex-col gap-1", className)}>
       {rendered}
       {sourceParts.length > 0 && <SourcesGroup parts={sourceParts} />}
     </div>

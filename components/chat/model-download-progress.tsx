@@ -19,8 +19,8 @@ export function ModelDownloadProgress({
 }: ModelDownloadProgressProps) {
   if (status === "error") {
     return (
-      <div className="mt-2 space-y-1.5 px-3 pb-2">
-        <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+      <div className="space-y-1 px-2 pb-1">
+        <div className="rounded-md border border-destructive/15 bg-destructive/[0.03] px-2 py-1 text-[11px] text-destructive/80">
           {message ?? "Model failed to load."}
         </div>
       </div>
@@ -32,13 +32,13 @@ export function ModelDownloadProgress({
   }
 
   return (
-    <div className="mt-2 space-y-1.5 px-3 pb-2">
-      <div className="flex justify-between text-[10px] text-muted-foreground">
+    <div className="space-y-1 px-2 pb-1">
+      <div className="flex justify-between text-[10px] text-muted-foreground/60">
         <span>{message ?? "Downloading model…"}</span>
         {status === "downloading" && <span>{progress}%</span>}
       </div>
       {status === "downloading" && (
-        <Progress value={progress} className="h-1" />
+        <Progress value={progress} className="h-0.5" />
       )}
     </div>
   )

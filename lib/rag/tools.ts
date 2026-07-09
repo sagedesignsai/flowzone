@@ -12,7 +12,7 @@
 import { tool } from "ai"
 import { z } from "zod"
 import { searchKnowledge, formatRetrievedContext } from "@/lib/rag/retrieve"
-import { indexText } from "@/lib/rag/index"
+import { indexText } from "@/lib/rag/indexer"
 import { isQdrantConfigured } from "@/lib/rag/qdrant"
 import { isEmbeddingConfigured } from "@/lib/rag/embeddings"
 import type { RetrievedChunk } from "@/lib/rag/retrieve"

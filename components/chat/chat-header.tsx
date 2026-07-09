@@ -50,20 +50,20 @@ export function ChatHeader({
   useLocalInference,
 }: ChatHeaderProps) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-border/60 px-4 py-3">
-      <div className="min-w-0 space-y-1">
-        <div className="flex flex-wrap items-center gap-2">
-            {projectId && <StatusPill label="Project context" />}
-            {useLocalInference && <StatusPill label="Local AI" tone="muted" />}
-            <StatusPill label={desktopLabel.label} tone={desktopLabel.tone} />
-        </div>
+    <div className="flex items-center justify-between gap-2 px-3 py-1">
+      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+        {projectId && <StatusPill label="Project" />}
+        {useLocalInference && <StatusPill label="Local" tone="muted" />}
+        <StatusPill label={desktopLabel.label} tone={desktopLabel.tone} />
       </div>
 
-      <StatusPill
-        active={useWebSearch}
-        label={capabilityLabel}
-        tone={useWebSearch ? "success" : "default"}
-      />
+      {useWebSearch && (
+        <StatusPill
+          active
+          label="Web"
+          tone="success"
+        />
+      )}
     </div>
   )
 }

@@ -46,6 +46,7 @@ function ChatPromptSubmit({
     <PromptInputSubmit
       disabled={!inputText.trim() && !hasAttachments && !isStreaming}
       onStop={onStop}
+      size="icon-xs"
       status={status}
     />
   )
@@ -110,11 +111,11 @@ export function ChatInput({
   onTranscriptionChange,
 }: ChatInputProps) {
   return (
-    <div className="w-full shrink-0 border-t border-border/60 bg-background/95 px-4 pb-4 pt-3 backdrop-blur">
+    <div className="w-full shrink-0 px-3 pb-3 pt-1">
       {desktopOptOut ? null : desktopStatusNotice(desktopOptOut, desktopReady, desktopSandboxId)}
 
       <PromptInput
-        className="rounded-2xl border border-border/70 bg-card/70 shadow-sm ring-1 ring-border/40 backdrop-blur"
+        className="rounded-xl border border-border/50 bg-card/90 shadow-xs backdrop-blur-sm"
         globalDrop
         multiple
         onSubmit={onSubmit}
@@ -122,26 +123,22 @@ export function ChatInput({
         <ChatAttachmentPreviews />
         <PromptInputBody>
           <PromptInputTextarea
-            className="min-h-[84px] resize-none bg-transparent px-4 py-3 text-sm sm:min-h-[96px]"
+            className="min-h-[44px] resize-none bg-transparent px-3 py-2.5 text-sm"
             disabled={isStreaming}
             onChange={onTextChange}
             placeholder={
               isStreaming
                 ? "Waiting for response…"
-                : desktopOptOut
-                  ? "Ask a follow-up or describe a task…"
-                  : desktopReady
-                    ? "Ask a follow-up or describe a task…"
-                    : "Ask a follow-up while the desktop connects…"
+                : "Ask a follow-up…"
             }
             value={inputText}
           />
         </PromptInputBody>
-        <PromptInputFooter className="px-3 pb-3 pt-2">
-          <div className="flex w-full flex-col gap-2">
-            <PromptInputTools className="flex-wrap gap-2">
+        <PromptInputFooter className="px-2 pb-2 pt-0">
+          <div className="flex w-full items-center justify-between gap-1">
+            <PromptInputTools className="flex items-center gap-0.5">
               <PromptInputActionMenu>
-                <PromptInputActionMenuTrigger tooltip="Add tools" variant="outline" />
+                <PromptInputActionMenuTrigger tooltip="Add files" variant="ghost" size="icon-xs" />
                 <PromptInputActionMenuContent>
                   <PromptInputActionAddAttachments />
                   <PromptInputActionAddScreenshot />
@@ -151,7 +148,7 @@ export function ChatInput({
               <SpeechInput
                 className="shrink-0"
                 onTranscriptionChange={onTranscriptionChange}
-                size="icon-sm"
+                size="icon-xs"
                 variant="ghost"
               />
 
@@ -159,18 +156,14 @@ export function ChatInput({
                 aria-pressed={useWebSearch}
                 className="transition-all duration-200"
                 onClick={onWebSearchToggle}
+                size="icon-xs"
                 variant={useWebSearch ? "default" : "ghost"}
               >
-                <GlobeIcon size={16} />
-                <span>Search</span>
+                <GlobeIcon size={14} />
               </PromptInputButton>
             </PromptInputTools>
 
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-[11px] text-muted-foreground">
-                Shift+Enter for new line
-              </p>
-
+            <div className="flex items-center gap-1">
               <ChatPromptSubmit
                 inputText={inputText}
                 isStreaming={isStreaming}
@@ -197,7 +190,7 @@ function desktopStatusNotice(
     desktopSandboxId
   ) {
     return (
-      <div className="mb-2 rounded-md border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-[11px] text-amber-400">
+      <div className="mb-1.5 rounded-md border border-amber-500/15 bg-amber-500/[0.04] px-2 py-0.5 text-[10px] text-amber-400/80">
         Desktop is starting. Text and web search still work.
       </div>
     )

@@ -30,7 +30,7 @@ export const ConversationContent = ({
   ...props
 }: ConversationContentProps) => (
   <StickToBottom.Content
-    className={cn("flex flex-col gap-6 p-4", className)}
+    className={cn("flex flex-col gap-4 p-3", className)}
     scrollClassName={cn("scroller overflow-y-auto", scrollClassName)}
     {...props}
   />
@@ -87,7 +87,7 @@ export const ConversationScrollButton = ({
     !isAtBottom && (
       <Button
         className={cn(
-          "absolute bottom-4 left-[50%] translate-x-[-50%] rounded-full dark:bg-background dark:hover:bg-muted",
+          "absolute bottom-3 left-[50%] translate-x-[-50%] rounded-full size-7 shadow-xs dark:bg-background/90 dark:hover:bg-muted backdrop-blur-xs",
           className
         )}
         onClick={handleScrollToBottom}
@@ -96,7 +96,7 @@ export const ConversationScrollButton = ({
         variant="outline"
         {...props}
       >
-        <ArrowDownIcon className="size-4" />
+        <ArrowDownIcon className="size-3.5" />
       </Button>
     )
   )

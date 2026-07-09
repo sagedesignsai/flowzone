@@ -15,6 +15,7 @@
 
 import { ToolLoopAgent, type LanguageModel, type ToolSet } from "ai"
 import { createKnowledgeTools } from "@/lib/rag/tools"
+import { createReaderTools } from "@/lib/rag/reader-tools"
 
 // ── Agent Factory ──────────────────────────────────────────
 
@@ -30,6 +31,7 @@ export function createBizOpsAgent(
   tools: ToolSet = {},
 ) {
   const knowledgeTools = createKnowledgeTools()
+  const readerTools = createReaderTools()
   return new ToolLoopAgent({
     model,
     id: "bizops-agent",
@@ -75,6 +77,10 @@ export function createBizOpsAgent(
       "- Service offering refinement and packaging",
       "",
       "## Tools Available",
+      "",
+      "### readDocument (always available)",
+      "- readDocument: parse and read any business document (PDF, DOCX, XLSX, MD, etc.) into clean text",
+      "- ingestDocument: parse a document and index it into the knowledge base for future reference",
       "",
       "### knowledgeBase (always available)",
       "- searchKnowledge: find relevant context from the business knowledge base (past reports, client records, SOPs, financial data)",
@@ -171,6 +177,7 @@ export function createBizOpsAgent(
       "- Report what was created, file paths, and suggested next steps",
     ].join("\n"),
     tools: {
+      ...readerTools,
       ...knowledgeTools,
       ...tools,
     },
